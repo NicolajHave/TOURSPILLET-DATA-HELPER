@@ -1,0 +1,63 @@
+{
+  "race": {
+    "slug": "tour-auvergne-rhone-alpes",
+    "year": 2026
+  },
+  "stage": {
+    "stageNo": 3,
+    "distanceKm": null
+  },
+  "results": [
+    {
+      "rank": null,
+      "status": "JORGENSON MATTEO",
+      "riderSlug": "matteo-jorgenson",
+      "riderName": "JORGENSON Matteo",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "NORDHAGEN JØRGEN\n  +0:14",
+      "riderSlug": "jorgen-nordhagen",
+      "riderName": "NORDHAGEN Jørgen",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "ARMIRAIL BRUNO\n  +0:50",
+      "riderSlug": "bruno-armirail",
+      "riderName": "ARMIRAIL Bruno",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "HAGENES PER STRAND\n  +2:07",
+      "riderSlug": "per-strand-hagenes",
+      "riderName": "HAGENES Per Strand",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "AFFINI EDOARDO\n  +2:25",
+      "riderSlug": "edoardo-affini",
+      "riderName": "AFFINI Edoardo",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "TULETT BEN\n  +4:35",
+      "riderSlug": "ben-tulett",
+      "riderName": "TULETT Ben",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "VAN AERT WOUT\n  +5:12",
+      "riderSlug": "wout-van-aert",
+      "riderName": "VAN AERT Wout",
+      "team": null
+    }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/tour-auvergne-rhone-alpes/2026/stage-3/result/result",
+  "capturedAt": "2026-06-09T21:43:59.668Z"
+}
