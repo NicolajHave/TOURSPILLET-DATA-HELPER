@@ -1,0 +1,65 @@
+{
+  "source": "Dauphiné 2026, 8 stages",
+  "generatedAt": "2026-06-15",
+  "unit": "kr",
+  "note": "points field is 0 for this game variant; price delta is the only signal",
+  "teamBonus": {
+    "all": 60000,
+    "flatStages": 60000
+  },
+  "dnfPenalty": -100000,
+  "baseline": {
+    "flatStages": 0,
+    "mountainStages": -67500
+  },
+  "positionPremium": {
+    "1": {
+      "flat": 281000,
+      "mountain": 466250
+    },
+    "2": {
+      "flat": 247500,
+      "mountain": 396500
+    },
+    "3": {
+      "flat": 210000,
+      "mountain": 363000
+    },
+    "4": {
+      "flat": 175500,
+      "mountain": 312500
+    },
+    "5": {
+      "flat": 158000,
+      "mountain": 240500
+    },
+    "6": {
+      "flat": 177500,
+      "mountain": 269500
+    },
+    "7": {
+      "flat": 164000,
+      "mountain": 183500
+    },
+    "8": {
+      "flat": 120000,
+      "mountain": 224000
+    },
+    "9": {
+      "flat": 117000,
+      "mountain": 216000
+    },
+    "10": {
+      "flat": 103500,
+      "mountain": 170000
+    }
+  },
+  "jerseyBonus": {
+    "Alex Baudin": 140000,
+    "Kevin Vauquelin": 90000,
+    "Clément Braz Afonso": 88000,
+    "Oscar Onley": 80000,
+    "Matteo Jorgenson": 66250,
+    "Nadav Raisberg": 54250
+  }
+}
