@@ -138,9 +138,13 @@ GET https://nexus-app-fantasy.holdet.dk/api/games/{gameId}/players
 ## 8. REVIDERET roadmap (prioriteret)
 
 1. **[NU — dagligt til 14/6]** Holdet-snapshots af game 622 efter hver etape.
-2. **[Denne uge]** Værdiformel-inferens: join snapshots (Δpris per rytter per
-   runde) med PCS-resultater for samme etape → regressér placering/status →
-   Δværdi. Inkl. holdbonus- og trøje-effekter hvis identificerbare.
+2. **[✓ GJORT — se `docs/VALUE_FORMULA.md`]** Værdiformel-inferens: join snapshots
+   (Δpris per rytter per runde) med PCS-resultater for samme etape → regressér
+   placering/status → Δværdi. Inkl. holdbonus- og trøje-effekter hvis
+   identificerbare. **Resultat:** additiv, deterministisk formel —
+   `Δpris = baseline(etapetype) + placeringspræmie(rank) + 60.000·[vinderhold]
+   + trøjebonus − 100.000·[DNF]`. Holdbonus (+60k) og DNF (−100k) er knivskarpe.
+   Kør `npx tsx scripts/inferValueFormula.ts`; koeff. i `artifacts/value-formula.json`.
 3. **[Parallelt]** Paper-trade beslutningsloopet på Dauphinés sidste etaper.
 4. **[Derefter]** PCS-backfill TdF 2025 (kalibrering) + Vuelta 2025 (holdout) →
    backtest-motor jf. §3.
@@ -162,7 +166,9 @@ GET https://nexus-app-fantasy.holdet.dk/api/games/{gameId}/players
 
 ## 10. Åbne beslutninger / parametre at bekræfte
 
-- Empirisk værdiformel (fra Dauphiné-snapshots — opgave #2).
+- ~~Empirisk værdiformel (fra Dauphiné-snapshots — opgave #2).~~ ✓ inferred, se
+  `docs/VALUE_FORMULA.md`. Forbehold: placeringspræmiens eksakte funktionsform og
+  trøje-vs-udbruds-skel bør re-kalibreres på TdF 2025.
 - Eksakt 2026-Tour-ruleset (id + tabel) ved spilåbning.
 - Tour 2026 `gameId` / `editionId` / cartridge-slug.
 - Kaptajnsbonus-formel (verificér mod snapshots).
