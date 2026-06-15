@@ -72,6 +72,11 @@ leverage mod toppen. Notér, kompensér ikke naivt.
 - Baselines at slå: (a) fast chalk-hold, (b) tilfældig kaptajn, (c) altid
   GC-favorit som kaptajn.
 - Hvis strategien kun virker på kalibreringsløbet → revidér FØR Touren.
+- **VIGTIG præcisering (15/6):** "TdF 2025 = kalibrering" gælder *form-/forecaster-/
+  beslutnings*-parametrene (half-lives, EV-gulv, vægte) — **ikke prisformlen**.
+  Prisformlens koefficienter kan KUN fittes på Dauphiné 2026, da der ikke findes
+  holdet-prisdata for TdF 2025. TdF 2025 = form-signal + backtest-substrat +
+  strukturel trøje-verifikation. Se `docs/VALUE_FORMULA.md` (Åbne punkter).
 
 ## 4. Stack & hvor tingene er
 
