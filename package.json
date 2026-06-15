@@ -7,6 +7,9 @@
   "scripts": {
     "prove": "tsx scripts/prove.ts",
     "prove:slice1": "tsx scripts/proveSlice1.ts",
+    "prove:forecaster": "tsx scripts/proveForecaster.ts",
+    "infer:value": "tsx scripts/inferValueFormula.ts",
+    "classify:route": "tsx scripts/classifyRoute.ts",
     "ingest:pcs": "tsx scripts/ingestPcs.ts"
   },
   "dependencies": {

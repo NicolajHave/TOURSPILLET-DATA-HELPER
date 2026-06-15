@@ -151,10 +151,17 @@ GET https://nexus-app-fantasy.holdet.dk/api/games/{gameId}/players
    + trøjebonus − 100.000·[DNF]`. Holdbonus (+60k) og DNF (−100k) er knivskarpe.
    Kør `npx tsx scripts/inferValueFormula.ts`; koeff. i `artifacts/value-formula.json`.
 3. **[Parallelt]** Paper-trade beslutningsloopet på Dauphinés sidste etaper.
-4. **[Derefter]** PCS-backfill TdF 2025 (kalibrering) + Vuelta 2025 (holdout) →
-   backtest-motor jf. §3.
-5. **[Sidst]** Leverage v2 (§2), team-stacking, slice 2 (schedule/deadlines),
-   slice 3 (daglig import-side/UI).
+4. **[I GANG — gated på manuel backfill]** PCS-backfill TdF 2025 → form-signal +
+   backtest-substrat + strukturel trøje-verifikation (IKKE prisformel-fit, se §3).
+   Henter blokeret af egress fra Claude-miljøet → browser-snippet. Checklist:
+   `docs/BACKFILL_CHECKLIST_TDF2025.md`. Vuelta 2025 = holdout, urørt.
+5. **[Skelet bygget — se `docs/FORECASTER.md`]** Forecaster (5a) + transfer-/
+   lookahead-evaluator (5b: NetGain over H, gebyr/rente/diskontering/leverage;
+   5c: break-even som placeringskrav; 5d: constraints). Design+interface+syntetiske
+   tests klar (`npm run prove:forecaster`, 26/26). FULD kobling + leverage v2 (§2),
+   team-stacking, slices FØRST når TRIN-2-kalibrering består backtest-sanity.
+   TdF 2026-rute-mål: `fixtures/route/…seed.json` + `npm run classify:route`
+   (guardrail: aldrig træningsdata).
 6. **[Ved Tour-åbning ~juli]** Nyt gameId/ruleset verificeres; skift game.
 
 ## 9. Constraints & gotchas
