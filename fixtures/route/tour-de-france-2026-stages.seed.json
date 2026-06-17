@@ -1,0 +1,28 @@
+{
+  "_README": "TRIN 4 seed — TdF 2026 RUTE = FORUDSIGELSES-MÅL, IKKE træningsdata. Udfyld felterne manuelt fra den officielle rute. GUARDRAIL: disse etaper må ALDRIG få results-rækker og må ALDRIG indgå i kalibrering/backtest (hasResults=false, isTarget=true). Kør 'npx tsx scripts/classifyRoute.ts' for at mærke + verificere. discipline: road|itt|ttt. parcoursType: flat|hilly_flat_finish|hilly_uphill_finish|mountain_flat_finish|mountain_summit_finish (eller null -> falder tilbage på verticalM/profileScore). summitFinish: true på bjergankomster.",
+  "race": { "slug": "tour-de-france", "year": 2026, "name": "Tour de France 2026" },
+  "guardrail": { "hasResults": false, "isTarget": true },
+  "stages": [
+    { "stageNo": 1,  "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 2,  "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 3,  "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 4,  "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 5,  "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 6,  "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 7,  "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 8,  "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 9,  "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 10, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 11, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 12, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 13, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 14, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 15, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 16, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 17, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 18, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "uge 3 — dobbelt Alpe d'Huez forventes her omkring (HANDOVER §1); verificér" },
+    { "stageNo": 19, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 20, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" },
+    { "stageNo": 21, "date": null, "distanceKm": null, "verticalM": null, "profileScore": null, "parcoursType": null, "summitFinish": null, "discipline": "road", "notes": "" }
+  ]
+}

@@ -105,6 +105,25 @@ Hvad en menig finisher uden trøje får for bare at gennemføre:
   præmie (572k) kan ikke renses for trøjeerobringen. Brug ikke E1-rank-1 som
   ren placeringsdatapunkt.
 
+#### Funktionsform (TRIN 2a — ufastlagt i v1, nu fittet)
+Shape fittet på normaliseret præmie (rank-1 = 1.0), pooled E4–8, n=60 punkter,
+R² i y-rum (sammenlignelig på tværs af kandidater):
+
+| Form | R² |
+|---|---:|
+| **exp** `y = e^(−0,108·(rank−1))` | **0,805** |
+| linear `y = 1 − 0,059·(rank−1)` | 0,783 |
+| power `y = rank^−0,49` | 0,521 |
+| invsqrt `y = rank^−0,5` (form.ts placingScore) | 0,486 |
+
+- **Eksponentiel decay vinder** (halverer ~hver 6.–7. plads), men **exp ≈ linear**
+  — n=60 fra ét løb kan ikke stærkt skelne dem. Konfidens: medium.
+- **Vigtigt fund:** `invsqrt` (1/√rank) — den form `form.ts` bruger til
+  form-signalet — er **dårligst**. Værdipræmien er altså **stejlere i toppen** end
+  form-kurven. Konsekvens for forecasteren: map placering→værdi via DENNE
+  eksp./empiriske kurve, **ikke** via `placingScore`. (placingScore er fint som
+  *input*-kvalitetsmål for form; det er bare ikke værdi-mappingen.)
+
 ### Trøje-/leder-bonus
 Ryttere der stiger langt mere end deres placering tilsiger (residual over
 rank-matchede ligesindede), gentaget på flere etaper:
@@ -151,9 +170,25 @@ ikke til koefficient-fit. Hvis snippet'en skal fikse TTT-parsing fremover: se
 
 ## Åbne punkter / forbehold
 
+> **KRITISK antagelse rettet (sparring):** v1 og roadmap antog at TdF 2025 kunne
+> *re-kalibrere prisformlen*. Det kan den **ikke** — der findes **ingen
+> holdet-prisdata for TdF 2025** (intet fantasy-spil vi har daglige snapshots af;
+> holdet-API'et eksponerer kun *nuværende* priser, ikke historiske runde-deltaer).
+> Dauphiné 2026 er **det eneste sted med observeret prisdata**. Prisformlens
+> koefficienter (præmie-skala, +60k, −100k) kan derfor kun fittes på Dauphiné.
+> TdF 2025's reelle rolle:
+> 1. **Form-signal** (`form()` / `profileFit()`) til 2026-forecasteren.
+> 2. **Backtest-substrat** (§3): kør beslutningsloopet over TdF 2025-resultater,
+>    *anvend* formlen til at score udfald, slå baselines.
+> 3. **Strukturel trøje-verifikation:** hvem bar hvilke trøjer (PCS GC/point/bjerg-
+>    standinger) — bekræfter HVEM, ikke bonussens MAGNITUDE.
+> Funktionsformen (exp vs lineær) kan i princippet *gen-fittes* hvis et fremtidigt
+> løb giver flere price-snapshots, men ikke fra TdF 2025.
+
 - Stage 1 = HAR; vinder-rank-1 er entanglet med trøjeerobring (udelad).
 - Stage 2+3 udekomponérbar (TTT) — fix snippet-TTT-parsing for fremtidige løb.
-- Trøje vs. udbruds-rytter kan ikke skelnes uden klassementsdata.
-- Placeringspræmiens *eksakte* funktionsform (lineær/eksponentiel i rank) og dens
-  skalering med etapekategori bør re-kalibreres på TdF 2025 (HANDOVER §3) — her
-  har vi kun 2 flade + 3 bjerg + 1 hård etape at fitte på.
+- Trøje vs. udbruds-rytter kan ikke skelnes uden klassementsdata → `jerseyBonus`
+  er markeret `verified:false, locked:false` i artefakten og holdes UDE af låste
+  koefficienter til cross-check.
+- Funktionsform: exp≈linear (n=60, ét løb) — lav diskrimination. Brug den
+  empiriske `byRank`-tabel som primær; exp som glat fallback/ekstrapolation.

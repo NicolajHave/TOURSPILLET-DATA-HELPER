@@ -3,3 +3,5 @@ node_modules/
 .env
 *.log
 .DS_Store
+# generated route classification (regenerate with `npm run classify:route`)
+fixtures/route/*.classified.json

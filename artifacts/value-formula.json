@@ -1,65 +1,119 @@
 {
-  "source": "Dauphiné 2026, 8 stages",
+  "source": "Dauphiné 2026, 8 stages — ENESTE eksisterende prisdata (holdet game 622)",
   "generatedAt": "2026-06-15",
   "unit": "kr",
-  "note": "points field is 0 for this game variant; price delta is the only signal",
-  "teamBonus": {
-    "all": 60000,
-    "flatStages": 60000
-  },
-  "dnfPenalty": -100000,
-  "baseline": {
-    "flatStages": 0,
-    "mountainStages": -67500
-  },
-  "positionPremium": {
-    "1": {
-      "flat": 281000,
-      "mountain": 466250
+  "formula": "Δpris = baseline(stageType) + positionPremium(rank) + teamBonus·[winTeam] + jerseyBonus − dnfPenalty·[out]",
+  "caveat": "Kan IKKE re-kalibreres på TdF 2025: der findes ingen holdet-prisdata for 2025. TdF 2025 bruges til form-signal, forecaster-backtest og STRUKTUREL trøje-verifikation — ikke til prisformel-fit.",
+  "components": {
+    "teamBonus": {
+      "value": 60000,
+      "source": "Dauphiné E4–5 (flade, ren måling — baseline 0)",
+      "n": 2,
+      "cv": 0,
+      "confidence": "high",
+      "note": "Præcis +60.000 på flade etaper; rank-matchet median 54–74k på bjerg (alle etaper CV 0.111)."
     },
-    "2": {
-      "flat": 247500,
-      "mountain": 396500
+    "dnfPenalty": {
+      "value": -100000,
+      "source": "Dauphiné alle etaper",
+      "n": 6,
+      "cv": 0,
+      "confidence": "high",
+      "note": "Flad −100.000 (enkelte −50.000 ved delvis runde)."
     },
-    "3": {
-      "flat": 210000,
-      "mountain": 363000
+    "baseline": {
+      "flatStages": 0,
+      "mountainStages": -67500,
+      "source": "Dauphiné, stagetype-opdelt",
+      "confidence": "medium",
+      "note": "0 på flade, ≈ −67.500 på bjerg (CV 0.193). Etapetype-afhængig."
     },
-    "4": {
-      "flat": 175500,
-      "mountain": 312500
+    "positionPremium": {
+      "byRank": {
+        "1": {
+          "flat": 281000,
+          "mountain": 466250
+        },
+        "2": {
+          "flat": 247500,
+          "mountain": 396500
+        },
+        "3": {
+          "flat": 210000,
+          "mountain": 363000
+        },
+        "4": {
+          "flat": 175500,
+          "mountain": 312500
+        },
+        "5": {
+          "flat": 158000,
+          "mountain": 240500
+        },
+        "6": {
+          "flat": 177500,
+          "mountain": 269500
+        },
+        "7": {
+          "flat": 164000,
+          "mountain": 183500
+        },
+        "8": {
+          "flat": 120000,
+          "mountain": 224000
+        },
+        "9": {
+          "flat": 117000,
+          "mountain": 216000
+        },
+        "10": {
+          "flat": 103500,
+          "mountain": 170000
+        }
+      },
+      "shape": {
+        "bestFit": "exp",
+        "form": "y = e^(-0.108·(rank-1))",
+        "param": 0.108,
+        "r2": 0.805,
+        "candidates": [
+          {
+            "key": "exp",
+            "r2": 0.805
+          },
+          {
+            "key": "linear",
+            "r2": 0.783
+          },
+          {
+            "key": "power",
+            "r2": 0.521
+          },
+          {
+            "key": "invsqrt",
+            "r2": 0.486
+          }
+        ],
+        "nPoints": 60
+      },
+      "source": "Dauphiné E4–8 (E1 udeladt: vinder entanglet med trøjeerobring)",
+      "confidence": "medium",
+      "note": "Skala vokser på afgørende etaper (rank-1 flad ~281k → bjerg ~466k). Funktionsform fit på normaliseret shape."
     },
-    "5": {
-      "flat": 158000,
-      "mountain": 240500
-    },
-    "6": {
-      "flat": 177500,
-      "mountain": 269500
-    },
-    "7": {
-      "flat": 164000,
-      "mountain": 183500
-    },
-    "8": {
-      "flat": 120000,
-      "mountain": 224000
-    },
-    "9": {
-      "flat": 117000,
-      "mountain": 216000
-    },
-    "10": {
-      "flat": 103500,
-      "mountain": 170000
+    "jerseyBonus": {
+      "verified": false,
+      "confidence": "low",
+      "locked": false,
+      "values": {
+        "Alex Baudin": 140000,
+        "Kevin Vauquelin": 90000,
+        "Clément Braz Afonso": 88000,
+        "Oscar Onley": 80000,
+        "Matteo Jorgenson": 66250,
+        "Nadav Raisberg": 54250
+      },
+      "source": "Dauphiné — RESIDUAL-baseret (ikke faktiske klassementsstandinger)",
+      "note": "GUARDRAIL: residualmetoden kan ikke skelne trøjebærer fra gentagen udbrudsrytter. HOLD UDE af låste koefficienter indtil cross-check mod faktiske GC/point/bjerg-standinger (TdF 2025)."
     }
-  },
-  "jerseyBonus": {
-    "Alex Baudin": 140000,
-    "Kevin Vauquelin": 90000,
-    "Clément Braz Afonso": 88000,
-    "Oscar Onley": 80000,
-    "Matteo Jorgenson": 66250,
-    "Nadav Raisberg": 54250
   }
 }
