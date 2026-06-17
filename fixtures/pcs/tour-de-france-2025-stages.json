@@ -1,0 +1,29 @@
+{
+  "race": { "slug": "tour-de-france", "year": 2025 },
+  "_corrections": "PCS' parcours-ikon mislabeler bjergankomster som mountain_flat_finish og flagger ikke ITT'er. Manuelt rettet mod den kendte 2025-rute (faktuelt, ikke skøn): ITT på etape 5 (Caen) + 13 (Peyragudes, bjerg-ITT); bjergankomst (summitFinish) på 12 Hautacam, 14 Superbagnères, 16 Ventoux, 18 Col de la Loze, 19 La Plagne. Øvrige som scrapet.",
+  "stages": [
+    { "stageNo": 1,  "date": "05/07", "distanceKm": null, "parcoursType": "flat",                "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 2,  "date": "06/07", "distanceKm": null, "parcoursType": "hilly_uphill_finish", "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 3,  "date": "07/07", "distanceKm": null, "parcoursType": "flat",                "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 4,  "date": "08/07", "distanceKm": null, "parcoursType": "hilly_flat_finish",   "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 5,  "date": "09/07", "distanceKm": null, "parcoursType": "flat",                "discipline": "itt",  "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 6,  "date": "10/07", "distanceKm": null, "parcoursType": "hilly_uphill_finish", "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 7,  "date": "11/07", "distanceKm": null, "parcoursType": "hilly_uphill_finish", "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 8,  "date": "12/07", "distanceKm": null, "parcoursType": "flat",                "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 9,  "date": "13/07", "distanceKm": null, "parcoursType": "flat",                "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 10, "date": "14/07", "distanceKm": null, "parcoursType": "hilly_uphill_finish", "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 11, "date": "16/07", "distanceKm": null, "parcoursType": "hilly_flat_finish",   "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 12, "date": "17/07", "distanceKm": null, "parcoursType": "mountain_summit_finish", "discipline": "road", "summitFinish": true, "verticalM": null, "profileScore": null },
+    { "stageNo": 13, "date": "18/07", "distanceKm": null, "parcoursType": "mountain_flat_finish", "discipline": "itt",  "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 14, "date": "19/07", "distanceKm": null, "parcoursType": "mountain_summit_finish", "discipline": "road", "summitFinish": true, "verticalM": null, "profileScore": null },
+    { "stageNo": 15, "date": "20/07", "distanceKm": null, "parcoursType": "hilly_flat_finish",   "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 16, "date": "22/07", "distanceKm": null, "parcoursType": "mountain_summit_finish", "discipline": "road", "summitFinish": true, "verticalM": null, "profileScore": null },
+    { "stageNo": 17, "date": "23/07", "distanceKm": null, "parcoursType": "flat",                "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 18, "date": "24/07", "distanceKm": null, "parcoursType": "mountain_summit_finish", "discipline": "road", "summitFinish": true, "verticalM": null, "profileScore": null },
+    { "stageNo": 19, "date": "25/07", "distanceKm": null, "parcoursType": "mountain_summit_finish", "discipline": "road", "summitFinish": true, "verticalM": null, "profileScore": null },
+    { "stageNo": 20, "date": "26/07", "distanceKm": null, "parcoursType": "hilly_flat_finish",   "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 21, "date": "27/07", "distanceKm": null, "parcoursType": "flat",                "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2025/stages",
+  "capturedAt": "2026-06-17T20:20:31.345Z"
+}
