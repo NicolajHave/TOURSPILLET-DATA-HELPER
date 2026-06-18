@@ -1,6 +1,10 @@
-// scripts/snippets/pcs-results.js (v2)
+// scripts/snippets/pcs-results.js (v3)
 // Kør i browser-konsollen på en PCS etape-resultatside.
 // Håndterer både /race/{slug}/{år}/stage-N og race.php?id1=...-URL-formaterne.
+// v3: fanger nu også stage-difficulty fra siden — distance, højdemeter,
+// ProfileScore (hele etapen) og ProfileScore FINAL (sidste 25 km). Final-scoren
+// er PCS' egen måde at skelne klatre-/bjergankomster fra spurt-etaper, så den er
+// det stærkeste enkeltsignal til klassifikation (bedre end det race-relative ikon).
 (() => {
   const src = location.pathname + location.search;
   const m = src.match(/race(?:\.php)?\/([^/?&]+)\/(\d{4})\/(?:stage-(\d+)|(prologue))/)
@@ -30,15 +34,31 @@
     };
   }).filter(Boolean);
 
-  const dist = (document.title.match(/\(([\d.]+)\s*km\)/) || [])[1];
+  // --- stage difficulty (best-effort; PCS markup varies) -------------------
+  const pageText = document.body.innerText.replace(/ /g, ' ');
+  const num = (re) => { const x = pageText.match(re); return x ? +x[1].replace(/[^\d]/g, '') : null; };
+  const dist = (document.title.match(/\(([\d.]+)\s*km\)/) || [])[1]
+    || (pageText.match(/Distance:?\s*([\d.]+)\s*km/i) || [])[1];
+  // "ProfileScore: 142" and "ProfileScore final: 88" (label wording varies a bit)
+  const profileScore = num(/ProfileScore\s*:?\s*(\d+)/i);
+  const profileScoreFinal = num(/ProfileScore\s*(?:final|finale|last)\b[^\d]*(\d+)/i);
+  const verticalM = num(/(?:Vertical\s*met(?:er|re)s?|Elevation\s*gain)\s*:?\s*([\d.,]+)\s*m?/i);
 
   const out = {
     race,
-    stage: { stageNo, distanceKm: dist ? +dist : null },
+    stage: {
+      stageNo,
+      distanceKm: dist ? +dist : null,
+      verticalM,
+      profileScore,
+      profileScoreFinal,
+    },
     results,
     sourceUrl: location.href,
     capturedAt: new Date().toISOString(),
   };
   copy(JSON.stringify(out, null, 2));
-  console.log(`PCS: ${results.length} resultater kopieret (${race.slug ?? '?'} ${race.year ?? '?'}, etape ${stageNo ?? '?'}).`);
+  console.log(`PCS: ${results.length} resultater (${race.slug ?? '?'} ${race.year ?? '?'}, etape ${stageNo ?? '?'}). `
+    + `ProfileScore=${profileScore ?? '?'} final=${profileScoreFinal ?? '?'} vert=${verticalM ?? '?'}m. `
+    + `Hvis score er '?', send en linje af siden til Claude.`);
 })();

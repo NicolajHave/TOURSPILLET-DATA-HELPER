@@ -1,6 +1,6 @@
 {
   "race": { "slug": "tour-de-france", "year": 2025 },
-  "_corrections": "To lag. FAKTUELT (sikkert): ITT på etape 5 (Caen) + 13 (Peyragudes bjerg-ITT); bjergankomst (summitFinish) på 12 Hautacam, 14 Superbagnères, 16 Ventoux, 18 Col de la Loze, 19 La Plagne. SKØN (bekræftet af Nicolaj, kuperede etaper PCS-ikonet undervurderede): 4 Rouen -> punch, 15 Carcassonne -> break, 20 Pontarlier -> break, 21 Paris/Montmartre -> punch. Etape 10+11 efterladt som scrapet.",
+  "_corrections": "To lag. FAKTUELT (sikkert): ITT på etape 5 (Caen) + 13 (Peyragudes bjerg-ITT); bjergankomst (summitFinish) på 12 Hautacam, 14 Superbagnères, 16 Ventoux, 18 Col de la Loze, 19 La Plagne. SKØN (bekræftet mod faktiske vindere): 4 Rouen -> punch (Pogačar fra lille gruppe), 11 Toulouse -> break (Abrahamsen fra udbrud), 15 Carcassonne -> break (Wellens solo), 20 Pontarlier -> break (Groves fra udbrud), 21 Paris/Montmartre -> punch (Van Aert solo). Etape 10 (S.Yates fra udbrud, kort væg) efterladt som punch.",
   "stages": [
     { "stageNo": 1,  "date": "05/07", "distanceKm": null, "parcoursType": "flat",                "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
     { "stageNo": 2,  "date": "06/07", "distanceKm": null, "parcoursType": "hilly_uphill_finish", "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
@@ -12,7 +12,7 @@
     { "stageNo": 8,  "date": "12/07", "distanceKm": null, "parcoursType": "flat",                "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
     { "stageNo": 9,  "date": "13/07", "distanceKm": null, "parcoursType": "flat",                "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
     { "stageNo": 10, "date": "14/07", "distanceKm": null, "parcoursType": "hilly_uphill_finish", "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
-    { "stageNo": 11, "date": "16/07", "distanceKm": null, "parcoursType": "hilly_flat_finish",   "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
+    { "stageNo": 11, "date": "16/07", "distanceKm": null, "parcoursType": "mountain_flat_finish", "discipline": "road", "summitFinish": false, "verticalM": null, "profileScore": null },
     { "stageNo": 12, "date": "17/07", "distanceKm": null, "parcoursType": "mountain_summit_finish", "discipline": "road", "summitFinish": true, "verticalM": null, "profileScore": null },
     { "stageNo": 13, "date": "18/07", "distanceKm": null, "parcoursType": "mountain_flat_finish", "discipline": "itt",  "summitFinish": false, "verticalM": null, "profileScore": null },
     { "stageNo": 14, "date": "19/07", "distanceKm": null, "parcoursType": "mountain_summit_finish", "discipline": "road", "summitFinish": true, "verticalM": null, "profileScore": null },
