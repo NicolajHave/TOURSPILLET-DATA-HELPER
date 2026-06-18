@@ -3,14 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "prove": "tsx scripts/prove.ts",
     "prove:slice1": "tsx scripts/proveSlice1.ts",
     "prove:forecaster": "tsx scripts/proveForecaster.ts",
     "infer:value": "tsx scripts/inferValueFormula.ts",
     "classify:route": "tsx scripts/classifyRoute.ts",
-    "ingest:pcs": "tsx scripts/ingestPcs.ts"
+    "ingest:pcs": "tsx scripts/ingestPcs.ts",
+    "calibrate:form": "tsx scripts/calibrateForm.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
