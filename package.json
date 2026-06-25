@@ -13,7 +13,8 @@
     "infer:value": "tsx scripts/inferValueFormula.ts",
     "classify:route": "tsx scripts/classifyRoute.ts",
     "ingest:pcs": "tsx scripts/ingestPcs.ts",
-    "calibrate:form": "tsx scripts/calibrateForm.ts"
+    "calibrate:form": "tsx scripts/calibrateForm.ts",
+    "backtest:captain": "tsx scripts/backtestCaptain.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
