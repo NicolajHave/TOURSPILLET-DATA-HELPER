@@ -1,0 +1,55 @@
+{
+  "race": {
+    "slug": "tour-de-suisse",
+    "year": 2026
+  },
+  "stages": [
+    {
+      "stageNo": 1,
+      "date": "17/06",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 2,
+      "date": "18/06",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 3,
+      "date": "19/06",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 4,
+      "date": "20/06",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "itt",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 5,
+      "date": "21/06",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-suisse/2026/stages",
+  "capturedAt": "2026-06-25T14:06:17.719Z"
+}
