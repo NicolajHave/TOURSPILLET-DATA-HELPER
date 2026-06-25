@@ -1,5 +1,10 @@
 # Backfill-checklist — TdF 2025 (hybrid trin 1: per-etape)
 
+> **BRANCH: `main`.** Alt arbejde ligger på `main` (feature-branchen blev merget
+> via PR #3 og findes ikke længere på origin). Gem/commit/upload alle datafiler
+> til `main` — i GitHub Desktop: Pull `main` → læg filer i `fixtures/pcs/` →
+> commit til `main` → push. Eller i browseren: "Add file → Upload files" til `main`.
+
 **Hvorfor manuelt:** PCS er blokeret fra dette miljø (egress-allowlist + PCS'
 datacenter-blok). Din egen browser passerer. Dette er en engangsopgave.
 
