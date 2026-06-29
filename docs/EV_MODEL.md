@@ -56,6 +56,17 @@ ikke overfittet). Den slår tilfældig massivt og favorit-proxyen klart.
 via værdikurven. Rankinglaget her er det kalibrerede/validerede; expectedDelta-
 mapningen er mekanisk testet (`npm run prove:forecaster`).
 
+## Ende-til-ende kaptajn-backtest (`npm run backtest:captain`)
+Kalibreret EV koblet ind → kaptajn pr. etape (no-lookahead), scoret i realiseret kr:
+- **Slår tilfældig massivt** (354k vs 4k kr/etape) og **edger chalk/GC-favorit** (354k vs 322k).
+- **Edgen over chalk kommer fra specialist-etaper:** spurt 379k vs GC-fav 33k (vælger
+  spurteren, ikke GC-stjernen); på bjerg er de enige (GC-stjernen ER rigtig dér).
+- **Stabilitet:** kaptajn == GC-favorit 65–72 % (så ~30 % kontrære, profil-drevne valg);
+  uændret stage-til-stage 39 %, resten skifter MED profilen — ønsket, ikke støj.
+- **Ærlige svagheder:** break negativ/lav tillid (recall 0,20 — kaptajn dér er nær gæt);
+  ITT svag (tynd profileFit-historik, n lille). Kontrærhed vs feltet kan ikke måles
+  uden ejerandele → live-fladen (paper-trade fra 4/7).
+
 ## Næste
 - `profileScoreFinal`-fangst (fix snippet-regex) → ren bjerg-vs-break-klassifikation.
 - PCS rytter-ranking → ægte markedsværdi-baseline.

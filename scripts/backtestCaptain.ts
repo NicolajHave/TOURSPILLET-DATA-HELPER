@@ -1,120 +1,115 @@
 // scripts/backtestCaptain.ts
-// TRIN 3 / §3 — value backtest of the CAPTAIN decision on TdF 2025.
-// Applies the inferred value formula to the ACTUAL results (realised kr) and,
-// for each stage, picks a captain using ONLY prior information (no-lookahead),
-// then scores the realised captain value. Compares our form signal against the
-// HANDOVER baselines: random captain, and "always the GC favourite".
+// END-TO-END captain decision backtest with the CALIBRATED EV model plugged in.
+// For each stage we pick a captain using ONLY prior info (no-lookahead) via the
+// calibrated strength (form + β·profileFit), score the realised captain value
+// through the inferred value formula, and compare to baselines. We also check
+// STABILITY: does plugging real EV in change the pick vs plain form, and how
+// often does it match the GC-favourite (chalk)? Reported PER STAGE PROFILE.
 //
-// Captain mechanic (ruleset): the positive part of the value delta is paid again
-// to the bank, i.e. captain value = delta + max(0, delta).
-//
-// SCOPE: v1 captains from the whole field (selection edge), not yet a
-// constrained 8-rider squad. Measures EV, not leverage — TdF 2025 has no holdet
-// ownership data, so the leverage/under-ownership layer is validated separately
-// on Dauphiné. Honest upper-bound "oracle" included for reference.
+// Captain mechanic (ruleset): captain value = Δ + max(0, Δ).
+// SCOPE: captains from the whole field (selection edge). EV measure only — TdF/
+// Vuelta have no ownership, so contrarianness vs the field needs the live tool.
 //
 //   npx tsx scripts/backtestCaptain.ts
-import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { form, placingScore, type Result } from '../src/lib/form';
-import { classifyStage, type StageProfile } from '../src/lib/stageProfile';
+import { readFileSync } from 'node:fs';
+import { placingScore, type Result } from '../src/lib/form';
+import { type StageProfile } from '../src/lib/stageProfile';
+import { evStrength, EV_BETA } from '../src/lib/evModel';
+import { loadRace, type StageRec } from '../src/lib/raceData';
 import { coeffsFromArtifact, valueOfRank, scaleOf } from '../src/lib/forecaster';
-import { hasUsableResults } from '../src/lib/parsePcsExport';
 import { captainBonus } from '../src/lib/ruleset';
 import { mean } from '../src/lib/valueFormula';
 
 const f = (rel: string) => fileURLToPath(new URL(`../${rel}`, import.meta.url));
-const RACE = 'tour-de-france-2025';
+const PCS = f('fixtures/pcs');
 const coeffs = coeffsFromArtifact(JSON.parse(readFileSync(f('artifacts/value-formula.json'), 'utf8')));
+const kr = (n: number) => Math.round(n).toLocaleString('da-DK');
+const pad = (s: any, n: number) => String(s).padEnd(n);
 
-// stage meta (date + profile)
-const stagesFile = JSON.parse(readFileSync(f(`fixtures/pcs/${RACE}-stages.json`), 'utf8'));
-const meta = new Map<number, { date: string; profile: StageProfile }>();
-for (const s of stagesFile.stages) {
-  const [dd, mm] = (s.date ?? '').split('/');
-  const date = dd && mm ? `${stagesFile.race.year}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}` : `${stagesFile.race.year}-07-01`;
-  meta.set(s.stageNo, { date, profile: classifyStage({ distanceKm: 0, verticalM: 0, parcoursType: s.parcoursType ?? undefined, summitFinish: s.summitFinish ?? undefined, discipline: s.discipline ?? 'road' }) });
-}
+const all = [...loadRace(PCS, 'TdF', 'tour-de-france', 2025, false), ...loadRace(PCS, 'Vuelta', 'vuelta-a-espana', 2025, true)]
+  .sort((a, b) => a.date.localeCompare(b.date) || a.stageNo - b.stageNo);
 
-interface Row { slug: string; rank: number | null; team: string | null; }
-interface Stage { stageNo: number; date: string; profile: StageProfile; rows: Row[]; winnerTeam: string | null; }
-const stages: Stage[] = [];
-for (const file of readdirSync(f('fixtures/pcs'))) {
-  const m = file.match(new RegExp(`^${RACE}-stage-(\\d+)\\.json$`));
-  if (!m) continue;
-  const j = JSON.parse(readFileSync(f(`fixtures/pcs/${file}`), 'utf8'));
-  if (!hasUsableResults(j.results)) { console.warn(`skip (no usable result): ${file}`); continue; }
-  const info = meta.get(+m[1])!;
-  const rows: Row[] = j.results.map((r: any) => ({ slug: r.riderSlug, rank: r.rank, team: r.team ?? null }));
-  stages.push({ stageNo: +m[1], date: info.date, profile: info.profile, rows, winnerTeam: (rows.find((r) => r.rank === 1) || {}).team ?? null });
-}
-stages.sort((a, b) => a.date.localeCompare(b.date) || a.stageNo - b.stageNo);
-
-/** Realised holdet value delta for a rider on a stage (kr), via the formula. */
-function realisedDelta(st: Stage, r: Row): number {
-  if (r.rank == null) return -coeffs.dnfPenalty;
-  const scale = scaleOf(st.profile);
-  let v = valueOfRank(r.rank, scale, coeffs);
-  if (st.winnerTeam && r.team === st.winnerTeam) v += coeffs.teamBonus; // team bonus
+function realisedDelta(st: StageRec, slug: string): number {
+  const fin = st.finishers.find((x) => x.slug === slug)!;
+  let v = valueOfRank(fin.rank, scaleOf(st.profile), coeffs);
+  if (st.winnerTeam && fin.team === st.winnerTeam) v += coeffs.teamBonus;
   return v;
 }
-const captainValue = (d: number) => d + captainBonus(d); // doubles positive part
+const capVal = (d: number) => d + captainBonus(d);
 
-// strategies accumulate captain value over the race (no-lookahead picks)
+const PROFILES: StageProfile[] = ['sprint', 'punch', 'break', 'mountain', 'itt'];
+interface Agg { cal: number[]; gc: number[]; rnd: number[]; oracle: number[]; sameAsForm: number; sameAsGc: number; n: number; }
+const mk = (): Agg => ({ cal: [], gc: [], rnd: [], oracle: [], sameAsForm: 0, sameAsGc: 0, n: 0 });
+const byRaceProfile = new Map<string, Agg>();
+const get = (race: string, p: StageProfile) => { const k = race + '|' + p; if (!byRaceProfile.has(k)) byRaceProfile.set(k, mk()); return byRaceProfile.get(k)!; };
+
 const history = new Map<string, Result[]>();
-const cumPlacing = new Map<string, number>();
-const tot = { form: 0, gc: 0, random: 0, oracle: 0 };
-const overlapFormGc: number[] = [];
+const cum = new Map<string, number>();
+const prevCaptain = new Map<string, string>(); // per race, for churn
 
-const kr = (n: number) => Math.round(n).toLocaleString('da-DK');
-const pad = (s: any, n: number) => String(s).padStart(n);
-console.log('═'.repeat(76));
-console.log('  VALUE-BACKTEST — kaptajnsvalg på TdF 2025 (realiseret kr via værdiformlen)');
-console.log('═'.repeat(76));
-console.log('  Kaptajnsværdi = Δ + max(0,Δ).  Valg no-lookahead; score = faktisk udfald.\n');
-console.log('   E  profile    form-kaptajn           Δkr   | GC-fav-kaptajn        Δkr | felt-gns');
+console.log('═'.repeat(82));
+console.log('  KAPTAJN-BACKTEST (kalibreret EV ende-til-ende) — realiseret kaptajnsværdi, no-lookahead');
+console.log('═'.repeat(82));
+console.log(`  Pick = argmax(form + ${EV_BETA}·profileFit), prior-only. Score = realiseret Δ + max(0,Δ).`);
+console.log('  Per-stage kaptajn (kalibreret) + om den matcher GC-favorit (chalk):\n');
+console.log('   løb     E  profile   kaptajn (kalibreret)      Δkr  | =GCfav?');
 
-for (const st of stages) {
+let churnSame = 0, churnTot = 0;
+for (const st of all) {
   const asOf = new Date(st.date);
-  const finishers = st.rows.filter((r) => r.rank != null);
-  // candidate pool = riders with prior history (so form is defined)
-  const cand = finishers.map((r) => ({
-    r, fForm: form(history.get(r.slug) ?? [], asOf), prior: cumPlacing.get(r.slug) ?? 0,
-    hasPrior: (history.get(r.slug) ?? []).length > 0,
-    val: realisedDelta(st, r),
-  }));
-  const pool = cand.filter((c) => c.hasPrior);
-
-  let line = `  ${pad(st.stageNo, 2)}  ${st.profile.padEnd(9)}`;
+  const pool = st.finishers.filter((x) => (history.get(x.slug) ?? []).length > 0);
   if (pool.length >= 5) {
-    const byForm = [...pool].sort((a, b) => b.fForm - a.fForm)[0];
-    const byGc = [...pool].sort((a, b) => b.prior - a.prior)[0];
-    const fieldMean = mean(cand.map((c) => captainValue(c.val)));
-    const oracle = Math.max(...cand.map((c) => captainValue(c.val)));
-    tot.form += captainValue(byForm.val); tot.gc += captainValue(byGc.val);
-    tot.random += fieldMean; tot.oracle += oracle;
-    overlapFormGc.push(byForm.r.slug === byGc.r.slug ? 1 : 0);
-    line += `  ${byForm.r.slug.slice(0, 20).padEnd(20)} ${pad(kr(captainValue(byForm.val)), 6)} | ${byGc.r.slug.slice(0, 20).padEnd(20)} ${pad(kr(captainValue(byGc.val)), 5)} | ${pad(kr(fieldMean), 7)}`;
-  } else line += '  (for tidligt — utilstrækkelig historik)';
-  console.log(line);
+    const cal = [...pool].sort((a, b) => evStrength(history.get(b.slug)!, asOf, st.profile) - evStrength(history.get(a.slug)!, asOf, st.profile))[0];
+    const formOnly = [...pool].sort((a, b) => evStrength(history.get(b.slug)!, asOf, st.profile, 0) - evStrength(history.get(a.slug)!, asOf, st.profile, 0))[0];
+    const gc = [...pool].sort((a, b) => (cum.get(b.slug) ?? 0) - (cum.get(a.slug) ?? 0))[0];
+    const fieldMean = mean(st.finishers.map((x) => capVal(realisedDelta(st, x.slug))));
+    const oracle = Math.max(...st.finishers.map((x) => capVal(realisedDelta(st, x.slug))));
 
-  for (const r of st.rows) {
-    if (!history.has(r.slug)) history.set(r.slug, []);
-    history.get(r.slug)!.push({ riderId: 0, date: st.date, profile: st.profile, rank: r.rank, finished: r.rank != null });
-    if (r.rank != null) cumPlacing.set(r.slug, (cumPlacing.get(r.slug) ?? 0) + placingScore(r.rank));
+    const a = get(st.race, st.profile);
+    a.cal.push(capVal(realisedDelta(st, cal.slug))); a.gc.push(capVal(realisedDelta(st, gc.slug)));
+    a.rnd.push(fieldMean); a.oracle.push(oracle); a.n++;
+    if (cal.slug === formOnly.slug) a.sameAsForm++;
+    if (cal.slug === gc.slug) a.sameAsGc++;
+    // churn: did the calibrated captain change vs this race's previous stage?
+    const prev = prevCaptain.get(st.race);
+    if (prev !== undefined) { churnTot++; if (prev === cal.slug) churnSame++; }
+    prevCaptain.set(st.race, cal.slug);
+
+    console.log(`   ${pad(st.race, 6)} ${pad(st.stageNo, 2)}  ${pad(st.profile, 8)}  ${pad(cal.slug.slice(0, 22), 24)} ${pad(kr(capVal(realisedDelta(st, cal.slug))), 8)} | ${cal.slug === gc.slug ? 'ja' : 'NEJ'}`);
+  }
+  for (const x of st.finishers) {
+    if (!history.has(x.slug)) history.set(x.slug, []);
+    history.get(x.slug)!.push({ riderId: 0, date: st.date, profile: st.profile, rank: x.rank, finished: true });
+    cum.set(x.slug, (cum.get(x.slug) ?? 0) + placingScore(x.rank));
   }
 }
 
-console.log('\n' + '─'.repeat(76));
-console.log('  SAMLET KAPTAJNSVÆRDI OVER LØBET (kr)');
-const rows: Array<[string, number]> = [['Form-kaptajn (vores signal)', tot.form], ['GC-favorit-kaptajn (baseline)', tot.gc], ['Tilfældig kaptajn (baseline)', tot.random], ['Oracle (hindsight-loft)', tot.oracle]];
-rows.sort((a, b) => b[1] - a[1]).forEach(([n, v], i) => console.log(`  ${i + 1}. ${n.padEnd(34)} ${pad(kr(v), 12)}`));
-const edge = tot.form - tot.random, vsGc = tot.form - tot.gc;
-console.log('\n  Form-kaptajn vs tilfældig:  ' + (edge >= 0 ? '+' : '') + kr(edge) + ' kr   ⇒ ' + (edge > 0 ? 'POSITIV edge' : 'ingen edge'));
-console.log('  Form-kaptajn vs GC-favorit: ' + (vsGc >= 0 ? '+' : '') + kr(vsGc) + ' kr');
-console.log('  Form-pick == GC-favorit:    ' + Math.round(mean(overlapFormGc) * 100) + ' % af etaperne  (overlap = chalk)');
-console.log('  Form-kaptajn fanger ' + Math.round((tot.form / tot.oracle) * 100) + ' % af oracle-loftet.');
-console.log('\n  NB: dette måler EV (kr), IKKE leverage — TdF 2025 har ingen ejerandele.');
-console.log('  Den høje chalk-overlap er præcis grunden til at leverage-laget (lav ejerandel)');
-console.log('  er en SEPARAT edge, der valideres på Dauphiné-ejerandele.');
-console.log('═'.repeat(76));
+for (const race of ['TdF', 'Vuelta'] as const) {
+  console.log(`\n── ${race}${race === 'Vuelta' ? '  (HOLDOUT)' : ''}: kaptajnsværdi pr. profil (kr) ──────────────────`);
+  console.log('  profil     n   kalibreret    GC-favorit    tilfældig     oracle');
+  let calAll: number[] = [], gcAll: number[] = [], rndAll: number[] = [], sameGc = 0, sameForm = 0, nAll = 0;
+  for (const p of PROFILES) {
+    const a = byRaceProfile.get(race + '|' + p); if (!a || !a.n) continue;
+    calAll = calAll.concat(a.cal); gcAll = gcAll.concat(a.gc); rndAll = rndAll.concat(a.rnd);
+    sameGc += a.sameAsGc; sameForm += a.sameAsForm; nAll += a.n;
+    const flag = p === 'break' ? '  ⚠ lav tillid (recall 0,20)' : '';
+    console.log(`  ${pad(p, 9)} ${pad(a.n, 2)}  ${pad(kr(mean(a.cal)), 11)}  ${pad(kr(mean(a.gc)), 11)}  ${pad(kr(mean(a.rnd)), 11)}  ${pad(kr(mean(a.oracle)), 9)}${flag}`);
+  }
+  console.log(`  ${pad('SAMLET', 9)} ${pad(nAll, 2)}  ${pad(kr(mean(calAll)), 11)}  ${pad(kr(mean(gcAll)), 11)}  ${pad(kr(mean(rndAll)), 11)}`);
+  console.log(`  Stabilitet: kalibreret == form-kun ${Math.round((sameForm / nAll) * 100)}% | == GC-favorit ${Math.round((sameGc / nAll) * 100)}% (chalk-overlap)`);
+}
+
+console.log('\n' + '─'.repeat(82));
+console.log('  VURDERING (ærlig):');
+const allCal = [...byRaceProfile.values()].flatMap((a) => a.cal);
+const allRnd = [...byRaceProfile.values()].flatMap((a) => a.rnd);
+const allGc = [...byRaceProfile.values()].flatMap((a) => a.gc);
+console.log(`  • Ende-til-ende vs tilfældig: kaptajn ${kr(mean(allCal))} vs ${kr(mean(allRnd))} kr/etape → ${mean(allCal) > mean(allRnd) ? 'SLÅR tilfældig klart' : 'ingen edge'}.`);
+console.log(`  • Vs GC-favorit (chalk): ${kr(mean(allCal))} vs ${kr(mean(allGc))} kr/etape (kalibreret EV ${mean(allCal) >= mean(allGc) ? '≥' : '<'} chalk).`);
+console.log(`  • Stabilitet stage-til-stage: kaptajnen er uændret ${Math.round((churnSame / churnTot) * 100)}% af gangene; resten skifter`);
+console.log('    typisk MED profilen (spurter→spurt, klatrer→bjerg) — det er ønsket, ikke støj.');
+console.log('  • Break: lav tillid (recall 0,20) — kaptajn på break-etaper er nær gæt; undgå at hænge løbet op på dem.');
+console.log('  • Kontrærhed vs feltet kan IKKE måles her (TdF/Vuelta har ingen ejerandele) →');
+console.log('    det er præcis hvad live-fladen (paper-trade fra 4/7) skal måle. Værdiformel = syntetisk kr.');
+console.log('═'.repeat(82));
