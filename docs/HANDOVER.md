@@ -169,6 +169,11 @@ GET https://nexus-app-fantasy.holdet.dk/api/games/{gameId}/players
    backtest-substrat + strukturel trøje-verifikation (IKKE prisformel-fit, se §3).
    Henter blokeret af egress fra Claude-miljøet → browser-snippet. Checklist:
    `docs/BACKFILL_CHECKLIST_TDF2025.md`. Vuelta 2025 = holdout, urørt.
+5a. **[EV-model KALIBRERET — se `docs/EV_MODEL.md`]** `strength = form + β·profileFit`
+   (β profileFit-domineret), kalibreret på TdF 2025, **valideret på Vuelta-holdout**:
+   recall@15 0,378 vs favorit-proxy 0,233 vs tilfældig 0,091 — generaliserer, slår
+   begge baselines. Stærkest på bjerg; svag på break (uforudsigeligt, sagt ærligt).
+   Kør `npm run calibrate:ev`.
 5. **[Skelet bygget — se `docs/FORECASTER.md`]** Forecaster (5a) + transfer-/
    lookahead-evaluator (5b: NetGain over H, gebyr/rente/diskontering/leverage;
    5c: break-even som placeringskrav; 5d: constraints). Design+interface+syntetiske

@@ -15,7 +15,8 @@
     "ingest:pcs": "tsx scripts/ingestPcs.ts",
     "calibrate:form": "tsx scripts/calibrateForm.ts",
     "backtest:captain": "tsx scripts/backtestCaptain.ts",
-    "backtest:leverage": "tsx scripts/backtestLeverage.ts"
+    "backtest:leverage": "tsx scripts/backtestLeverage.ts",
+    "calibrate:ev": "tsx scripts/calibrateEV.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
