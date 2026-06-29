@@ -92,6 +92,15 @@ export interface LeverageInput {
  * For cash-game / mini-league play you would instead maximise expectedDelta
  * directly. This tool targets absolute rank, so leverage is the default.
  */
-export function leverageScore({ expectedDelta, popularity }: LeverageInput): number {
+export function leverageScore(
+  { expectedDelta, popularity }: LeverageInput,
+  evFloor = 0,
+): number {
+  // CRITICAL: the (1 − popularity) tilt only makes sense for POSITIVE EV. For a
+  // negative expectedDelta, multiplying by (1 − popularity) INVERTS the ordering
+  // (a loss is made "smaller" by high ownership), which would reward chalk on bad
+  // picks. So only riders strictly above the EV-floor get a leverage score; the
+  // rest return -Infinity and can never out-rank a real pick (HANDOVER §2.1).
+  if (expectedDelta <= evFloor) return -Infinity;
   return expectedDelta * (1 - popularity);
 }

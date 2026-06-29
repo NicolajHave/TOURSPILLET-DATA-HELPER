@@ -14,7 +14,8 @@
     "classify:route": "tsx scripts/classifyRoute.ts",
     "ingest:pcs": "tsx scripts/ingestPcs.ts",
     "calibrate:form": "tsx scripts/calibrateForm.ts",
-    "backtest:captain": "tsx scripts/backtestCaptain.ts"
+    "backtest:captain": "tsx scripts/backtestCaptain.ts",
+    "backtest:leverage": "tsx scripts/backtestLeverage.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

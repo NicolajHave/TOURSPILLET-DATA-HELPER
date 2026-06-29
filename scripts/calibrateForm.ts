@@ -12,6 +12,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { form, profileFit, placingScore, type Result } from '../src/lib/form';
 import { classifyStage, type StageProfile } from '../src/lib/stageProfile';
+import { hasUsableResults } from '../src/lib/parsePcsExport';
 import { pearson, mean } from '../src/lib/valueFormula';
 
 const f = (rel: string) => fileURLToPath(new URL(`../${rel}`, import.meta.url));
@@ -37,6 +38,7 @@ for (const file of readdirSync(f('fixtures/pcs'))) {
   const m = file.match(new RegExp(`^${RACE}-stage-(\\d+)\\.json$`));
   if (!m) continue;
   const j = JSON.parse(readFileSync(f(`fixtures/pcs/${file}`), 'utf8'));
+  if (!hasUsableResults(j.results)) { console.warn(`skip (no usable result): ${file}`); continue; }
   const info = meta.get(+m[1]);
   if (!info) { console.warn(`mangler profil for etape ${m[1]}`); continue; }
   stages.push({ stageNo: +m[1], date: info.date, profile: info.profile, rows: j.results.map((r: any) => ({ slug: r.riderSlug, rank: r.rank })) });

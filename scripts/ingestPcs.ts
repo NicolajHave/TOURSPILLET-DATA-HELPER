@@ -12,7 +12,7 @@ import 'dotenv/config';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { parsePcsExport, type PcsExport } from '../src/lib/parsePcsExport';
+import { parsePcsExport, hasUsableResults, type PcsExport } from '../src/lib/parsePcsExport';
 import { classifyStage } from '../src/lib/stageProfile';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -58,6 +58,12 @@ for (const file of files) {
       stagesCount++;
     }
   } else if (raw.results) {
+    // DATA-QUALITY GUARD: skip stages with no usable result (all rank=null) —
+    // TTT (misparsed) or neutralised/no-result stages. Detected in data.
+    if (!hasUsableResults(raw.results)) {
+      console.log(`  skip (no usable result — all rank=null): ${file}`);
+      continue;
+    }
     // stage-results file
     const { stage, results } = parsePcsExport(raw as PcsExport);
     // ensure the stage row exists (features may be filled later by a stages file)

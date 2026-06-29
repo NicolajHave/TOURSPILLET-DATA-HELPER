@@ -41,6 +41,17 @@ export interface ResultRow {
   rank: number | null; status: string;
 }
 
+/**
+ * Data-quality guard: a stage is usable for calibration/backtest only if at
+ * least ONE rider has a real finishing rank. All-null stages are either a TTT
+ * (the snippet misparses team time trials -> rank=null, name+gap in `status`) or
+ * a neutralised / no-result stage (e.g. Vuelta 2025 stage 21 Madrid). Detected
+ * in the DATA, not by filename, so future neutralised stages are caught too.
+ */
+export function hasUsableResults(results: Array<{ rank: number | null }>): boolean {
+  return results.some((r) => r.rank != null);
+}
+
 export function parsePcsExport(x: PcsExport): {
   race: RaceRow; stage: StageRow; results: ResultRow[];
 } {

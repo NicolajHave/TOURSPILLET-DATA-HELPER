@@ -8,6 +8,7 @@ import {
   DEFAULT_PARAMS, type ValueCoeffs, type RiderInput, type BucketProbs,
 } from '../src/lib/forecaster';
 import { evaluateTransfer, checkConstraints, type TransferLeg } from '../src/lib/transferEvaluator';
+import { leverageScore } from '../src/lib/ruleset';
 import { archetypeWeights, type ArchetypeWeights } from '../src/lib/stageProfile';
 
 let pass = 0, fail = 0;
@@ -103,6 +104,11 @@ const threeSameTeam = [mk(1, 1, 6e6), mk(2, 1, 6e6), mk(3, 1, 6e6), mk(4, 3, 6e6
 ok('3 from one team fails maxPerRealTeam', !checkConstraints(threeSameTeam).perTeamOk);
 const overCap = valid.map((m, i) => (i === 0 ? mk(1, 1, 20e6) : m));
 ok('over salary cap fails', !checkConstraints(overCap).salaryCapOk);
+
+console.log('\n── LEVERAGE SCORE (negativ-EV guard) ───────────────────────────');
+ok('positiv EV: lav ejerandel > høj ejerandel', leverageScore({ expectedDelta: 100_000, popularity: 0.05 }) > leverageScore({ expectedDelta: 100_000, popularity: 0.8 }));
+ok('negativ EV boostes IKKE af lav ejerandel (returnerer -Infinity)', leverageScore({ expectedDelta: -50_000, popularity: 0.02 }) === -Infinity);
+ok('sub-EV-gulv pick kan aldrig outranke positiv pick', leverageScore({ expectedDelta: 100_000, popularity: 0.9 }) > leverageScore({ expectedDelta: -1, popularity: 0.0 }));
 
 console.log('\n════════════════════════════════════════════════════════════════');
 console.log(`  RESULTAT: ${pass} bestået, ${fail} fejlet`);

@@ -64,6 +64,20 @@ er toppen af leaderboardet, hvis ejerskab afviger fra gennemsnittet. Kan ikke
 observeres direkte — betyder at leverage mod feltgennemsnit overvurderer reel
 leverage mod toppen. Notér, kompensér ikke naivt.
 
+**Leverage-test-status (16/6 — `npm run backtest:leverage`):** hypotesen kan
+**ikke** backtestes pålideligt på Dauphiné endnu. To forhindringer:
+1. **EV-cold-start:** uden før-løb-form kan modellen ikke identificere
+   positive-EV picks på bjergetaper (baseline dybt negativ) → bjergrunderne
+   (hvor leverage betyder mest) er **ikke testbare**. På flade runder er EV-modellen
+   for svag → både EV-max og leverage lander i feltets bund.
+2. **Kun ÉN ejerandels-realisering:** ejerandele findes kun for Dauphiné. Robust
+   leverage-validering kræver flere udfald → reelt kun muligt **LIVE** (paper-trade)
+   under Touren.
+   → **Lås IKKE leverage-parametre fra backtest.** Behandl leverage som en
+   live-valideret hypotese; byg først en troværdig EV-model (kræver før-løb-data).
+   Bug fundet+rettet undervejs: `leverageScore` inverterede for negativ EV
+   (belønnede chalk på dårlige picks) — nu spærret med EV-gulv (`evFloor`, default 0).
+
 ## 3. Validerings-design (v2 — anti-overfitting)
 
 - **TdF 2025 = kalibrering** (justér half-lives, EV-gulv, vægte her)
@@ -171,6 +185,14 @@ GET https://nexus-app-fantasy.holdet.dk/api/games/{gameId}/players
 - Kaptajnsmekanik (positiv værdistigning udbetalt til bank) er **inferred** —
   verificér empirisk mod Dauphiné-snapshots.
 - Holdbonus ~60k → team-stacking har skjult værdi (§2.3).
+- **TTT-beslutning (truffet):** TTT-etaper parses IKKE individuelt — de holdes ude
+  af individuel placeringslogik som egen undtagelse (holdresultat, ingen meningsfuld
+  individuel placering, sjælden: 1/grand tour, lav marginal værdi). De fanges
+  automatisk af no-result-guarden nedenfor (snippet giver rank=null for alle).
+- **No-result-guard (data-detekteret):** en etape hvor ALLE rank er null ekskluderes
+  automatisk fra fit/backtest (`hasUsableResults()` i `parsePcsExport.ts`). Fanger
+  både TTT (Vuelta s5, Dauphiné E3) og neutraliserede etaper (Vuelta s21 Madrid) —
+  uafhængigt af filnavn. Stol aldrig på filnavns-mærkning alene.
 - PCS↔holdet identitet: navn/slug vs. `personId` → `rider_links`, auto-match på
   navn, manuel rettelse af afvigere.
 - No-lookahead i ALT historik-baseret feature-arbejde.

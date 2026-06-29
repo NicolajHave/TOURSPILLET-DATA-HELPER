@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { form, placingScore, type Result } from '../src/lib/form';
 import { classifyStage, type StageProfile } from '../src/lib/stageProfile';
 import { coeffsFromArtifact, valueOfRank, scaleOf } from '../src/lib/forecaster';
+import { hasUsableResults } from '../src/lib/parsePcsExport';
 import { captainBonus } from '../src/lib/ruleset';
 import { mean } from '../src/lib/valueFormula';
 
@@ -42,6 +43,7 @@ for (const file of readdirSync(f('fixtures/pcs'))) {
   const m = file.match(new RegExp(`^${RACE}-stage-(\\d+)\\.json$`));
   if (!m) continue;
   const j = JSON.parse(readFileSync(f(`fixtures/pcs/${file}`), 'utf8'));
+  if (!hasUsableResults(j.results)) { console.warn(`skip (no usable result): ${file}`); continue; }
   const info = meta.get(+m[1])!;
   const rows: Row[] = j.results.map((r: any) => ({ slug: r.riderSlug, rank: r.rank, team: r.team ?? null }));
   stages.push({ stageNo: +m[1], date: info.date, profile: info.profile, rows, winnerTeam: (rows.find((r) => r.rank === 1) || {}).team ?? null });
