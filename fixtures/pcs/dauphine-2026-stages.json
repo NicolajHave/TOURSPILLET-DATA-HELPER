@@ -1,0 +1,82 @@
+{
+  "race": {
+    "slug": "dauphine",
+    "year": 2026
+  },
+  "stages": [
+    {
+      "stageNo": 1,
+      "date": "07/06",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 2,
+      "date": "08/06",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 3,
+      "date": "09/06",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "ttt",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 4,
+      "date": "10/06",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 5,
+      "date": "11/06",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 6,
+      "date": "12/06",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 7,
+      "date": "13/06",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 8,
+      "date": "14/06",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/dauphine/2026/stages",
+  "capturedAt": "2026-06-29T12:01:06.303Z"
+}
