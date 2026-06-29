@@ -1,0 +1,73 @@
+{
+  "race": {
+    "slug": "vuelta-a-espana",
+    "year": 2025
+  },
+  "stage": {
+    "stageNo": 5,
+    "distanceKm": 24.1,
+    "verticalM": 122,
+    "profileScore": 0,
+    "profileScoreFinal": null
+  },
+  "results": [
+    {
+      "rank": null,
+      "status": "ALMEIDA JOÃO",
+      "riderSlug": "joao-almeida",
+      "riderName": "ALMEIDA João",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "SOLER MARC",
+      "riderSlug": "marc-soler",
+      "riderName": "SOLER Marc",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "BJERG MIKKEL",
+      "riderSlug": "mikkel-bjerg",
+      "riderName": "BJERG Mikkel",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "AYUSO JUAN",
+      "riderSlug": "juan-ayuso-pesquera",
+      "riderName": "AYUSO Juan",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "GROSSSCHARTNER FELIX\n  +0:41",
+      "riderSlug": "felix-grossschartner",
+      "riderName": "GROSSSCHARTNER Felix",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "OLIVEIRA IVO\n  +0:41",
+      "riderSlug": "ivo-emanuel-alves",
+      "riderName": "OLIVEIRA Ivo",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "VINE JAY\n  +1:36",
+      "riderSlug": "jay-vine",
+      "riderName": "VINE Jay",
+      "team": null
+    },
+    {
+      "rank": null,
+      "status": "NOVAK DOMEN\n  +4:02",
+      "riderSlug": "domen-novak",
+      "riderName": "NOVAK Domen",
+      "team": null
+    }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/vuelta-a-espana/2025/stage-5/result/result",
+  "capturedAt": "2026-06-29T13:34:24.203Z"
+}

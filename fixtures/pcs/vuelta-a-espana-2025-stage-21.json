@@ -1,0 +1,1088 @@
+{
+  "race": {
+    "slug": "vuelta-a-espana",
+    "year": 2025
+  },
+  "stage": {
+    "stageNo": 21,
+    "distanceKm": 108,
+    "verticalM": 1678,
+    "profileScore": 92,
+    "profileScoreFinal": null
+  },
+  "results": [
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "joao-almeida",
+      "riderName": "ALMEIDA João",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "juan-ayuso-pesquera",
+      "riderName": "AYUSO Juan",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "mikkel-bjerg",
+      "riderName": "BJERG Mikkel",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "felix-grossschartner",
+      "riderName": "GROSSSCHARTNER Felix",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "domen-novak",
+      "riderName": "NOVAK Domen",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "ivo-emanuel-alves",
+      "riderName": "OLIVEIRA Ivo",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "marc-soler",
+      "riderName": "SOLER Marc",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jay-vine",
+      "riderName": "VINE Jay",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jonas-vingegaard",
+      "riderName": "VINGEGAARD Jonas",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "matteo-jorgenson",
+      "riderName": "JORGENSON Matteo",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "wilco-kelderman",
+      "riderName": "KELDERMAN Wilco",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "sepp-kuss",
+      "riderName": "KUSS Sepp",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "ben-tulett",
+      "riderName": "TULETT Ben",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "dylan-van-baarle",
+      "riderName": "VAN BAARLE Dylan",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "andrea-bagioli",
+      "riderName": "BAGIOLI Andrea",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "julien-bernard",
+      "riderName": "BERNARD Julien",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "giulio-ciccone",
+      "riderName": "CICCONE Giulio",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "amanuel-ghebreigzabhier",
+      "riderName": "GHEBREIGZABHIER Amanuel",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "daan-hoole",
+      "riderName": "HOOLE Daan",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "soren-kragh-andersen",
+      "riderName": "KRAGH ANDERSEN Søren",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "mads-pedersen",
+      "riderName": "PEDERSEN Mads",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "carlos-verona",
+      "riderName": "VERONA Carlos",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "orluis-aular",
+      "riderName": "AULAR Orluis",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "carlos-canal",
+      "riderName": "CANAL Carlos",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jefferson-cepeda-hernandez",
+      "riderName": "CEPEDA Jefferson Alveiro",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "ivan-garcia-cortina",
+      "riderName": "GARCÍA CORTINA Iván",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "michel-hessmann",
+      "riderName": "HESSMANN Michel",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jai-hindley",
+      "riderName": "HINDLEY Jai",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "giovanni-aleotti",
+      "riderName": "ALEOTTI Giovanni",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "nico-denz",
+      "riderName": "DENZ Nico",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "finn-fisher-black",
+      "riderName": "FISHER-BLACK Finn",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "giulio-pellizzari",
+      "riderName": "PELLIZZARI Giulio",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "matteo-sobrero",
+      "riderName": "SOBRERO Matteo",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "tim-van-dijke",
+      "riderName": "VAN DIJKE Tim",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "ben-zwiehoff",
+      "riderName": "ZWIEHOFF Ben",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "mikel-landa",
+      "riderName": "LANDA Mikel",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "junior-lecerf",
+      "riderName": "LECERF Junior",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "maximilian-schachmann",
+      "riderName": "SCHACHMANN Maximilian",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "mauri-vansevenant",
+      "riderName": "VANSEVENANT Mauri",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "louis-vervaeke",
+      "riderName": "VERVAEKE Louis",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "magnus-sheffield",
+      "riderName": "SHEFFIELD Magnus",
+      "team": "INEOS Grenadiers"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "egan-bernal",
+      "riderName": "BERNAL Egan",
+      "team": "INEOS Grenadiers"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "filippo-ganna",
+      "riderName": "GANNA Filippo",
+      "team": "INEOS Grenadiers"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "bob-jungels",
+      "riderName": "JUNGELS Bob",
+      "team": "INEOS Grenadiers"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "michal-kwiatkowski",
+      "riderName": "KWIATKOWSKI Michał",
+      "team": "INEOS Grenadiers"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "victor-langellotti",
+      "riderName": "LANGELLOTTI Victor",
+      "team": "INEOS Grenadiers"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "brandon-smith-rivera-vargas",
+      "riderName": "RIVERA Brandon Smith",
+      "team": "INEOS Grenadiers"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "ben-turner",
+      "riderName": "TURNER Ben",
+      "team": "INEOS Grenadiers"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jasper-philipsen",
+      "riderName": "PHILIPSEN Jasper",
+      "team": "Alpecin - Deceuninck"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "tobias-bayer",
+      "riderName": "BAYER Tobias",
+      "team": "Alpecin - Deceuninck"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "gal-glivar",
+      "riderName": "GLIVAR Gal",
+      "team": "Alpecin - Deceuninck"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "edward-planckaert",
+      "riderName": "PLANCKAERT Edward",
+      "team": "Alpecin - Deceuninck"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jonas-rickaert",
+      "riderName": "RICKAERT Jonas",
+      "team": "Alpecin - Deceuninck"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "oscar-riesebeek",
+      "riderName": "RIESEBEEK Oscar",
+      "team": "Alpecin - Deceuninck"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "markel-beloki",
+      "riderName": "BELOKI Markel",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "madis-mihkels",
+      "riderName": "MIHKELS Madis",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "lukas-nerurkar",
+      "riderName": "NERURKAR Lukas",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "sean-quinn",
+      "riderName": "QUINN Sean",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "james-shaw",
+      "riderName": "SHAW James",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jardi-christiaan-van-der-lee",
+      "riderName": "VAN DER LEE Jardi Christiaan",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "felix-gall",
+      "riderName": "GALL Felix",
+      "team": "Decathlon AG2R La Mondiale Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "bruno-armirail",
+      "riderName": "ARMIRAIL Bruno",
+      "team": "Decathlon AG2R La Mondiale Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "leo-bisiaux",
+      "riderName": "BISIAUX Léo",
+      "team": "Decathlon AG2R La Mondiale Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "sander-de-pestel",
+      "riderName": "DE PESTEL Sander",
+      "team": "Decathlon AG2R La Mondiale Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jordan-labrosse",
+      "riderName": "LABROSSE Jordan",
+      "team": "Decathlon AG2R La Mondiale Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "nans-peters",
+      "riderName": "PETERS Nans",
+      "team": "Decathlon AG2R La Mondiale Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "callum-scotson",
+      "riderName": "SCOTSON Callum",
+      "team": "Decathlon AG2R La Mondiale Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "johannes-staune-mittet",
+      "riderName": "STAUNE-MITTET Johannes",
+      "team": "Decathlon AG2R La Mondiale Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "antonio-tiberi",
+      "riderName": "TIBERI Antonio",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "santiago-buitrago-sanchez",
+      "riderName": "BUITRAGO Santiago",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "nicolo-buratti",
+      "riderName": "BURATTI Nicolò",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "roman-ermakov",
+      "riderName": "ERMAKOV Roman",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jack-haig",
+      "riderName": "HAIG Jack",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "mathijs-paasschens",
+      "riderName": "PAASSCHENS Mathijs",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "finlay-pickering",
+      "riderName": "PICKERING Finlay",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "torstein-traeen",
+      "riderName": "TRÆEN Torstein",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "tom-pidcock",
+      "riderName": "PIDCOCK Tom",
+      "team": "Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "david-de-la-cruz",
+      "riderName": "DE LA CRUZ David",
+      "team": "Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "fabio-christen",
+      "riderName": "CHRISTEN Fabio",
+      "team": "Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "damien-howson",
+      "riderName": "HOWSON Damien",
+      "team": "Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "nickolas-zukowsky",
+      "riderName": "ZUKOWSKY Nickolas",
+      "team": "Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "david-gonzalez-lopez",
+      "riderName": "GONZÁLEZ David",
+      "team": "Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "marcel-camprubi",
+      "riderName": "CAMPRUBÍ Marcel",
+      "team": "Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "harold-tejada",
+      "riderName": "TEJADA Harold",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "nicola-conci",
+      "riderName": "CONCI Nicola",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "lorenzo-fortunato",
+      "riderName": "FORTUNATO Lorenzo",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "harold-martin-lopez",
+      "riderName": "LÓPEZ Harold Martín",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "fausto-masnada",
+      "riderName": "MASNADA Fausto",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "wout-poels",
+      "riderName": "POELS Wout",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "nicolas-vinokurov",
+      "riderName": "VINOKUROV Nicolas",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "clement-braz-afonso",
+      "riderName": "BRAZ AFONSO Clément",
+      "team": "Groupama - FDJ"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "remi-cavagna",
+      "riderName": "CAVAGNA Rémi",
+      "team": "Groupama - FDJ"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "david-gaudu",
+      "riderName": "GAUDU David",
+      "team": "Groupama - FDJ"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "thibaud-gruel",
+      "riderName": "GRUEL Thibaud",
+      "team": "Groupama - FDJ"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "rudy-molard",
+      "riderName": "MOLARD Rudy",
+      "team": "Groupama - FDJ"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "brieuc-rolland",
+      "riderName": "ROLLAND Brieuc",
+      "team": "Groupama - FDJ"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "stefan-kung",
+      "riderName": "KÜNG Stefan",
+      "team": "Groupama - FDJ"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "guillermo-thomas-silva-coussan",
+      "riderName": "SILVA Guillermo Thomas",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "abel-balderstone-roumens",
+      "riderName": "BALDERSTONE Abel",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "joan-bou",
+      "riderName": "BOU Joan",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jaume-guardeno",
+      "riderName": "GUARDEÑO Jaume",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "alex-molenaar",
+      "riderName": "MOLENAAR Alex",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "joel-nicolau",
+      "riderName": "NICOLAU Joel",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jakub-otruba",
+      "riderName": "OTRUBA Jakub",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "edward-irl-dunbar",
+      "riderName": "DUNBAR Eddie",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "anders-foldager",
+      "riderName": "FOLDAGER Anders",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "patrick-gamper",
+      "riderName": "GAMPER Patrick",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "christopher-juul-jensen",
+      "riderName": "JUUL-JENSEN Christopher",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "kelland-brien",
+      "riderName": "O'BRIEN Kelland",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jenthe-biermans",
+      "riderName": "BIERMANS Jenthe",
+      "team": "Arkéa - B&B Hotels"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "victor-guernalec",
+      "riderName": "GUERNALEC Victor",
+      "team": "Arkéa - B&B Hotels"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "leandre-lozouet",
+      "riderName": "LOZOUET Léandre",
+      "team": "Arkéa - B&B Hotels"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "louis-rouland",
+      "riderName": "ROULAND Louis",
+      "team": "Arkéa - B&B Hotels"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "alessandro-verre",
+      "riderName": "VERRE Alessandro",
+      "team": "Arkéa - B&B Hotels"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "pierre-thierry",
+      "riderName": "THIERRY Pierre",
+      "team": "Arkéa - B&B Hotels"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "emanuel-buchmann",
+      "riderName": "BUCHMANN Emanuel",
+      "team": "Cofidis"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "sergio-samitier",
+      "riderName": "SAMITIER Sergio",
+      "team": "Cofidis"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "stanislaw-aniolkowski",
+      "riderName": "ANIOŁKOWSKI Stanisław",
+      "team": "Cofidis"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "bryan-coquard",
+      "riderName": "COQUARD Bryan",
+      "team": "Cofidis"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jesus-herrada-lopez",
+      "riderName": "HERRADA Jesús",
+      "team": "Cofidis"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "huub-artz",
+      "riderName": "ARTZ Huub",
+      "team": "Intermarché - Wanty"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "kamiel-bonneu",
+      "riderName": "BONNEU Kamiel",
+      "team": "Intermarché - Wanty"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "dries-de-pooter",
+      "riderName": "DE POOTER Dries",
+      "team": "Intermarché - Wanty"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "arne-marit",
+      "riderName": "MARIT Arne",
+      "team": "Intermarché - Wanty"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "louis-meintjes",
+      "riderName": "MEINTJES Louis",
+      "team": "Intermarché - Wanty"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "simone-petilli",
+      "riderName": "PETILLI Simone",
+      "team": "Intermarché - Wanty"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "dion-smith",
+      "riderName": "SMITH Dion",
+      "team": "Intermarché - Wanty"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "luca-van-boven",
+      "riderName": "VAN BOVEN Luca",
+      "team": "Intermarché - Wanty"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "patrick-eddy",
+      "riderName": "EDDY Patrick",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "chris-hamilton",
+      "riderName": "HAMILTON Chris",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "bjoern-koerdt",
+      "riderName": "KOERDT Bjorn",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "gijs-leemreize",
+      "riderName": "LEEMREIZE Gijs",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "guillermo-juan-martinez",
+      "riderName": "MARTINEZ Juan Guillermo",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "timo-roosen",
+      "riderName": "ROOSEN Timo",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "kevin-vermaerke",
+      "riderName": "VERMAERKE Kevin",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "lars-craps",
+      "riderName": "CRAPS Lars",
+      "team": "Lotto"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jasper-de-buyst",
+      "riderName": "DE BUYST Jasper",
+      "team": "Lotto"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "alec-segaert",
+      "riderName": "SEGAERT Alec",
+      "team": "Lotto"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "eduardo-sepulveda",
+      "riderName": "SEPÚLVEDA Eduardo",
+      "team": "Lotto"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "liam-slock",
+      "riderName": "SLOCK Liam",
+      "team": "Lotto"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "elia-viviani",
+      "riderName": "VIVIANI Elia",
+      "team": "Lotto"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jonas-gregaard",
+      "riderName": "GREGAARD Jonas",
+      "team": "Lotto"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "mario-aparicio-munoz",
+      "riderName": "APARICIO Mario",
+      "team": "Burgos Burpellet BH"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "sergio-geovani-chumil-gonzalez",
+      "riderName": "CHUMIL Sergio Geovani",
+      "team": "Burgos Burpellet BH"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jose-luis-faura-asensio",
+      "riderName": "FAURA José Luis",
+      "team": "Burgos Burpellet BH"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "hugo-de-la-calle-arango",
+      "riderName": "DE LA CALLE Hugo",
+      "team": "Burgos Burpellet BH"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "pier-andre-cote",
+      "riderName": "CÔTÉ Pier-André",
+      "team": "Israel - Premier Tech"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "marco-frigo",
+      "riderName": "FRIGO Marco",
+      "team": "Israel - Premier Tech"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jan-hirt",
+      "riderName": "HIRT Jan",
+      "team": "Israel - Premier Tech"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "nadav-raisberg",
+      "riderName": "RAISBERG Nadav",
+      "team": "Israel - Premier Tech"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "jake-stewart",
+      "riderName": "STEWART Jake",
+      "team": "Israel - Premier Tech"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "ethan-vernon",
+      "riderName": "VERNON Ethan",
+      "team": "Israel - Premier Tech"
+    },
+    {
+      "rank": null,
+      "status": "NR",
+      "riderSlug": "matthew-riccitello",
+      "riderName": "RICCITELLO Matthew",
+      "team": "Israel - Premier Tech"
+    }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/vuelta-a-espana/2025/stage-21/result/result",
+  "capturedAt": "2026-06-29T13:50:45.179Z"
+}

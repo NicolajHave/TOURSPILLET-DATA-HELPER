@@ -1,0 +1,199 @@
+{
+  "race": {
+    "slug": "vuelta-a-espana",
+    "year": 2025
+  },
+  "stages": [
+    {
+      "stageNo": 1,
+      "date": "23/08",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 2,
+      "date": "24/08",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 3,
+      "date": "25/08",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 4,
+      "date": "26/08",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 5,
+      "date": "27/08",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "ttt",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 6,
+      "date": "28/08",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 7,
+      "date": "29/08",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 8,
+      "date": "30/08",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 9,
+      "date": "31/08",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 10,
+      "date": "02/09",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 11,
+      "date": "03/09",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 12,
+      "date": "04/09",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 13,
+      "date": "05/09",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 14,
+      "date": "06/09",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 15,
+      "date": "07/09",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 16,
+      "date": "09/09",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 17,
+      "date": "10/09",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 18,
+      "date": "11/09",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "itt",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 19,
+      "date": "12/09",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 20,
+      "date": "13/09",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 21,
+      "date": "14/09",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/vuelta-a-espana/2025/stages",
+  "capturedAt": "2026-06-29T13:30:13.963Z"
+}
