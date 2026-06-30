@@ -54,12 +54,18 @@
 </tr></thead><tbody></tbody></table>
 <p class="muted" id="capline"></p>
 
-<h2>3) Log faktisk udfald (gemmes lokalt i browseren)</h2>
-<input id="logstage" placeholder="etape (fx 'TdF 2026 E5')" style="width:200px" />
-<input id="lognote" placeholder="note: hvem blev kaptajn, faktisk Δ, placering…" style="width:380px" />
-<button id="savelog">Gem</button>
-<button id="exportlog">Eksportér alle (kopiér)</button>
-<table id="logtbl"><thead><tr><th>Dato</th><th>Etape</th><th>Profil</th><th>Anbef. kaptajn</th><th>Note</th></tr></thead><tbody></tbody></table>
+<h2>3) Log beslutning + udfald (til leverage-måling)</h2>
+<p class="muted">Gemmer hele beslutnings-snapshottet — hver kandidats ejerandel PÅ
+BESLUTNINGSTIDSPUNKTET, modellens anbefaling, og dit valgte hold/kaptajn — så du
+bagefter kan måle om leverage virkede (kontrærhed kræver ejerandel-ved-beslutning).
+Eksportér jævnligt som JSON; ryddet cache sletter ellers localStorage.</p>
+<input id="logstage" placeholder="etape (fx 'TdF 2026 E5')" style="width:160px" />
+<input id="myteam" placeholder="mit hold (8 ryttere)" style="width:300px" />
+<input id="mycaptain" placeholder="min kaptajn" style="width:150px" />
+<button id="savelog">Gem beslutning (med ejerandele)</button>
+<button id="exportlog">Eksportér alle som JSON (kopiér)</button>
+<span id="logstatus" class="muted"></span>
+<table id="logtbl"><thead><tr><th>Dato</th><th>Etape</th><th>Profil</th><th>Model-kaptajn</th><th>Mit hold</th><th>Min kaptajn</th><th>#kand.</th><th>Faktisk udfald (redigér efter etapen)</th></tr></thead><tbody></tbody></table>
 
 <script>
 let SNAP = null;
@@ -112,33 +118,54 @@ function compute() {
       + `<td class="${r.ev >= 0 ? 'pos' : 'neg'}">${kr(r.ev)}</td><td>${lev}</td>`;
     tb.appendChild(tr);
   });
-  $('capline').innerHTML = `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr, ejer ${(captain.own * 100).toFixed(0)}%).`;
+  const lowConf = profile === 'break' || profile === 'itt';
+  $('capline').innerHTML = `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr, ejer ${(captain.own * 100).toFixed(0)}%).`
+    + (lowConf ? ' <b class="neg">⚠ LAV TILLID</b>' : '');
   $('breakwarn').innerHTML = profile === 'break'
-    ? '<p class="warn">⚠ Break-etape: modellen er svag her (recall 0,20 — kaptajn er nær gæt). Lav tillid.</p>' : '';
+    ? '<p class="warn">⚠ LAV TILLID (break): modellen er svag her (recall 0,20 — kaptajn er nær gæt). Stol ikke blindt på anbefalingen.</p>'
+    : profile === 'itt'
+    ? '<p class="warn">⚠ LAV TILLID (ITT): tynd profil-historik for tempo. Anbefalingen er usikker.</p>' : '';
   $('status').textContent = `${rows.length} aktive ryttere · profil ${profile}`;
-  window._lastCaptain = captain.name;
+  // capture the full decision snapshot for the leverage-measurement log
+  window._decision = {
+    profile, lowConfidence: lowConf, modelCaptain: captain.name,
+    candidates: rows.map((r) => ({ name: r.name, own: +(r.own).toFixed(4), ev: Math.round(r.ev), lev: r.lev === -Infinity ? null : Math.round(r.lev), hasForm: r.hasForm })),
+  };
 }
 $('go').onclick = compute;
 
-// ---- local outcome log ----
+// ---- local decision + outcome log (the leverage-measurement record) ----
 const LS = 'paperTrades';
 const getLogs = () => JSON.parse(localStorage.getItem(LS) || '[]');
+const setLogs = (l) => localStorage.setItem(LS, JSON.stringify(l));
 function renderLogs() {
-  const tb = $('logtbl').querySelector('tbody'); tb.innerHTML = '';
-  getLogs().slice().reverse().forEach((l) => {
+  const logs = getLogs(); const tb = $('logtbl').querySelector('tbody'); tb.innerHTML = '';
+  logs.map((l, idx) => ({ l, idx })).reverse().forEach(({ l, idx }) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${l.savedAt}</td><td>${l.stage}</td><td>${l.profile}</td><td>${l.captain || ''}</td><td>${l.note}</td>`;
+    tr.innerHTML = `<td>${l.savedAt}</td><td>${l.stage || ''}</td><td>${l.profile}${l.lowConfidence ? ' ⚠' : ''}</td>`
+      + `<td>${l.modelCaptain || ''}</td><td style="text-align:left">${l.myTeam || ''}</td><td>${l.myCaptain || ''}</td>`
+      + `<td>${(l.candidates || []).length}</td>`
+      + `<td><input data-i="${idx}" class="outcome" value="${(l.outcome || '').replace(/"/g, '&quot;')}" placeholder="fyld ud efter etapen" style="width:220px"/></td>`;
     tb.appendChild(tr);
   });
+  tb.querySelectorAll('input.outcome').forEach((inp) => { inp.onchange = () => { const L = getLogs(); L[+inp.dataset.i].outcome = inp.value; setLogs(L); }; });
 }
 $('savelog').onclick = () => {
+  if (!window._decision) { alert('Kør "Beregn" først — så gemmes ejerandele pr. kandidat med beslutningen.'); return; }
   const logs = getLogs();
-  logs.push({ savedAt: new Date().toISOString().slice(0, 10), stage: $('logstage').value, profile: $('profile').value, captain: window._lastCaptain || '', note: $('lognote').value });
-  localStorage.setItem(LS, JSON.stringify(logs)); $('lognote').value = ''; renderLogs();
+  logs.push({
+    savedAt: new Date().toISOString().slice(0, 10), stage: $('logstage').value,
+    profile: window._decision.profile, lowConfidence: window._decision.lowConfidence,
+    modelCaptain: window._decision.modelCaptain, candidates: window._decision.candidates,
+    myTeam: $('myteam').value, myCaptain: $('mycaptain').value, outcome: '',
+  });
+  setLogs(logs);
+  $('logstatus').textContent = `gemt · ${logs.length} poster · ${window._decision.candidates.length} kandidater m. ejerandel`;
+  renderLogs();
 };
 $('exportlog').onclick = () => {
-  const txt = JSON.stringify(getLogs(), null, 2);
-  navigator.clipboard?.writeText(txt); alert('Log kopieret til udklipsholder (' + getLogs().length + ' poster).');
+  navigator.clipboard?.writeText(JSON.stringify(getLogs(), null, 2));
+  alert('Hele loggen (inkl. ejerandele pr. beslutning) kopieret: ' + getLogs().length + ' poster.');
 };
 renderLogs();
 </script>
