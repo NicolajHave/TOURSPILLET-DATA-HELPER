@@ -1,59 +1,69 @@
-// scripts/snippets/pcs-rider.js (v1)
-// Kør i browser-konsollen på en PCS RYTTERSIDE, fx (filtrér gerne til sæsonen):
-//   https://www.procyclingstats.com/rider/tadej-pogacar/2026
-// Én rytterside = hele sæsonens resultater → form-bredde til EV-modellen.
+// scripts/snippets/pcs-rider.js (v2)
+// Kør på en PCS RYTTER-RESULTATSIDE filtreret til sæsonen, fx:
+//   …/rider/tadej-pogacar  →  fanen Results  →  vælg 2026
+//   (URL kan være rider.php?id=…&p=results&xseason=2026 — slug er IKKE i URL'en)
 //
-// VIGTIGT (samme klasse fejl som pcs-results v1): race/stageNo må IKKE læses fra
-// side-URL'en (den er /rider/{slug}). Hver resultat-RÆKKE har sin egen race-link,
-// så vi parser race/år/etape PER RÆKKE. Side-URL'en giver kun rytter-slug.
+// v2 (efter DOM-diagnose): tabellen er class="basic" (ikke rdrResults). Kolonner:
+//   # | Date | Result | Race | Class | KMs | PCS points | UCI points | Vert. mtr
+// Vi mapper kolonner via OVERSKRIFTER (robust mod rækkefølge), parser race/år/etape
+// PER RÆKKE fra race-linket, og tager KMs + Vert.mtr med så fallback-klassifikation
+// kan bruge klatre-densitet (vert/km), ikke kun distance ("sprint-only"-fælden).
+// Klassements-rækker (Mountains/Points/GC classification) markeres rowType:
+// 'classification' → de er STANDINGER, ikke etaperesultater (udelades fra form/fit).
 //
-// SMOKE-TEST FØRST: kør på ÉN rytter, gem filen, og send de første ~10 resultater
-// til Claude FØR du kører hele startlisten — så vi ikke gentager en parse-fejl 191
-// gange. Gem som: fixtures/riders/rider-{slug}.json
+// SMOKE-TEST: kør på ÉN rytter (Pogačar), send output til Claude FØR alle 191.
+// Gem som: fixtures/riders/rider-{slug}.json
 (() => {
-  // rider slug + name from the PAGE url/title
-  const rm = location.pathname.match(/rider\/([^/?#]+)/);
-  const riderSlug = rm ? rm[1] : null;
+  const slugify = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const pm = location.pathname.match(/rider\/([^/?#]+)/);
   const riderName = (document.querySelector('h1')?.innerText || '').replace(/\s+/g, ' ').trim();
+  const riderSlug = pm ? pm[1] : slugify(riderName);
 
-  // parse a per-row race link -> { raceSlug, year, stageNo }
+  // find the results table: a table.basic whose header has Date + Race (+ Result)
+  const tables = [...document.querySelectorAll('table')];
+  const headerText = (t) => (t.querySelector('tr')?.innerText || '').toLowerCase();
+  const table = tables.find((t) => /date/.test(headerText(t)) && /race/.test(headerText(t)) && t.querySelector('a[href*="/race/"]'))
+    || tables.find((t) => t.querySelector('a[href*="/race/"]'));
+  if (!table) { console.warn('Ingen resultattabel fundet — kopiér Inspect af tabellen til Claude.'); return; }
+
+  // map columns by header label
+  const heads = [...(table.querySelector('thead tr') || table.querySelector('tr')).children].map((c) => c.innerText.trim().toLowerCase());
+  const col = (re, fallback) => { const i = heads.findIndex((h) => re.test(h)); return i >= 0 ? i : fallback; };
+  const iDate = col(/date/, 1), iResult = col(/result|rnk|pos/, 2), iKms = col(/km/, 5), iVert = col(/vert/, 8);
+
   const parseRace = (href) => {
     const m = (href || '').match(/race\/([^/?#]+)\/(\d{4})(?:\/stage-(\d+)|\/(prologue))?/);
     return m ? { raceSlug: m[1], year: +m[2], stageNo: m[4] ? 0 : (m[3] ? +m[3] : null) } : null;
   };
-  const DATE = /\b(\d{4}-\d{2}-\d{2})\b/;                 // PCS rider results use ISO dates
-  const STATUS = /^(DNF|DNS|DNQ|OTL|DSQ|NR|DF)$/i;
+  const numCell = (cells, i) => { const m = (cells[i] || '').replace(/[.,]/g, '').match(/\d+/); return m ? +m[0] : null; };
+  const STATUS = /^(DNF|DNS|DNQ|OTL|DSQ|NR|DF|HD)$/i;
 
-  // the results table = the one whose rows link to /race/
-  const table = [...document.querySelectorAll('table')].find((t) => t.querySelector('a[href*="/race/"]'));
-  if (!table) { console.warn('Ingen resultattabel fundet på ryttersiden — kopiér denne besked + en Inspect af én række til Claude.'); return; }
-
-  const results = [...table.querySelectorAll('tbody tr')].map((tr) => {
+  const rows = [...table.querySelectorAll('tbody tr')].length ? [...table.querySelectorAll('tbody tr')] : [...table.querySelectorAll('tr')].slice(1);
+  const results = rows.map((tr) => {
     const raceA = tr.querySelector('a[href*="/race/"]');
     if (!raceA) return null;
-    const race = parseRace(raceA.getAttribute('href') || '');
     const cells = [...tr.children].map((c) => (c.innerText || '').trim());
-    const rowText = cells.join(' | ');
-    const date = (rowText.match(DATE) || [])[1] || null;
-    // rank = first standalone integer 1..400 that isn't the year and isn't a distance (km/decimal)
-    let rank = null, status = 'OK';
-    for (const c of cells) {
-      if (STATUS.test(c)) { status = c.toUpperCase(); rank = null; break; }
-      if (/^\d{1,3}$/.test(c)) { const v = +c; if (v >= 1 && v <= 400) { rank = v; break; } }
-    }
-    if (rank === null && status === 'OK') status = 'NR';
-    const distM = rowText.match(/([\d]+(?:\.\d+)?)\s*km/i);
+    const race = parseRace(raceA.getAttribute('href') || '');
+    const raceName = raceA.innerText.trim();
+    const resultCell = cells[iResult] || '';
+    let rank = /^\d+$/.test(resultCell) ? +resultCell : null;
+    let status = rank != null ? 'OK' : (STATUS.test(resultCell) ? resultCell.toUpperCase() : 'NR');
+    const isClassification = /classification|klassement|\bgc\b|jersey/i.test(raceName);
+    const rowType = isClassification ? 'classification' : (race && race.stageNo != null ? 'stage' : 'oneday');
     return {
-      date, rank, status,
+      date: (cells[iDate] || '').match(/\d{4}-\d{2}-\d{2}/)?.[0] || null,
+      rank, status, rowType,
       raceSlug: race?.raceSlug ?? null, year: race?.year ?? null, stageNo: race?.stageNo ?? null,
-      raceName: raceA.innerText.trim(),
-      distanceKm: distM ? +distM[1] : null,
+      raceName,
+      distanceKm: numCell(cells, iKms),
+      verticalM: numCell(cells, iVert),
     };
-  }).filter(Boolean).filter((r) => r.raceSlug); // keep only rows tied to a real race
+  }).filter(Boolean).filter((r) => r.raceSlug);
 
   const out = { rider: { slug: riderSlug, name: riderName }, results, sourceUrl: location.href, capturedAt: new Date().toISOString() };
   copy(JSON.stringify(out, null, 2));
-  console.log(`PCS rytter: ${riderName || riderSlug} — ${results.length} resultater kopieret. Gem som fixtures/riders/rider-${riderSlug}.json`);
-  console.log('SMOKE-TEST: send de første ~10 resultater til Claude FØR du kører hele startlisten.');
-  console.table(results.slice(0, 12).map((r) => ({ date: r.date, rank: r.rank, status: r.status, race: r.raceSlug, stage: r.stageNo })));
+  const byType = results.reduce((a, r) => (a[r.rowType] = (a[r.rowType] || 0) + 1, a), {});
+  console.log(`PCS rytter: ${riderName} (${riderSlug}) — ${results.length} rækker. Typer: ${JSON.stringify(byType)}. Gem som fixtures/riders/rider-${riderSlug}.json`);
+  console.log('SMOKE-TEST: send de første ~12 rækker + typer til Claude FØR du kører hele startlisten.');
+  console.table(results.slice(0, 12).map((r) => ({ date: r.date, rank: r.rank, st: r.status, type: r.rowType, race: r.raceSlug, stg: r.stageNo, km: r.distanceKm, vert: r.verticalM })));
 })();
