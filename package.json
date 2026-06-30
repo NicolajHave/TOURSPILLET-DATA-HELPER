@@ -17,7 +17,8 @@
     "backtest:captain": "tsx scripts/backtestCaptain.ts",
     "backtest:leverage": "tsx scripts/backtestLeverage.ts",
     "calibrate:ev": "tsx scripts/calibrateEV.ts",
-    "build:web": "tsx scripts/buildWeb.ts"
+    "build:web": "tsx scripts/buildWeb.ts",
+    "coverage:riders": "tsx scripts/riderCoverage.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
