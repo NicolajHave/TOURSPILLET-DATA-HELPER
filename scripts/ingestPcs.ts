@@ -32,6 +32,10 @@ let resultsCount = 0;
 
 for (const file of files) {
   const raw = JSON.parse(readFileSync(join(dir, file), 'utf-8'));
+  // GUARD: only race files (stage-results or stages-overview) belong here. Rider
+  // season files (fixtures/riders/) have `rider`/no `race` and must not be
+  // mis-ingested as a race.
+  if (!raw.race) { console.log(`  skip (ikke en race-fil): ${file}`); continue; }
   const raceId = `${raw.race.slug}-${raw.race.year}`;
 
   await db.from('races').upsert({
