@@ -69,9 +69,15 @@
   }).filter(Boolean).filter((r) => r.raceSlug);
 
   const out = { rider: { slug: riderSlug, name: riderName }, results, sourceUrl: location.href, capturedAt: new Date().toISOString() };
-  copy(JSON.stringify(out, null, 2));
+  // Batch-effektivt: trigger en fil-download med korrekt navn (ingen Notesblok ×191).
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `rider-${riderSlug}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   const byType = results.reduce((a, r) => (a[r.rowType] = (a[r.rowType] || 0) + 1, a), {});
-  console.log(`PCS rytter: ${riderName} (${riderSlug}) — ${results.length} rækker. Typer: ${JSON.stringify(byType)}. Gem som fixtures/riders/rider-${riderSlug}.json`);
+  console.log(`PCS rytter: ${riderName} (${riderSlug}) — ${results.length} rækker. Typer: ${JSON.stringify(byType)}. Downloadet som rider-${riderSlug}.json → flyt til fixtures/riders/ og upload.`);
   console.log('SMOKE-TEST: send de første ~12 rækker + typer til Claude FØR du kører hele startlisten.');
   console.table(results.slice(0, 12).map((r) => ({ date: r.date, rank: r.rank, st: r.status, type: r.rowType, race: r.raceSlug, stg: r.stageNo, km: r.distanceKm, vert: r.verticalM })));
 })();
