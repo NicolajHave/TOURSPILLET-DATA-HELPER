@@ -22,8 +22,8 @@
   // find the results table: a table.basic whose header has Date + Race (+ Result)
   const tables = [...document.querySelectorAll('table')];
   const headerText = (t) => (t.querySelector('tr')?.innerText || '').toLowerCase();
-  const table = tables.find((t) => /date/.test(headerText(t)) && /race/.test(headerText(t)) && t.querySelector('a[href*="/race/"]'))
-    || tables.find((t) => t.querySelector('a[href*="/race/"]'));
+  const table = tables.find((t) => /date/.test(headerText(t)) && /race/.test(headerText(t)) && t.querySelector('a[href*="race/"]'))
+    || tables.find((t) => t.querySelector('a[href*="race/"]'));
   if (!table) { console.warn('Ingen resultattabel fundet — kopiér Inspect af tabellen til Claude.'); return; }
 
   // map columns by header label
@@ -40,15 +40,19 @@
 
   const rows = [...table.querySelectorAll('tbody tr')].length ? [...table.querySelectorAll('tbody tr')] : [...table.querySelectorAll('tr')].slice(1);
   const results = rows.map((tr) => {
-    const raceA = tr.querySelector('a[href*="/race/"]');
+    const raceA = tr.querySelector('a[href*="race/"]');
     if (!raceA) return null;
     const cells = [...tr.children].map((c) => (c.innerText || '').trim());
-    const race = parseRace(raceA.getAttribute('href') || '');
+    const href = raceA.getAttribute('href') || '';
+    const race = parseRace(href);
     const raceName = raceA.innerText.trim();
     const resultCell = cells[iResult] || '';
     let rank = /^\d+$/.test(resultCell) ? +resultCell : null;
     let status = rank != null ? 'OK' : (STATUS.test(resultCell) ? resultCell.toUpperCase() : 'NR');
-    const isClassification = /classification|klassement|\bgc\b|jersey/i.test(raceName);
+    // classification = a standings row (KOM/points/GC/youth), not a stage result.
+    // Detect from the href suffix (most reliable) OR the link text.
+    const isClassification = /\/(kom|points|gc|youth|general|teams|sprint)(\/|$|\?)/i.test(href)
+      || /classification|klassement|jersey/i.test(raceName);
     const rowType = isClassification ? 'classification' : (race && race.stageNo != null ? 'stage' : 'oneday');
     return {
       date: (cells[iDate] || '').match(/\d{4}-\d{2}-\d{2}/)?.[0] || null,
