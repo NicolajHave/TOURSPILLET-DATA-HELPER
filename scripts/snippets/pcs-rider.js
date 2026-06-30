@@ -35,7 +35,10 @@
     const m = (href || '').match(/race\/([^/?#]+)\/(\d{4})(?:\/stage-(\d+)|\/(prologue))?/);
     return m ? { raceSlug: m[1], year: +m[2], stageNo: m[4] ? 0 : (m[3] ? +m[3] : null) } : null;
   };
-  const numCell = (cells, i) => { const m = (cells[i] || '').replace(/[.,]/g, '').match(/\d+/); return m ? +m[0] : null; };
+  // KMs use a DOT decimal (150.7) — keep it; strip only thousands commas.
+  const kmCell = (cells, i) => { const m = (cells[i] || '').replace(/,/g, '').match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : null; };
+  // Vert. mtr is integer metres — strip any thousands separator (dot/comma/space).
+  const vertCell = (cells, i) => { const m = (cells[i] || '').replace(/[.,\s]/g, '').match(/\d+/); return m ? parseInt(m[0], 10) : null; };
   const STATUS = /^(DNF|DNS|DNQ|OTL|DSQ|NR|DF|HD)$/i;
 
   const rows = [...table.querySelectorAll('tbody tr')].length ? [...table.querySelectorAll('tbody tr')] : [...table.querySelectorAll('tr')].slice(1);
@@ -54,13 +57,14 @@
     const isClassification = /\/(kom|points|gc|youth|general|teams|sprint)(\/|$|\?)/i.test(href)
       || /classification|klassement|jersey/i.test(raceName);
     const rowType = isClassification ? 'classification' : (race && race.stageNo != null ? 'stage' : 'oneday');
+    const discipline = /\bTTT\b/i.test(raceName) ? 'ttt' : (/\bITT\b|time trial|prologue/i.test(raceName) ? 'itt' : 'road');
     return {
       date: (cells[iDate] || '').match(/\d{4}-\d{2}-\d{2}/)?.[0] || null,
-      rank, status, rowType,
+      rank, status, rowType, discipline,
       raceSlug: race?.raceSlug ?? null, year: race?.year ?? null, stageNo: race?.stageNo ?? null,
       raceName,
-      distanceKm: numCell(cells, iKms),
-      verticalM: numCell(cells, iVert),
+      distanceKm: kmCell(cells, iKms),
+      verticalM: vertCell(cells, iVert),
     };
   }).filter(Boolean).filter((r) => r.raceSlug);
 
