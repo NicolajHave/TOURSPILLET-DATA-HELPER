@@ -13,7 +13,7 @@
 import { fileURLToPath } from 'node:url';
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { form, profileFit, type Result } from '../src/lib/form';
-import { type StageProfile } from '../src/lib/stageProfile';
+import { classifyStage, type StageProfile } from '../src/lib/stageProfile';
 import { loadRace } from '../src/lib/raceData';
 import { nameKey, mean } from '../src/lib/valueFormula';
 import { coeffsFromArtifact } from '../src/lib/forecaster';
@@ -56,12 +56,38 @@ const riders = [...history.entries()].map(([key, results]) => {
 });
 
 const coeffs = coeffsFromArtifact(JSON.parse(readFileSync(f('artifacts/value-formula.json'), 'utf8')));
+
+// TdF 2026 ROUTE (prediction target, GUARDRAIL: stages only, never results) —
+// scraped overview from PCS. When present, the surface auto-fills tomorrow's
+// profile + the transfer horizon (E+1..E+3) from the stage number.
+let route: Array<{ stageNo: number; date: string | null; profile: StageProfile }> | null = null;
+try {
+  const rt = JSON.parse(readFileSync(f('fixtures/pcs/tour-de-france-2026-stages.json'), 'utf8'));
+  route = rt.stages
+    .filter((s: any) => s.stageNo != null)
+    .sort((a: any, b: any) => a.stageNo - b.stageNo)
+    .map((s: any) => {
+      const [dd, mm] = (s.date ?? '').split(/[/.]/);
+      return {
+        stageNo: s.stageNo,
+        date: dd && mm ? `2026-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}` : null,
+        profile: classifyStage({
+          distanceKm: s.distanceKm ?? 0, verticalM: s.verticalM ?? 0,
+          profileScore: s.profileScore ?? undefined, parcoursType: s.parcoursType ?? undefined,
+          summitFinish: s.summitFinish ?? undefined, discipline: s.discipline ?? 'road',
+        }),
+      };
+    });
+  console.log(`route: ${route!.length} TdF 2026-etaper klassificeret (auto-horisont aktiv).`);
+} catch { console.log('route: fixtures/pcs/tour-de-france-2026-stages.json mangler — horisont-profiler forbliver manuelle.'); }
+
 const out = {
   generatedAt: asOf.toISOString().slice(0, 10),
   races,
   stageCount: stages.length,
   evBeta: EV_BETA,
   valueCoeffs: coeffs,
+  route,
   riders,
 };
 mkdirSync(f('public/data'), { recursive: true });

@@ -87,6 +87,9 @@
   <h2><span class="step">1</span>Snapshot & etape</h2>
   <textarea id="snap" placeholder="Indsæt rå JSON fra GET /api/games/{gameId}/players …"></textarea>
   <div class="controls">
+    <label id="stagewrap" style="display:none">TdF-etape
+      <select id="stagepick"><option value="">manuel</option></select>
+    </label>
     <label>Etapeprofil
       <select id="profile">
         <option value="sprint">sprint</option>
@@ -179,6 +182,25 @@ const saveExcluded = (s) => localStorage.setItem(EXKEY, JSON.stringify([...s]));
 fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
   SNAP = s; SNAP.byKey = {}; for (const r of s.riders) SNAP.byKey[r.key] = r;
   $('meta').textContent = `form: ${s.riders.length} ryttere · ${s.races.join(' + ')} · as-of ${s.generatedAt}`;
+  // route present -> stage picker that auto-fills profile + transfer horizon
+  if (s.route && s.route.length) {
+    const sp = $('stagepick');
+    s.route.forEach((st) => {
+      const o = document.createElement('option');
+      o.value = String(st.stageNo);
+      o.textContent = `E${st.stageNo}${st.date ? ' · ' + st.date.slice(5) : ''} · ${st.profile}`;
+      sp.appendChild(o);
+    });
+    $('stagewrap').style.display = '';
+    sp.onchange = () => {
+      const idx = s.route.findIndex((st) => String(st.stageNo) === sp.value);
+      if (idx < 0) return; // "manuel" valgt
+      const prof = (o) => (s.route[idx + o] ? s.route[idx + o].profile : '');
+      $('profile').value = prof(0);
+      $('h1').value = prof(0); $('h2').value = prof(1); $('h3').value = prof(2);
+      if ($('snap').value.trim()) compute();
+    };
+  }
 }).catch(() => { $('meta').textContent = 'form-snapshot mangler (kør build:web)'; });
 
 function compute() {
