@@ -115,7 +115,28 @@
 </div>
 
 <div class="card">
-  <h2><span class="step">3</span>Log beslutning + udfald <span class="muted" style="text-transform:none">(til leverage-måling)</span></h2>
+  <h2><span class="step">3</span>Transfer-evaluator <span class="muted" style="text-transform:none">(sælg X / køb Y over 1–3 etaper)</span></h2>
+  <p class="muted">Vælg et kandidatskifte og profilerne for de næste etaper. NetGain =
+  diskonteret Σ(E[Δ_Y]−E[Δ_X]) − 1 % købsgebyr + 0,5 %/runde rente på frigjort kontant.
+  Svaret gives som <em>break-even-placering</em>: hvad Y mindst skal levere, før skiftet er
+  positivt. Konfidens falder pr. etape frem — flagede horisonter er støj.</p>
+  <div class="controls">
+    <label>Sælg <input id="sellX" list="riderlist" placeholder="rytter på mit hold" style="width:180px" /></label>
+    <label>Køb <input id="buyY" list="riderlist" placeholder="kandidat" style="width:180px" /></label>
+    <datalist id="riderlist"></datalist>
+  </div>
+  <div class="controls">
+    <label>E+1 <select id="h1" class="hprof"><option>sprint</option><option>punch</option><option>break</option><option selected>mountain</option><option>itt</option></select></label>
+    <label>E+2 <select id="h2" class="hprof"><option value="">—</option><option>sprint</option><option>punch</option><option>break</option><option selected>mountain</option><option>itt</option></select></label>
+    <label>E+3 <select id="h3" class="hprof"><option value="" selected>—</option><option>sprint</option><option>punch</option><option>break</option><option>mountain</option><option>itt</option></select></label>
+    <button id="evalgo">Evaluér skifte</button>
+    <span id="tstatus" class="muted"></span>
+  </div>
+  <div id="tout"></div>
+</div>
+
+<div class="card">
+  <h2><span class="step">4</span>Log beslutning + udfald <span class="muted" style="text-transform:none">(til leverage-måling)</span></h2>
   <p class="muted">Gemmer hele beslutnings-snapshottet — hver kandidats ejerandel PÅ
   BESLUTNINGSTIDSPUNKTET, modellens anbefaling, dine ⚑-udelukkelser og dit valgte
   hold/kaptajn — så kontrærhed kan måles bagefter. Eksportér jævnligt som JSON;
@@ -171,7 +192,7 @@ function compute() {
     const p = persons[i.personId] || {}; const name = `${p.firstName || ''} ${p.lastName || ''}`.trim();
     const m = SNAP.byKey[nameKey(name)];
     const strength = m ? (m.form + beta * (m.fit[profile] || 0)) : 0;
-    return { name, team: teams[i.teamId]?.name || '', own: i.popularity, price: i.price, strength, hasForm: !!m, ex: excluded.has(name) };
+    return { name, team: teams[i.teamId]?.name || '', own: i.popularity, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
   });
   rows.sort((a, b) => b.strength - a.strength);
   rows.forEach((r, idx) => {
@@ -222,8 +243,89 @@ function compute() {
     profile, lowConfidence: lowConf, modelCaptain: captain ? captain.name : null, excluded: exNames,
     candidates: rows.map((r) => ({ name: r.name, own: +(r.own).toFixed(4), ev: Math.round(r.ev), lev: r.lev === -Infinity ? null : Math.round(r.lev), hasForm: r.hasForm, excluded: r.ex })),
   };
+  // field data + datalist for the transfer evaluator
+  window._field = rows;
+  const dl = $('riderlist'); dl.innerHTML = '';
+  [...rows].sort((a, b) => a.name.localeCompare(b.name, 'da')).forEach((r) => {
+    const o = document.createElement('option'); o.value = r.name; dl.appendChild(o);
+  });
 }
 $('go').onclick = compute;
+
+// ---- transfer evaluator (mirrors src/lib/transferEvaluator.ts exactly) ----
+const RS = { transferFee: 0.01, interestRate: 0.005 };
+const DECAY = 0.85, LOWCONF = 0.6;
+function rankForValue(target, scale, c) {
+  const prem = target - c.baseline[scale];
+  if (prem <= 0) return Infinity;
+  if (prem >= c.premiumRank1[scale]) return 1;
+  return 1 + Math.log(c.premiumRank1[scale] / prem) / c.decayK;
+}
+function describeRank(rank) {
+  if (!isFinite(rank)) return 'uopnåeligt ved placering alene (kræver trøje/holdbonus eller billigere indgang)';
+  if (rank <= 1) return 'etapesejr (plads 1) eller bedre';
+  if (rank <= 3) return `podie (≈ plads ${rank.toFixed(1)})`;
+  if (rank <= 10) return `top-10 (≈ plads ${rank.toFixed(1)})`;
+  if (rank <= 25) return `≈ plads ${rank.toFixed(0)}`;
+  return `menig placering (≈ plads ${rank.toFixed(0)}) — let opnåeligt`;
+}
+/** EV for one rider on one profile: rank the whole active field by that profile's
+ *  strength, then value the rider's predicted rank on the value curve. */
+function evOnProfile(rider, profile) {
+  const c = SNAP.valueCoeffs, beta = SNAP.evBeta;
+  const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
+  const mine = s(rider);
+  const rank = 1 + window._field.filter((r) => r !== rider && s(r) > mine).length;
+  return valueOfRank(rank, scaleOf(profile), c);
+}
+function evalTransfer() {
+  if (!window._field) { $('tstatus').textContent = 'kør "Beregn" først'; return; }
+  const find = (v) => window._field.find((r) => r.name.toLowerCase() === v.trim().toLowerCase());
+  const X = find($('sellX').value), Y = find($('buyY').value);
+  if (!X || !Y) { $('tstatus').textContent = 'vælg både sælg- og køb-rytter fra listen'; return; }
+  if (X === Y) { $('tstatus').textContent = 'X og Y er samme rytter'; return; }
+  const profiles = [$('h1').value, $('h2').value, $('h3').value].filter(Boolean);
+  const c = SNAP.valueCoeffs;
+  const legs = profiles.map((p) => ({ profile: p, evX: evOnProfile(X, p), evY: evOnProfile(Y, p), scale: scaleOf(p) }));
+
+  const fee = Math.round(Y.price * RS.transferFee);
+  const freedCash = X.price - Y.price;
+  let grossDisc = 0, keepDisc = 0, sumDisc = 0, levGross = 0;
+  const horizons = [];
+  legs.forEach((leg, i) => {
+    const w = Math.pow(DECAY, i);
+    grossDisc += w * (leg.evY - leg.evX);
+    keepDisc += w * leg.evX;
+    sumDisc += w;
+    levGross += w * (leg.evY * (1 - Y.own) - leg.evX * (1 - X.own));
+    const H = i + 1;
+    const interestAdj = freedCash * RS.interestRate * H;
+    const netGain = grossDisc - fee + interestAdj;
+    const leverageAdjusted = levGross - fee + interestAdj;
+    const confidence = Math.pow(DECAY, i);
+    const requiredAvgDeltaY = (fee - interestAdj + keepDisc) / sumDisc;
+    const requiredRank = rankForValue(requiredAvgDeltaY, legs[0].scale, c);
+    horizons.push({ H, netGain, leverageAdjusted, confidence, flagged: confidence < LOWCONF, requiredRank, requiredAvgDeltaY });
+  });
+
+  const yFlag = Y.ex ? ' <span class="neg">⚠ Y er ⚑-udelukket på nyheder!</span>' : '';
+  let html = `<p class="muted" style="margin-top:12px">Købsgebyr ${kr(fee)} kr · frigjort kontant ${kr(freedCash)} kr (rente 0,5 %/runde)${yFlag}</p>`;
+  html += '<table><thead><tr><th>H</th><th style="text-align:left">Break-even (hvad Y mindst skal levere i snit/etape)</th><th>netto (kr)</th><th>leverage-just.</th><th>konfidens</th></tr></thead><tbody>';
+  for (const h of horizons) {
+    html += `<tr><td>${h.H}</td><td style="text-align:left">${describeRank(h.requiredRank)}</td>`
+      + `<td class="${h.netGain >= 0 ? 'pos' : 'neg'}">${kr(h.netGain)}</td>`
+      + `<td class="${h.leverageAdjusted >= 0 ? 'pos' : 'neg'}">${kr(h.leverageAdjusted)}</td>`
+      + `<td>${(h.confidence * 100).toFixed(0)}%${h.flagged ? ' ⚠ støj' : ''}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  const best = horizons.filter((h) => !h.flagged).reduce((a, b) => (b.netGain > a.netGain ? b : a), horizons[0]);
+  html += `<p class="capline">Skiftet ${X.name} → <b>${Y.name}</b> er ${best.netGain > 0 ? 'POSITIVT' : 'negativt'} ved H=${best.H}: `
+    + `Y skal i snit levere ${describeRank(best.requiredRank)}.</p>`;
+  $('tout').innerHTML = html;
+  $('tstatus').textContent = `${legs.length} etape(r): ${profiles.join(' → ')}`;
+  window._lastTransfer = { sell: X.name, buy: Y.name, profiles, fee, freedCash, horizons: horizons.map((h) => ({ H: h.H, netGain: Math.round(h.netGain), leverageAdjusted: Math.round(h.leverageAdjusted), confidence: +h.confidence.toFixed(2), requiredRank: isFinite(h.requiredRank) ? +h.requiredRank.toFixed(1) : null })) };
+}
+$('evalgo').onclick = evalTransfer;
 
 // ---- local decision + outcome log (the leverage-measurement record) ----
 const LS = 'paperTrades';
@@ -249,6 +351,7 @@ $('savelog').onclick = () => {
     profile: window._decision.profile, lowConfidence: window._decision.lowConfidence,
     modelCaptain: window._decision.modelCaptain, excluded: window._decision.excluded,
     candidates: window._decision.candidates,
+    transferEval: window._lastTransfer || null,
     myTeam: $('myteam').value, myCaptain: $('mycaptain').value, outcome: '',
   });
   setLogs(logs);
