@@ -3,69 +3,137 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Tourspillet — daglig beslutning (paper-trade)</title>
+<title>Tourspillet — daglig beslutning</title>
 <style>
-  :root { font-family: system-ui, sans-serif; }
-  body { margin: 0; padding: 16px; max-width: 1000px; margin: 0 auto; color: #1a1a1a; }
-  h1 { font-size: 1.2rem; } h2 { font-size: 1rem; margin-top: 1.4rem; }
-  .muted { color: #666; font-size: .85rem; }
-  textarea { width: 100%; height: 90px; font-family: ui-monospace, monospace; font-size: .8rem; }
-  select, button { font-size: .9rem; padding: 4px 8px; }
-  table { border-collapse: collapse; width: 100%; font-size: .85rem; margin-top: 8px; }
-  th, td { border-bottom: 1px solid #eee; padding: 4px 6px; text-align: right; }
-  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
-  tr.cap { background: #fffbe6; font-weight: 600; }
-  .pos { color: #137333; } .neg { color: #c5221f; }
-  .warn { background: #fce8e6; padding: 6px 10px; border-radius: 4px; font-size: .85rem; }
-  .pill { background:#eef; border-radius: 10px; padding: 1px 8px; font-size:.75rem; }
+  :root {
+    --jaune: #FFD520;          /* maillot jaune */
+    --jaune-soft: #FFF6D0;
+    --ink: #16150f;
+    --paper: #faf9f5;
+    --card: #ffffff;
+    --line: #eae7dd;
+    --muted: #7a7668;
+    --green: #1e7d3c;
+    --red: #c0261d;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); }
+
+  .masthead {
+    background: var(--jaune);
+    border-bottom: 4px solid var(--ink);
+    padding: 18px 20px 14px;
+  }
+  .masthead-inner { max-width: 1000px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+  .masthead h1 { margin: 0; font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; text-transform: uppercase; }
+  .masthead h1 .bike { font-weight: 400; }
+  .meta-pill { background: var(--ink); color: var(--jaune); border-radius: 999px; padding: 3px 12px; font-size: .74rem; font-weight: 600; }
+
+  main { max-width: 1000px; margin: 0 auto; padding: 18px 16px 60px; }
+  .lede { color: var(--muted); font-size: .85rem; line-height: 1.5; margin: 10px 2px 18px; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(22,21,15,.05); }
+  .card h2 { margin: 0 0 10px; font-size: .95rem; text-transform: uppercase; letter-spacing: .04em; }
+  .card h2 .step { display: inline-block; background: var(--jaune); border: 1.5px solid var(--ink); border-radius: 999px; width: 22px; height: 22px; line-height: 20px; text-align: center; font-size: .8rem; margin-right: 8px; }
+
+  textarea { width: 100%; height: 88px; font-family: ui-monospace, Consolas, monospace; font-size: .78rem; border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: #fffdf6; }
+  textarea:focus, select:focus, input:focus { outline: 2px solid var(--jaune); border-color: var(--ink); }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+  select, input[type=text], input:not([type]) { font-size: .88rem; padding: 6px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  button { font-size: .88rem; font-weight: 700; padding: 7px 16px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--jaune); color: var(--ink); cursor: pointer; }
+  button:hover { background: var(--ink); color: var(--jaune); }
+  button.ghost { background: #fff; font-weight: 600; }
+  .muted { color: var(--muted); font-size: .82rem; }
+
+  .warn { background: #fdeceb; border-left: 4px solid var(--red); padding: 8px 12px; border-radius: 6px; font-size: .85rem; margin-top: 12px; }
+
+  table { border-collapse: collapse; width: 100%; font-size: .84rem; margin-top: 10px; }
+  th { text-align: right; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 2px solid var(--ink); padding: 6px; }
+  td { border-bottom: 1px solid var(--line); padding: 6px; text-align: right; white-space: nowrap; }
+  th:nth-child(2), td:nth-child(2), th:nth-child(3), td:nth-child(3) { text-align: left; }
+  tbody tr:hover { background: var(--jaune-soft); }
+  tr.cap { background: var(--jaune-soft); font-weight: 700; box-shadow: inset 3px 0 0 var(--jaune); }
+  tr.ex td { color: #b6b2a4; text-decoration: line-through; }
+  tr.ex td:last-child { text-decoration: none; }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+  .ownbar { display: inline-block; min-width: 44px; padding: 1px 6px; border-radius: 4px; background: linear-gradient(90deg, var(--jaune) var(--w, 0%), #f1efe6 var(--w, 0%)); font-variant-numeric: tabular-nums; }
+  .flagbtn { border: none; background: none; cursor: pointer; font-size: .95rem; padding: 0 4px; opacity: .45; }
+  .flagbtn:hover { opacity: 1; background: none; color: inherit; }
+  tr.ex .flagbtn { opacity: 1; }
+
+  .capline { margin: 10px 2px 0; font-size: .95rem; }
+  .capline b { background: var(--jaune); padding: 1px 8px; border-radius: 6px; border: 1px solid var(--ink); }
+
+  footer { max-width: 1000px; margin: 0 auto; padding: 0 16px 30px; color: var(--muted); font-size: .75rem; }
 </style>
 </head>
 <body>
-<h1>Tourspillet — daglig beslutning <span class="pill" id="meta">indlæser…</span></h1>
-<p class="muted">
-  Paper-trade-flade til leverage LIVE under Touren. Indsæt dagens holdet-snapshot
-  (rå <code>/players</code>-JSON), vælg morgendagens etapeprofil → rangering efter
-  leverage (expectedDelta × (1−ejerandel), EV-gulv) + anbefalet kaptajn. Log
-  faktisk udfald bagefter. Model: <code>form + β·profileFit</code> → værdikurve.
-  expectedDelta er et model-estimat (optimistisk i toppen) — brug til *rangering*.
+<div class="masthead"><div class="masthead-inner">
+  <h1><span class="bike">🚴</span> Tourspillet <span style="font-weight:400">·</span> daglig beslutning</h1>
+  <span class="meta-pill" id="meta">indlæser…</span>
+</div></div>
+
+<main>
+<p class="lede">
+  Paper-trade-flade til leverage LIVE under Touren. Indsæt dagens holdet-snapshot,
+  vælg morgendagens etapeprofil → rangering efter leverage (expectedDelta × (1−ejerandel),
+  EV-gulv) + anbefalet kaptajn. Brug ⚑ til at udelukke ryttere på dagens nyheder
+  (styrt, sygdom, udgået efter snapshot). Log beslutningen — og udfaldet bagefter.
+  expectedDelta er et model-estimat; brug det til <em>rangering</em>, ikke som facit.
 </p>
 
-<h2>1) Indsæt holdet-snapshot</h2>
-<textarea id="snap" placeholder="Indsæt rå JSON fra GET /api/games/{gameId}/players …"></textarea>
-<div style="margin-top:8px">
-  Etapeprofil:
-  <select id="profile">
-    <option value="sprint">sprint</option>
-    <option value="punch">punch</option>
-    <option value="break">break</option>
-    <option value="mountain" selected>mountain</option>
-    <option value="itt">itt</option>
-  </select>
-  Sortér:
-  <select id="sort"><option value="lev">leverage</option><option value="ev">expectedDelta</option></select>
-  <button id="go">Beregn</button>
-  <span id="status" class="muted"></span>
+<div class="card">
+  <h2><span class="step">1</span>Snapshot & etape</h2>
+  <textarea id="snap" placeholder="Indsæt rå JSON fra GET /api/games/{gameId}/players …"></textarea>
+  <div class="controls">
+    <label>Etapeprofil
+      <select id="profile">
+        <option value="sprint">sprint</option>
+        <option value="punch">punch</option>
+        <option value="break">break</option>
+        <option value="mountain" selected>mountain</option>
+        <option value="itt">itt</option>
+      </select>
+    </label>
+    <label>Sortér
+      <select id="sort"><option value="lev">leverage</option><option value="ev">expectedDelta</option></select>
+    </label>
+    <button id="go">Beregn</button>
+    <span id="status" class="muted"></span>
+  </div>
+  <div id="breakwarn"></div>
 </div>
-<div id="breakwarn"></div>
 
-<h2>2) Kandidater</h2>
-<table id="tbl"><thead><tr>
-  <th>#</th><th>Rytter</th><th>Hold</th><th>Ejer%</th><th>Pris</th><th>expΔ (kr)</th><th>leverage</th>
-</tr></thead><tbody></tbody></table>
-<p class="muted" id="capline"></p>
+<div class="card">
+  <h2><span class="step">2</span>Kandidater</h2>
+  <table id="tbl"><thead><tr>
+    <th>#</th><th>Rytter</th><th>Hold</th><th>Ejer%</th><th>Pris</th><th>expΔ (kr)</th><th>leverage</th><th>⚑</th>
+  </tr></thead><tbody></tbody></table>
+  <p class="capline" id="capline"></p>
+  <p class="muted" id="exline"></p>
+</div>
 
-<h2>3) Log beslutning + udfald (til leverage-måling)</h2>
-<p class="muted">Gemmer hele beslutnings-snapshottet — hver kandidats ejerandel PÅ
-BESLUTNINGSTIDSPUNKTET, modellens anbefaling, og dit valgte hold/kaptajn — så du
-bagefter kan måle om leverage virkede (kontrærhed kræver ejerandel-ved-beslutning).
-Eksportér jævnligt som JSON; ryddet cache sletter ellers localStorage.</p>
-<input id="logstage" placeholder="etape (fx 'TdF 2026 E5')" style="width:160px" />
-<input id="myteam" placeholder="mit hold (8 ryttere)" style="width:300px" />
-<input id="mycaptain" placeholder="min kaptajn" style="width:150px" />
-<button id="savelog">Gem beslutning (med ejerandele)</button>
-<button id="exportlog">Eksportér alle som JSON (kopiér)</button>
-<span id="logstatus" class="muted"></span>
-<table id="logtbl"><thead><tr><th>Dato</th><th>Etape</th><th>Profil</th><th>Model-kaptajn</th><th>Mit hold</th><th>Min kaptajn</th><th>#kand.</th><th>Faktisk udfald (redigér efter etapen)</th></tr></thead><tbody></tbody></table>
+<div class="card">
+  <h2><span class="step">3</span>Log beslutning + udfald <span class="muted" style="text-transform:none">(til leverage-måling)</span></h2>
+  <p class="muted">Gemmer hele beslutnings-snapshottet — hver kandidats ejerandel PÅ
+  BESLUTNINGSTIDSPUNKTET, modellens anbefaling, dine ⚑-udelukkelser og dit valgte
+  hold/kaptajn — så kontrærhed kan måles bagefter. Eksportér jævnligt som JSON;
+  ryddet cache sletter ellers localStorage.</p>
+  <div class="controls">
+    <input id="logstage" placeholder="etape (fx 'TdF 2026 E5')" style="width:170px" />
+    <input id="myteam" placeholder="mit hold (8 ryttere)" style="width:290px" />
+    <input id="mycaptain" placeholder="min kaptajn" style="width:150px" />
+    <button id="savelog">Gem beslutning</button>
+    <button id="exportlog" class="ghost">Eksportér JSON</button>
+    <span id="logstatus" class="muted"></span>
+  </div>
+  <table id="logtbl"><thead><tr><th>Dato</th><th>Etape</th><th>Profil</th><th>Model-kaptajn</th><th>Mit hold</th><th>Min kaptajn</th><th>#kand.</th><th>Faktisk udfald (redigér efter etapen)</th></tr></thead><tbody></tbody></table>
+</div>
+</main>
+
+<footer>Model: form + β·profileFit → Plackett-Luce → værdikurve (Dauphiné-inferred).
+Kalibreret TdF 2025, holdout Vuelta 2025. Leverage valideres LIVE — det er formålet med loggen.</footer>
 
 <script>
 let SNAP = null;
@@ -82,9 +150,14 @@ function valueOfRank(rank, scale, c) {
 const scaleOf = (p) => (p === 'mountain' || p === 'break') ? 'mountain' : 'flat';
 const kr = (n) => Math.round(n).toLocaleString('da-DK');
 
+// ---- nyheds-/styrtflag (manuel fundamental-input, persisteret) ----
+const EXKEY = 'excludedRiders';
+const getExcluded = () => new Set(JSON.parse(localStorage.getItem(EXKEY) || '[]'));
+const saveExcluded = (s) => localStorage.setItem(EXKEY, JSON.stringify([...s]));
+
 fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
   SNAP = s; SNAP.byKey = {}; for (const r of s.riders) SNAP.byKey[r.key] = r;
-  $('meta').textContent = `form: ${s.riders.length} ryttere · ${s.races.join('+')} · as-of ${s.generatedAt}`;
+  $('meta').textContent = `form: ${s.riders.length} ryttere · ${s.races.join(' + ')} · as-of ${s.generatedAt}`;
 }).catch(() => { $('meta').textContent = 'form-snapshot mangler (kør build:web)'; });
 
 function compute() {
@@ -92,12 +165,13 @@ function compute() {
   let raw; try { raw = JSON.parse($('snap').value); } catch { $('status').textContent = 'ugyldig JSON'; return; }
   const persons = raw._embedded?.persons || {}, teams = raw._embedded?.teams || {};
   const profile = $('profile').value, scale = scaleOf(profile), c = SNAP.valueCoeffs, beta = SNAP.evBeta;
+  const excluded = getExcluded();
 
   let rows = (raw.items || []).filter((i) => !i.isOut).map((i) => {
     const p = persons[i.personId] || {}; const name = `${p.firstName || ''} ${p.lastName || ''}`.trim();
     const m = SNAP.byKey[nameKey(name)];
     const strength = m ? (m.form + beta * (m.fit[profile] || 0)) : 0;
-    return { name, team: teams[i.teamId]?.name || '', own: i.popularity, price: i.price, strength, hasForm: !!m };
+    return { name, team: teams[i.teamId]?.name || '', own: i.popularity, price: i.price, strength, hasForm: !!m, ex: excluded.has(name) };
   });
   rows.sort((a, b) => b.strength - a.strength);
   rows.forEach((r, idx) => {
@@ -105,31 +179,48 @@ function compute() {
     r.ev = valueOfRank(r.predRank, scale, c);
     r.lev = r.ev > 0 ? r.ev * (1 - r.own) : -Infinity;
   });
-  const captain = rows.reduce((a, b) => (b.ev > a.ev ? b : a), rows[0]);
+  const eligible = rows.filter((r) => !r.ex);
+  const captain = eligible.length ? eligible.reduce((a, b) => (b.ev > a.ev ? b : a), eligible[0]) : null;
   const sortKey = $('sort').value;
   const view = [...rows].sort((a, b) => (b[sortKey] === -Infinity ? -1e18 : b[sortKey]) - (a[sortKey] === -Infinity ? -1e18 : a[sortKey]));
 
   const tb = $('tbl').querySelector('tbody'); tb.innerHTML = '';
   view.slice(0, 40).forEach((r, i) => {
-    const tr = document.createElement('tr'); if (r === captain) tr.className = 'cap';
+    const tr = document.createElement('tr');
+    if (r === captain) tr.className = 'cap';
+    if (r.ex) tr.className = 'ex';
     const lev = r.lev === -Infinity ? '–' : kr(r.lev);
-    tr.innerHTML = `<td>${i + 1}</td><td>${r.name}${r === captain ? ' 👑' : ''}${r.hasForm ? '' : ' <span class="muted">(ingen form)</span>'}</td>`
-      + `<td>${r.team}</td><td>${(r.own * 100).toFixed(0)}%</td><td>${kr(r.price)}</td>`
-      + `<td class="${r.ev >= 0 ? 'pos' : 'neg'}">${kr(r.ev)}</td><td>${lev}</td>`;
+    tr.innerHTML = `<td>${i + 1}</td>`
+      + `<td>${r.name}${r === captain ? ' 👑' : ''}${r.hasForm ? '' : ' <span class="muted">(ingen form)</span>'}</td>`
+      + `<td>${r.team}</td>`
+      + `<td><span class="ownbar" style="--w:${Math.min(100, r.own * 100).toFixed(0)}%">${(r.own * 100).toFixed(0)}%</span></td>`
+      + `<td>${kr(r.price)}</td>`
+      + `<td class="${r.ev >= 0 ? 'pos' : 'neg'}">${kr(r.ev)}</td><td>${lev}</td>`
+      + `<td><button class="flagbtn" data-name="${r.name.replace(/"/g, '&quot;')}" title="${r.ex ? 'fjern nyhedsflag' : 'udeluk (styrt/sygdom/nyhed)'}">${r.ex ? '⛔' : '⚑'}</button></td>`;
     tb.appendChild(tr);
   });
+  tb.querySelectorAll('.flagbtn').forEach((btn) => {
+    btn.onclick = () => {
+      const s = getExcluded(); const n = btn.dataset.name;
+      s.has(n) ? s.delete(n) : s.add(n); saveExcluded(s); compute();
+    };
+  });
+
   const lowConf = profile === 'break' || profile === 'itt';
-  $('capline').innerHTML = `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr, ejer ${(captain.own * 100).toFixed(0)}%).`
-    + (lowConf ? ' <b class="neg">⚠ LAV TILLID</b>' : '');
+  $('capline').innerHTML = captain
+    ? `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr · ejer ${(captain.own * 100).toFixed(0)}%)`
+      + (lowConf ? ' <span class="neg" style="font-weight:700">⚠ LAV TILLID</span>' : '')
+    : 'Ingen kvalificeret kaptajn (alle udelukket?)';
   $('breakwarn').innerHTML = profile === 'break'
     ? '<p class="warn">⚠ LAV TILLID (break): modellen er svag her (recall 0,20 — kaptajn er nær gæt). Stol ikke blindt på anbefalingen.</p>'
     : profile === 'itt'
     ? '<p class="warn">⚠ LAV TILLID (ITT): tynd profil-historik for tempo. Anbefalingen er usikker.</p>' : '';
-  $('status').textContent = `${rows.length} aktive ryttere · profil ${profile}`;
-  // capture the full decision snapshot for the leverage-measurement log
+  const exNames = rows.filter((r) => r.ex).map((r) => r.name);
+  $('exline').textContent = exNames.length ? `⚑ udelukket på nyheder: ${exNames.join(', ')} (klik ⛔ for at fortryde)` : '';
+  $('status').textContent = `${rows.length} aktive ryttere · profil ${profile}` + (exNames.length ? ` · ${exNames.length} udelukket` : '');
   window._decision = {
-    profile, lowConfidence: lowConf, modelCaptain: captain.name,
-    candidates: rows.map((r) => ({ name: r.name, own: +(r.own).toFixed(4), ev: Math.round(r.ev), lev: r.lev === -Infinity ? null : Math.round(r.lev), hasForm: r.hasForm })),
+    profile, lowConfidence: lowConf, modelCaptain: captain ? captain.name : null, excluded: exNames,
+    candidates: rows.map((r) => ({ name: r.name, own: +(r.own).toFixed(4), ev: Math.round(r.ev), lev: r.lev === -Infinity ? null : Math.round(r.lev), hasForm: r.hasForm, excluded: r.ex })),
   };
 }
 $('go').onclick = compute;
@@ -156,7 +247,8 @@ $('savelog').onclick = () => {
   logs.push({
     savedAt: new Date().toISOString().slice(0, 10), stage: $('logstage').value,
     profile: window._decision.profile, lowConfidence: window._decision.lowConfidence,
-    modelCaptain: window._decision.modelCaptain, candidates: window._decision.candidates,
+    modelCaptain: window._decision.modelCaptain, excluded: window._decision.excluded,
+    candidates: window._decision.candidates,
     myTeam: $('myteam').value, myCaptain: $('mycaptain').value, outcome: '',
   });
   setLogs(logs);
