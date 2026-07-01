@@ -139,7 +139,21 @@
 </div>
 
 <div class="card">
-  <h2><span class="step">4</span>Log beslutning + udfald <span class="muted" style="text-transform:none">(til leverage-måling)</span></h2>
+  <h2><span class="step">4</span>Hold-rådgiver <span class="muted" style="text-transform:none">(bedste skifte fra DIT hold — shortlist, ikke orakel)</span></h2>
+  <p class="muted">Indtast dine 8 ryttere + bank. Alle lovlige skifter evalueres over
+  horisonten fra trin 3 (max 2 pr. hold, køb ≤ salgspris + bank, ⚑-flaggede kan ikke
+  købes) og rangeres efter NetGain. Anbefalinger på break/ITT er lav-tillid — du beslutter.</p>
+  <div class="controls">
+    <input id="advteam" list="riderlist" placeholder="mit hold: 8 navne, komma-adskilt" style="width:540px" />
+    <label>Bank (kr) <input id="advbank" placeholder="0" style="width:110px" /></label>
+    <button id="advgo">Find bedste skifter</button>
+    <span id="advstatus" class="muted"></span>
+  </div>
+  <div id="advout"></div>
+</div>
+
+<div class="card">
+  <h2><span class="step">5</span>Log beslutning + udfald <span class="muted" style="text-transform:none">(til leverage-måling)</span></h2>
   <p class="muted">Gemmer hele beslutnings-snapshottet — hver kandidats ejerandel PÅ
   BESLUTNINGSTIDSPUNKTET, modellens anbefaling, dine ⚑-udelukkelser og dit valgte
   hold/kaptajn — så kontrærhed kan måles bagefter. Eksportér jævnligt som JSON;
@@ -292,24 +306,24 @@ function describeRank(rank) {
   return `menig placering (≈ plads ${rank.toFixed(0)}) — let opnåeligt`;
 }
 /** EV for one rider on one profile: rank the whole active field by that profile's
- *  strength, then value the rider's predicted rank on the value curve. */
+ *  strength, then value the rider's predicted rank on the value curve.
+ *  (memo-cache used by the squad advisor's 1000+ evaluations) */
+let _evCache = null;
 function evOnProfile(rider, profile) {
+  const ck = _evCache && rider.name + '|' + profile;
+  if (_evCache && _evCache.has(ck)) return _evCache.get(ck);
   const c = SNAP.valueCoeffs, beta = SNAP.evBeta;
   const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
   const mine = s(rider);
   const rank = 1 + window._field.filter((r) => r !== rider && s(r) > mine).length;
-  return valueOfRank(rank, scaleOf(profile), c);
+  const ev = valueOfRank(rank, scaleOf(profile), c);
+  if (_evCache) _evCache.set(ck, ev);
+  return ev;
 }
-function evalTransfer() {
-  if (!window._field) { $('tstatus').textContent = 'kør "Beregn" først'; return; }
-  const find = (v) => window._field.find((r) => r.name.toLowerCase() === v.trim().toLowerCase());
-  const X = find($('sellX').value), Y = find($('buyY').value);
-  if (!X || !Y) { $('tstatus').textContent = 'vælg både sælg- og køb-rytter fra listen'; return; }
-  if (X === Y) { $('tstatus').textContent = 'X og Y er samme rytter'; return; }
-  const profiles = [$('h1').value, $('h2').value, $('h3').value].filter(Boolean);
+/** Core swap math — mirrors src/lib/transferEvaluator.ts (parity-verified). */
+function transferHorizons(X, Y, profiles) {
   const c = SNAP.valueCoeffs;
   const legs = profiles.map((p) => ({ profile: p, evX: evOnProfile(X, p), evY: evOnProfile(Y, p), scale: scaleOf(p) }));
-
   const fee = Math.round(Y.price * RS.transferFee);
   const freedCash = X.price - Y.price;
   let grossDisc = 0, keepDisc = 0, sumDisc = 0, levGross = 0;
@@ -329,6 +343,16 @@ function evalTransfer() {
     const requiredRank = rankForValue(requiredAvgDeltaY, legs[0].scale, c);
     horizons.push({ H, netGain, leverageAdjusted, confidence, flagged: confidence < LOWCONF, requiredRank, requiredAvgDeltaY });
   });
+  return { legs, fee, freedCash, horizons };
+}
+function evalTransfer() {
+  if (!window._field) { $('tstatus').textContent = 'kør "Beregn" først'; return; }
+  const find = (v) => window._field.find((r) => r.name.toLowerCase() === v.trim().toLowerCase());
+  const X = find($('sellX').value), Y = find($('buyY').value);
+  if (!X || !Y) { $('tstatus').textContent = 'vælg både sælg- og køb-rytter fra listen'; return; }
+  if (X === Y) { $('tstatus').textContent = 'X og Y er samme rytter'; return; }
+  const profiles = [$('h1').value, $('h2').value, $('h3').value].filter(Boolean);
+  const { fee, freedCash, horizons } = transferHorizons(X, Y, profiles);
 
   const yFlag = Y.ex ? ' <span class="neg">⚠ Y er ⚑-udelukket på nyheder!</span>' : '';
   let html = `<p class="muted" style="margin-top:12px">Købsgebyr ${kr(fee)} kr · frigjort kontant ${kr(freedCash)} kr (rente 0,5 %/runde)${yFlag}</p>`;
@@ -344,10 +368,65 @@ function evalTransfer() {
   html += `<p class="capline">Skiftet ${X.name} → <b>${Y.name}</b> er ${best.netGain > 0 ? 'POSITIVT' : 'negativt'} ved H=${best.H}: `
     + `Y skal i snit levere ${describeRank(best.requiredRank)}.</p>`;
   $('tout').innerHTML = html;
-  $('tstatus').textContent = `${legs.length} etape(r): ${profiles.join(' → ')}`;
+  $('tstatus').textContent = `${profiles.length} etape(r): ${profiles.join(' → ')}`;
   window._lastTransfer = { sell: X.name, buy: Y.name, profiles, fee, freedCash, horizons: horizons.map((h) => ({ H: h.H, netGain: Math.round(h.netGain), leverageAdjusted: Math.round(h.leverageAdjusted), confidence: +h.confidence.toFixed(2), requiredRank: isFinite(h.requiredRank) ? +h.requiredRank.toFixed(1) : null })) };
 }
 $('evalgo').onclick = evalTransfer;
+
+// ---- squad advisor (greedy single-swap, TRIN 5d) ----
+function advise() {
+  if (!window._field) { $('advstatus').textContent = 'kør "Beregn" først'; return; }
+  const names = $('advteam').value.split(',').map((s) => s.trim()).filter(Boolean);
+  if (names.length !== 8) { $('advstatus').textContent = `forventer 8 navne, fik ${names.length}`; return; }
+  const squad = []; const missing = [];
+  for (const n of names) {
+    const r = window._field.find((x) => x.name.toLowerCase() === n.toLowerCase());
+    r ? squad.push(r) : missing.push(n);
+  }
+  if (missing.length) { $('advstatus').textContent = 'ukendte navne: ' + missing.join(', '); return; }
+  const bank = parseInt(($('advbank').value || '0').replace(/[^\d-]/g, ''), 10) || 0;
+  const profiles = [$('h1').value, $('h2').value, $('h3').value].filter(Boolean);
+  const teamCount = new Map();
+  squad.forEach((r) => teamCount.set(r.team, (teamCount.get(r.team) || 0) + 1));
+
+  _evCache = new Map();
+  const proposals = [];
+  for (const X of squad) {
+    for (const Y of window._field) {
+      if (squad.includes(Y) || Y.ex) continue;                       // ⚑ = kan ikke købes
+      if (Y.price > X.price + bank) continue;                         // budget
+      const cnt = (teamCount.get(Y.team) || 0) - (X.team === Y.team ? 1 : 0);
+      if (cnt >= 2) continue;                                         // max 2 pr. rigtigt hold
+      const t = transferHorizons(X, Y, profiles);
+      const ok = t.horizons.filter((h) => !h.flagged);
+      const best = (ok.length ? ok : t.horizons).reduce((a, b) => (b.netGain > a.netGain ? b : a));
+      proposals.push({ X, Y, best });
+    }
+  }
+  _evCache = null;
+  proposals.sort((a, b) => b.best.netGain - a.best.netGain);
+  const top = proposals.slice(0, 10);
+
+  let html = '';
+  if (!top.length || top[0].best.netGain <= 0) {
+    html += '<p class="warn" style="border-left-color:var(--green);background:#e9f5ec">✋ Intet skifte slår gebyret over denne horisont — <b>behold holdet</b> (spar 1 %-gebyret). Det er en reel anbefaling, ikke en fejl.</p>';
+  }
+  if (top.length) {
+    html += '<table><thead><tr><th>#</th><th style="text-align:left">Sælg</th><th style="text-align:left">Køb</th><th>ejer%</th><th>H</th><th>netto (kr)</th><th>leverage-just.</th><th style="text-align:left">Break-even</th></tr></thead><tbody>';
+    top.forEach((p, i) => {
+      html += `<tr><td>${i + 1}</td><td style="text-align:left">${p.X.name}${p.X.ex ? ' ⚑' : ''}</td>`
+        + `<td style="text-align:left"><b>${p.Y.name}</b></td><td>${(p.Y.own * 100).toFixed(0)}%</td><td>${p.best.H}</td>`
+        + `<td class="${p.best.netGain >= 0 ? 'pos' : 'neg'}">${kr(p.best.netGain)}</td>`
+        + `<td class="${p.best.leverageAdjusted >= 0 ? 'pos' : 'neg'}">${kr(p.best.leverageAdjusted)}</td>`
+        + `<td style="text-align:left">${describeRank(p.best.requiredRank)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  $('advout').innerHTML = html;
+  $('advstatus').textContent = `${proposals.length} lovlige skifter evalueret · horisont ${profiles.join(' → ')} · bank ${kr(bank)}`;
+  window._advice = top.slice(0, 3).map((p) => ({ sell: p.X.name, buy: p.Y.name, H: p.best.H, netGain: Math.round(p.best.netGain), leverageAdjusted: Math.round(p.best.leverageAdjusted), requiredRank: isFinite(p.best.requiredRank) ? +p.best.requiredRank.toFixed(1) : null }));
+}
+$('advgo').onclick = advise;
 
 // ---- local decision + outcome log (the leverage-measurement record) ----
 const LS = 'paperTrades';
@@ -374,7 +453,8 @@ $('savelog').onclick = () => {
     modelCaptain: window._decision.modelCaptain, excluded: window._decision.excluded,
     candidates: window._decision.candidates,
     transferEval: window._lastTransfer || null,
-    myTeam: $('myteam').value, myCaptain: $('mycaptain').value, outcome: '',
+    advisorTop: window._advice || null,
+    myTeam: $('myteam').value || $('advteam').value, myCaptain: $('mycaptain').value, outcome: '',
   });
   setLogs(logs);
   $('logstatus').textContent = `gemt · ${logs.length} poster · ${window._decision.candidates.length} kandidater m. ejerandel`;
