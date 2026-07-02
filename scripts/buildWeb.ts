@@ -32,22 +32,58 @@ const races = readdirSync(PCS)
 const stages = races.flatMap((slug) => loadRace(PCS, slug, slug, 2026, true));
 stages.sort((a, b) => a.date.localeCompare(b.date) || a.stageNo - b.stageNo);
 
-// build per-rider result history (keyed by normalised name) + display name
-const history = new Map<string, Result[]>();
-const display = new Map<string, string>();
-const rawNameByKey = new Map<string, string>();
-for (const st of stages) {
-  for (const fin of st.finishers) {
-    const key = nameKey(fin.slug.replace(/-/g, ' '));
-    if (!history.has(key)) history.set(key, []);
-    history.get(key)!.push({ riderId: 0, date: st.date, profile: st.profile, rank: fin.rank, finished: true });
-    if (!rawNameByKey.has(key)) rawNameByKey.set(key, fin.slug);
+// EXACT-profile index from every stages-file we have: raceSlug-year-stageNo -> profile.
+const profileIndex = new Map<string, StageProfile>();
+for (const file of readdirSync(PCS)) {
+  const m = file.match(/^(.+)-(\d{4})-stages\.json$/);
+  if (!m) continue;
+  const rt = JSON.parse(readFileSync(f(`fixtures/pcs/${file}`), 'utf8'));
+  for (const s of rt.stages ?? []) {
+    if (s.stageNo == null) continue;
+    profileIndex.set(`${rt.race?.slug ?? m[1]}-${m[2]}-${s.stageNo}`, classifyStage({
+      distanceKm: s.distanceKm ?? 0, verticalM: s.verticalM ?? 0, profileScore: s.profileScore ?? undefined,
+      parcoursType: s.parcoursType ?? undefined, summitFinish: s.summitFinish ?? undefined, discipline: s.discipline ?? 'road',
+    }));
   }
 }
 
-// as-of = day after the latest result (≈ the next stage)
-const latest = stages.length ? stages[stages.length - 1].date : '2026-07-04';
-const asOf = new Date(new Date(latest).getTime() + 86_400_000);
+const history = new Map<string, Result[]>();
+const rawNameByKey = new Map<string, string>();
+
+// PRIMARY history source: rider season files (whole-season, per rider). Profile
+// per row = exact stages-file lookup, else vert/km/profileScore fallback. Drop
+// classification rows (standings, would double-count the stage finishes).
+const riderFiles = readdirSync(f('fixtures/riders')).filter((x) => /^rider-.*\.json$/.test(x));
+const cov = { exact: 0, fallback: 0, dropped: 0 };
+for (const file of riderFiles) {
+  const j = JSON.parse(readFileSync(f(`fixtures/riders/${file}`), 'utf8'));
+  const key = nameKey(j.rider.name);
+  rawNameByKey.set(key, j.rider.name);
+  if (!history.has(key)) history.set(key, []);
+  for (const r of j.results ?? []) {
+    if (r.rowType === 'classification' || !r.date || r.rank == null) { if (r.rowType === 'classification') cov.dropped++; continue; }
+    const exact = r.stageNo != null ? profileIndex.get(`${r.raceSlug}-${r.year}-${r.stageNo}`) : undefined;
+    const profile = exact ?? classifyStage({ distanceKm: r.distanceKm ?? 0, verticalM: r.verticalM ?? 0, discipline: r.discipline ?? 'road' });
+    exact ? cov.exact++ : cov.fallback++;
+    history.get(key)!.push({ riderId: 0, date: r.date, profile, rank: r.rank, finished: true });
+  }
+}
+// SECONDARY: 2026 stage results for riders WITHOUT a season file (the missing
+// startlist riders still get some form from the races we scraped per-stage).
+let filled = 0;
+for (const st of stages) {
+  for (const fin of st.finishers) {
+    const key = nameKey(fin.slug.replace(/-/g, ' '));
+    if (history.has(key)) continue; // already covered by a rider file
+    if (!rawNameByKey.has(key)) { rawNameByKey.set(key, fin.slug); filled++; }
+    if (!history.has(key)) history.set(key, []);
+    history.get(key)!.push({ riderId: 0, date: st.date, profile: st.profile, rank: fin.rank, finished: true });
+  }
+}
+console.log(`riders: ${riderFiles.length} sæson-filer (${cov.exact} eksakt + ${cov.fallback} fallback profiler, ${cov.dropped} classification droppet) + ${filled} kun-fra-stage-filer.`);
+
+// as-of = day before the Tour start (all pre-Tour form counts, nothing future).
+const asOf = new Date('2026-07-03');
 
 const riders = [...history.entries()].map(([key, results]) => {
   const fit: Record<string, number> = {};
