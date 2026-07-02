@@ -47,6 +47,10 @@ for (const file of readdirSync(PCS)) {
   }
 }
 
+// PCS serves some races under a different canonical slug on rider pages than on
+// the race overview. Map rider-row slug -> our stages-file slug for exact lookup.
+const SLUG_ALIAS: Record<string, string> = { 'tour-auvergne-rhone-alpes': 'dauphine' };
+
 const history = new Map<string, Result[]>();
 const rawNameByKey = new Map<string, string>();
 
@@ -62,7 +66,8 @@ for (const file of riderFiles) {
   if (!history.has(key)) history.set(key, []);
   for (const r of j.results ?? []) {
     if (r.rowType === 'classification' || !r.date || r.rank == null) { if (r.rowType === 'classification') cov.dropped++; continue; }
-    const exact = r.stageNo != null ? profileIndex.get(`${r.raceSlug}-${r.year}-${r.stageNo}`) : undefined;
+    const slug = SLUG_ALIAS[r.raceSlug] ?? r.raceSlug;
+    const exact = r.stageNo != null ? profileIndex.get(`${slug}-${r.year}-${r.stageNo}`) : undefined;
     const profile = exact ?? classifyStage({ distanceKm: r.distanceKm ?? 0, verticalM: r.verticalM ?? 0, discipline: r.discipline ?? 'road' });
     exact ? cov.exact++ : cov.fallback++;
     history.get(key)!.push({ riderId: 0, date: r.date, profile, rank: r.rank, finished: true });
