@@ -63,22 +63,33 @@ const coeffs = coeffsFromArtifact(JSON.parse(readFileSync(f('artifacts/value-for
 let route: Array<{ stageNo: number; date: string | null; profile: StageProfile }> | null = null;
 try {
   const rt = JSON.parse(readFileSync(f('fixtures/pcs/tour-de-france-2026-stages.json'), 'utf8'));
+  let merged = 0;
   route = rt.stages
     .filter((s: any) => s.stageNo != null)
     .sort((a: any, b: any) => a.stageNo - b.stageNo)
     .map((s: any) => {
+      // merge per-stage info (pcs-stageinfo.js preview, or the live result scrape
+      // once the stage is run — same filename) for vert/km/profileScore. Fixes the
+      // hilly_flat ambiguity (break vs sprint needs vertical metres).
+      let info: any = {};
+      try {
+        info = JSON.parse(readFileSync(f(`fixtures/pcs/tour-de-france-2026-stage-${s.stageNo}.json`), 'utf8')).stage ?? {};
+        if (info.verticalM != null || info.profileScore != null) merged++;
+      } catch { /* no per-stage file yet */ }
       const [dd, mm] = (s.date ?? '').split(/[/.]/);
       return {
         stageNo: s.stageNo,
         date: dd && mm ? `2026-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}` : null,
         profile: classifyStage({
-          distanceKm: s.distanceKm ?? 0, verticalM: s.verticalM ?? 0,
-          profileScore: s.profileScore ?? undefined, parcoursType: s.parcoursType ?? undefined,
+          distanceKm: info.distanceKm ?? s.distanceKm ?? 0,
+          verticalM: info.verticalM ?? s.verticalM ?? 0,
+          profileScore: info.profileScore ?? s.profileScore ?? undefined,
+          parcoursType: s.parcoursType ?? undefined,
           summitFinish: s.summitFinish ?? undefined, discipline: s.discipline ?? 'road',
         }),
       };
     });
-  console.log(`route: ${route!.length} TdF 2026-etaper klassificeret (auto-horisont aktiv).`);
+  console.log(`route: ${route!.length} TdF 2026-etaper klassificeret (auto-horisont aktiv); ${merged} m. per-etape-info (vert/ps).`);
 } catch { console.log('route: fixtures/pcs/tour-de-france-2026-stages.json mangler — horisont-profiler forbliver manuelle.'); }
 
 const out = {
