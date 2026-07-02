@@ -54,7 +54,11 @@ Den naive `EV × (1 − ownership)` per rytter er for primitiv. Tre rettelser:
    - Udbruds-/transitionsetaper: medium-høj leverage (høj varians = kontrær zone).
    - Uge 3 (dobbelt Alpe d'Huez): maksimal leverage — det er her feltet skal slås.
    Princip: chalk hvor forudsigeligt, kontrær hvor varians er høj.
-3. **Team-stacking / korrelation:** holdbonus (~60k til alle aktive ryttere fra
+3. **Team-stacking / korrelation:** *(EV-leddet er nu fremadrettet modelleret i
+   fladen (2/7): expectedTeamBonus = P(hold vinder)·60k pr. rytter, P ∝ strength^γ,
+   γ=1,5 kalibreret på faktiske vindere (`npm run calibrate:winprob`). Den
+   KORRELEREDE varians (samtidig upside) er stadig ikke modelleret — post-4/7.)*
+   **Oprindelig note:** holdbonus (~60k til alle aktive ryttere fra
    etapevinderens hold) gør ejerskab af 2 ryttere fra et stage-winning team til
    korreleret upside (jf. QB+WR-stacks i DFS). Skal ind i optimeringen.
    Husk constraint: max 2 ryttere per rigtigt hold.

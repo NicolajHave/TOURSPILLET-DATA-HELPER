@@ -231,9 +231,12 @@ function compute() {
     return { name, team: teams[i.teamId]?.name || '', own: i.popularity, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
   });
   rows.sort((a, b) => b.strength - a.strength);
+  // field + caches SKAL sættes før EV-loopet (teamWinProb læser _field)
+  window._field = rows; _twpCache = null; _evCache = null;
   rows.forEach((r, idx) => {
     r.predRank = idx + 1;
-    r.ev = valueOfRank(r.predRank, scale, c);
+    r.twp = teamWinProb(r.team, profile);
+    r.ev = valueOfRank(r.predRank, scale, c) + c.teamBonus * r.twp;
     r.lev = r.ev > 0 ? r.ev * (1 - r.own) : -Infinity;
   });
   const eligible = rows.filter((r) => !r.ex);
@@ -265,7 +268,7 @@ function compute() {
 
   const lowConf = profile === 'break' || profile === 'itt';
   $('capline').innerHTML = captain
-    ? `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr · ejer ${(captain.own * 100).toFixed(0)}%)`
+    ? `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr · ejer ${(captain.own * 100).toFixed(0)}% · heraf forventet holdbonus ${kr(c.teamBonus * captain.twp)} kr ved P(hold vinder)=${(captain.twp * 100).toFixed(0)}%)`
       + (lowConf ? ' <span class="neg" style="font-weight:700">⚠ LAV TILLID</span>' : '')
     : 'Ingen kvalificeret kaptajn (alle udelukket?)';
   $('breakwarn').innerHTML = profile === 'break'
@@ -279,8 +282,7 @@ function compute() {
     profile, lowConfidence: lowConf, modelCaptain: captain ? captain.name : null, excluded: exNames,
     candidates: rows.map((r) => ({ name: r.name, own: +(r.own).toFixed(4), ev: Math.round(r.ev), lev: r.lev === -Infinity ? null : Math.round(r.lev), hasForm: r.hasForm, excluded: r.ex })),
   };
-  // field data + datalist for the transfer evaluator
-  window._field = rows;
+  // datalist for the transfer evaluator (field allerede sat ovenfor)
   const dl = $('riderlist'); dl.innerHTML = '';
   [...rows].sort((a, b) => a.name.localeCompare(b.name, 'da')).forEach((r) => {
     const o = document.createElement('option'); o.value = r.name; dl.appendChild(o);
@@ -305,9 +307,28 @@ function describeRank(rank) {
   if (rank <= 25) return `≈ plads ${rank.toFixed(0)}`;
   return `menig placering (≈ plads ${rank.toFixed(0)}) — let opnåeligt`;
 }
+/** P(rytterens RIGTIGE hold vinder etapen) ≈ holdets andel af feltets samlede
+ *  strength på profilen (grov Plackett-Luce-førstevalgs-proxy, ukalibreret).
+ *  Fodrer den fremadrettede holdbonus: expectedTeamBonus = P(hold vinder)·60k
+ *  til HVER rytter på holdet — stacking-kanalen fra HANDOVER §2.3. */
+let _twpCache = null;
+function teamWinProb(team, profile) {
+  if (!_twpCache) _twpCache = new Map();
+  if (!_twpCache.has(profile)) {
+    const beta = SNAP.evBeta;
+    const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
+    const g = SNAP.winProbGamma || 1;
+    let tot = 0; const per = new Map();
+    for (const r of window._field) { const v = Math.pow(Math.max(0, s(r)), g); tot += v; per.set(r.team, (per.get(r.team) || 0) + v); }
+    const m = new Map();
+    for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
+    _twpCache.set(profile, m);
+  }
+  return _twpCache.get(profile).get(team) || 0;
+}
 /** EV for one rider on one profile: rank the whole active field by that profile's
- *  strength, then value the rider's predicted rank on the value curve.
- *  (memo-cache used by the squad advisor's 1000+ evaluations) */
+ *  strength, value the predicted rank on the value curve, and add the expected
+ *  team bonus. (memo-cache used by the squad advisor's 1000+ evaluations) */
 let _evCache = null;
 function evOnProfile(rider, profile) {
   const ck = _evCache && rider.name + '|' + profile;
@@ -316,7 +337,7 @@ function evOnProfile(rider, profile) {
   const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
   const mine = s(rider);
   const rank = 1 + window._field.filter((r) => r !== rider && s(r) > mine).length;
-  const ev = valueOfRank(rank, scaleOf(profile), c);
+  const ev = valueOfRank(rank, scaleOf(profile), c) + c.teamBonus * teamWinProb(rider.team, profile);
   if (_evCache) _evCache.set(ck, ev);
   return ev;
 }
