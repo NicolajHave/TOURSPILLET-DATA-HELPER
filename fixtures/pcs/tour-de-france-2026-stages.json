@@ -1,0 +1,199 @@
+{
+  "race": {
+    "slug": "tour-de-france",
+    "year": 2026
+  },
+  "stages": [
+    {
+      "stageNo": 1,
+      "date": "04/07",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "ttt",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 2,
+      "date": "05/07",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 3,
+      "date": "06/07",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 4,
+      "date": "07/07",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 5,
+      "date": "08/07",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 6,
+      "date": "09/07",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 7,
+      "date": "10/07",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 8,
+      "date": "11/07",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 9,
+      "date": "12/07",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 10,
+      "date": "14/07",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 11,
+      "date": "15/07",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 12,
+      "date": "16/07",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 13,
+      "date": "17/07",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 14,
+      "date": "18/07",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 15,
+      "date": "19/07",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 16,
+      "date": "21/07",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "itt",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 17,
+      "date": "22/07",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 18,
+      "date": "23/07",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 19,
+      "date": "24/07",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 20,
+      "date": "25/07",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 21,
+      "date": "26/07",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stages",
+  "capturedAt": "2026-07-02T06:15:34.114Z"
+}
