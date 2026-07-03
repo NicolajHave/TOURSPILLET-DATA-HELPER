@@ -251,18 +251,24 @@ function compute() {
     const strength = m ? (m.form + beta * (m.fit[profile] || 0)) : 0;
     return { name, team: teams[i.teamId]?.name || '', own: i.popularity ?? 0, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
   });
+  // field + caches SKAL sættes før sort/EV-loop (teamWinProb + TTT-hold læser _field)
+  window._field = rows; _twpCache = null; _evCache = null; _tttCache = null;
+  const ttt = profile === 'ttt';
+  // TTT: erstat individuel strength med holdets tempo-styrke, så holdkammerater
+  // klumper sammen og rangeres efter holdets motor (ikke tilfældig TTT-historik).
+  if (ttt) { const T = tttTeamStrength(); rows.forEach((r) => { r.strength = T.strength.get(r.team) || 0; }); }
   rows.sort((a, b) => b.strength - a.strength);
-  // field + caches SKAL sættes før EV-loopet (teamWinProb læser _field)
-  window._field = rows; _twpCache = null; _evCache = null;
   rows.forEach((r, idx) => {
-    r.predRank = idx + 1;
-    r.fitP = r.fitObj ? (r.fitObj[profile] || 0) : 0;
+    r.predRank = ttt ? (tttTeamStrength().rank.get(r.team) || 999) : idx + 1;
+    r.fitP = ttt ? 0 : (r.fitObj ? (r.fitObj[profile] || 0) : 0);
     r.twp = teamWinProb(r.team, profile);
     r.ev = valueOfRank(r.predRank, scale, c) + c.teamBonus * r.twp;
     r.lev = r.ev > 0 ? r.ev * (1 - r.own) : -Infinity;
   });
   const eligible = rows.filter((r) => !r.ex);
-  const captain = eligible.length ? eligible.reduce((a, b) => (b.ev > a.ev ? b : a), eligible[0]) : null;
+  // Ved lige expΔ: på TTT foretræk holdets tempo-motor (Ganna-typen), ellers form.
+  const capBetter = (b, a) => b.ev > a.ev || (b.ev === a.ev && (ttt ? tttEngine(b) > tttEngine(a) : b.form > a.form));
+  const captain = eligible.length ? eligible.reduce((a, b) => (capBetter(b, a) ? b : a), eligible[0]) : null;
   const sortKey = $('sort').value;
   const view = [...rows].sort((a, b) => (b[sortKey] === -Infinity ? -1e18 : b[sortKey]) - (a[sortKey] === -Infinity ? -1e18 : a[sortKey]));
 
@@ -272,17 +278,21 @@ function compute() {
     if (r === captain) tr.className = 'cap';
     if (r.ex) tr.className = 'ex';
     const lev = r.lev === -Infinity ? '–' : kr(r.lev);
-    tr.title = r.hasForm
+    tr.title = ttt
+      ? `HVORFOR (TTT/holdtempo): ${r.team || 'ukendt hold'} → hold-plads ${r.predRank} → expΔ ${kr(r.ev)}`
+        + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder TTT) ${(r.twp * 100).toFixed(0)}%)` : '')
+        + ` · alle på holdet deler placeringen · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
+      : r.hasForm
       ? `HVORFOR: form ${r.form.toFixed(2)} · profil-fit(${profile}) ${r.fitP.toFixed(2)} → model-plads ${r.predRank} → expΔ ${kr(r.ev)}`
         + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder) ${(r.twp * 100).toFixed(0)}%)` : '')
         + ` · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
       : 'Ingen 2026-form på denne rytter (ingen data) → strength 0.';
     tr.innerHTML = `<td>${i + 1}</td>`
-      + `<td>${r.name}${r === captain ? ' 👑' : ''}${r.hasForm ? '' : ' <span class="muted">(ingen form)</span>'}</td>`
+      + `<td>${r.name}${r === captain ? ' 👑' : ''}${(!ttt && !r.hasForm) ? ' <span class="muted">(ingen form)</span>' : ''}</td>`
       + `<td>${r.team}</td>`
       + `<td><span class="ownbar" style="--w:${Math.min(100, r.own * 100).toFixed(0)}%">${(r.own * 100).toFixed(0)}%</span></td>`
       + `<td>${kr(r.price)}</td>`
-      + `<td title="modellens forudsagte placering + profil-fit">${r.predRank}${r.hasForm ? ` <span class="muted">(fit ${r.fitP.toFixed(2)})</span>` : ''}</td>`
+      + `<td title="${ttt ? 'holdets forudsagte TTT-placering (alle på holdet deler den)' : 'modellens forudsagte placering + profil-fit'}">${r.predRank}${ttt ? ' <span class="muted">(hold)</span>' : (r.hasForm ? ` <span class="muted">(fit ${r.fitP.toFixed(2)})</span>` : '')}</td>`
       + `<td class="${r.ev >= 0 ? 'pos' : 'neg'}">${kr(r.ev)}</td><td>${lev}</td>`
       + `<td><button class="flagbtn" data-name="${r.name.replace(/"/g, '&quot;')}" title="${r.ex ? 'fjern nyhedsflag' : 'udeluk (styrt/sygdom/nyhed)'}">${r.ex ? '⛔' : '⚑'}</button></td>`;
     tb.appendChild(tr);
@@ -304,7 +314,7 @@ function compute() {
     : profile === 'itt'
     ? '<p class="warn">⚠ LAV TILLID (ITT): tynd profil-historik for tempo. Anbefalingen er usikker.</p>'
     : profile === 'ttt'
-    ? '<p class="warn">⚠ LAV TILLID (TTT): holdtempo — individuel placering er ikke mekanikken. Se på hvilket HOLD der vinder (holdbonus = P(hold vinder)·60k til alle på holdet er den vigtige kanal her).</p>' : '';
+    ? '<p class="warn">⚠ TTT (holdtempo): modellen rangerer nu HOLD efter tempo-motor (gns. af holdets 5 stærkeste ITT-motorer) og giver alle på holdet holdets forudsagte placering — derfor står topholdenes ledere (fx Pogačar/UAE) i toppen igen, ikke tilfældige TTT-ryttere. Kaptajn = stærkeste tempo-holds leder. Stadig lav-tillid: ingen kalibreret TTT-værdikurve (låner fladt-kurven), og holdbonus = P(hold vinder TTT)·60k er ukalibreret.</p>' : '';
   const exNames = rows.filter((r) => r.ex).map((r) => r.name);
   $('exline').textContent = exNames.length ? `⚑ udelukket på nyheder: ${exNames.join(', ')} (klik ⛔ for at fortryde)` : '';
   $('status').textContent = `${rows.length} aktive ryttere · profil ${profile}` + (exNames.length ? ` · ${exNames.length} udelukket` : '');
@@ -367,17 +377,45 @@ function describeRank(rank) {
  *  strength på profilen (grov Plackett-Luce-førstevalgs-proxy, ukalibreret).
  *  Fodrer den fremadrettede holdbonus: expectedTeamBonus = P(hold vinder)·60k
  *  til HVER rytter på holdet — stacking-kanalen fra HANDOVER §2.3. */
+// --- TTT (holdtempo) scoring -------------------------------------------------
+// En TTT er et HOLDresultat: hele holdet kører sammen, får samme tid og samme
+// placering. Individuel profil-fit er derfor meningsløs (straffer fx Pogačar til
+// plads 103 fordi han ikke tilfældigvis har kørt en TTT i 2026). Vi rangerer i
+// stedet HOLD efter deres tempo-motor (gns. af holdets TTT_ENGINES stærkeste
+// ITT-motorer) og giver HVER rytter på holdet holdets forudsagte placering.
+const TTT_ENGINES = 5;
+const tttEngine = (r) => r.form + SNAP.evBeta * ((r.fitObj && r.fitObj.itt) || 0);
+let _tttCache = null;
+function tttTeamStrength() {
+  if (_tttCache) return _tttCache;
+  const byTeam = new Map();
+  for (const r of window._field) { if (!byTeam.has(r.team)) byTeam.set(r.team, []); byTeam.get(r.team).push(tttEngine(r)); }
+  const strength = new Map();
+  for (const [t, arr] of byTeam) { arr.sort((a, b) => b - a); const top = arr.slice(0, TTT_ENGINES); strength.set(t, top.reduce((s, v) => s + v, 0) / Math.max(top.length, 1)); }
+  const rank = new Map();
+  [...strength.entries()].sort((a, b) => b[1] - a[1]).forEach(([t], i) => rank.set(t, i + 1));
+  _tttCache = { strength, rank };
+  return _tttCache;
+}
+
 let _twpCache = null;
 function teamWinProb(team, profile) {
   if (!_twpCache) _twpCache = new Map();
   if (!_twpCache.has(profile)) {
-    const beta = SNAP.evBeta;
-    const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
     const g = SNAP.winProbGamma || 1;
-    let tot = 0; const per = new Map();
-    for (const r of window._field) { const v = Math.pow(Math.max(0, s(r)), g); tot += v; per.set(r.team, (per.get(r.team) || 0) + v); }
     const m = new Map();
-    for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
+    if (profile === 'ttt') {
+      // P(hold vinder TTT) ≈ softmax over holdenes tempo-styrke (ikke individuel).
+      const T = tttTeamStrength(); let tot = 0; const per = new Map();
+      for (const [t, v] of T.strength) { const p = Math.pow(Math.max(0, v), g); per.set(t, p); tot += p; }
+      for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
+    } else {
+      const beta = SNAP.evBeta;
+      const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
+      let tot = 0; const per = new Map();
+      for (const r of window._field) { const v = Math.pow(Math.max(0, s(r)), g); tot += v; per.set(r.team, (per.get(r.team) || 0) + v); }
+      for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
+    }
     _twpCache.set(profile, m);
   }
   return _twpCache.get(profile).get(team) || 0;
@@ -390,9 +428,15 @@ function evOnProfile(rider, profile) {
   const ck = _evCache && rider.name + '|' + profile;
   if (_evCache && _evCache.has(ck)) return _evCache.get(ck);
   const c = SNAP.valueCoeffs, beta = SNAP.evBeta;
-  const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
-  const mine = s(rider);
-  const rank = 1 + window._field.filter((r) => r !== rider && s(r) > mine).length;
+  let rank;
+  if (profile === 'ttt') {
+    // TTT: alle på et hold deler holdets placering (holdtempo, se tttTeamStrength).
+    rank = tttTeamStrength().rank.get(rider.team) || 999;
+  } else {
+    const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
+    const mine = s(rider);
+    rank = 1 + window._field.filter((r) => r !== rider && s(r) > mine).length;
+  }
   const ev = valueOfRank(rank, scaleOf(profile), c) + c.teamBonus * teamWinProb(rider.team, profile);
   if (_evCache) _evCache.set(ck, ev);
   return ev;
