@@ -178,9 +178,24 @@ let SNAP = null;
 const $ = (id) => document.getElementById(id);
 
 // ---- model math (kept in sync with src/lib: nameKey, valueOfRank, leverage) ----
-function nameKey(s) {
+function tokensOf(s) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-    .replace(/[^a-z\s-]/g, ' ').split(/[\s-]+/).filter(Boolean).sort().join(' ');
+    .replace(/[^a-z\s-]/g, ' ').split(/[\s-]+/).filter(Boolean);
+}
+function nameKey(s) { return tokensOf(s).sort().join(' '); }
+/** Robust holdet-name -> form-rider match. holdet and PCS disagree on nicknames
+ *  (Thomas/Tom Pidcock), surname additions (Gee/Gee-West) and middle names
+ *  (Ion Izagirre / Ion Izagirre Insausti). Try exact, then subset both ways,
+ *  then last-name + first-initial — each requiring a UNIQUE hit. */
+function matchForm(name) {
+  const k = nameKey(name);
+  if (SNAP.byKey[k]) return SNAP.byKey[k];
+  const t = tokensOf(name), set = new Set(t);
+  let c = SNAP._R.filter((x) => t.every((y) => x.set.has(y))); if (c.length === 1) return c[0].r;
+  c = SNAP._R.filter((x) => [...x.set].every((y) => set.has(y))); if (c.length === 1) return c[0].r;
+  const li = t.length ? t[t.length - 1] + '|' + t[0][0] : '';
+  c = SNAP._R.filter((x) => x.li === li); if (c.length === 1) return c[0].r;
+  return null;
 }
 function valueOfRank(rank, scale, c) {
   return c.baseline[scale] + c.premiumRank1[scale] * Math.exp(-c.decayK * (rank - 1));
@@ -195,6 +210,7 @@ const saveExcluded = (s) => localStorage.setItem(EXKEY, JSON.stringify([...s]));
 
 fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
   SNAP = s; SNAP.byKey = {}; for (const r of s.riders) SNAP.byKey[r.key] = r;
+  SNAP._R = s.riders.map((r) => { const t = tokensOf(r.name); return { r, set: new Set(r.key.split(' ')), li: t.length ? t[t.length - 1] + '|' + t[0][0] : '' }; });
   $('meta').textContent = `form: ${s.riders.length} ryttere · ${s.races.join(' + ')} · as-of ${s.generatedAt}`;
   // route present -> stage picker that auto-fills profile + transfer horizon
   if (s.route && s.route.length) {
@@ -226,7 +242,7 @@ function compute() {
 
   let rows = (raw.items || []).filter((i) => !i.isOut).map((i) => {
     const p = persons[i.personId] || {}; const name = `${p.firstName || ''} ${p.lastName || ''}`.trim();
-    const m = SNAP.byKey[nameKey(name)];
+    const m = matchForm(name);
     const strength = m ? (m.form + beta * (m.fit[profile] || 0)) : 0;
     return { name, team: teams[i.teamId]?.name || '', own: i.popularity, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
   });
