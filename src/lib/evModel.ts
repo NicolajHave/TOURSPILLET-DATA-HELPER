@@ -30,6 +30,16 @@ export const WIN_PROB_GAMMA_BY_PROFILE: Record<StageProfile, number> = {
   break: 1, itt: 2, mountain: 2.5, punch: 2.5, sprint: 1.5, ttt: WIN_PROB_GAMMA,
 };
 
+/** Empirisk DNF/DNS-hazard pr. rytter pr. etape (npm run calibrate:dnf; 51
+ *  etaper TdF+Vuelta 2025 + Dauphiné/Suisse 2026, 8194 startere, 159 events).
+ *  Bjerg skiller sig markant ud (3,4 % — tidsgrænse + nedkørsler); resten
+ *  <1,2 %. Forecasterens flade 3 %-default var for høj overalt UNDTAGEN bjerg.
+ *  ttt: ingen events i data → itt-raten (nærmeste analog). */
+export const DNF_RATE_BY_PROFILE: Record<StageProfile, number> = {
+  break: 0.0113, itt: 0.008, mountain: 0.0343, punch: 0.0078, sprint: 0.0087, ttt: 0.008,
+};
+export const DNF_RATE_POOLED = 0.0194;
+
 /** No-lookahead EV strength for one rider on one stage profile. */
 export function evStrength(history: Result[], asOf: Date, profile: StageProfile, beta = EV_BETA): number {
   return form(history, asOf) + beta * profileFit(history, profile, asOf);

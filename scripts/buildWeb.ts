@@ -17,7 +17,7 @@ import { classifyStage, type StageProfile } from '../src/lib/stageProfile';
 import { loadRace } from '../src/lib/raceData';
 import { nameKey, mean } from '../src/lib/valueFormula';
 import { coeffsFromArtifact } from '../src/lib/forecaster';
-import { EV_BETA, WIN_PROB_GAMMA, WIN_PROB_GAMMA_BY_PROFILE } from '../src/lib/evModel';
+import { EV_BETA, WIN_PROB_GAMMA, WIN_PROB_GAMMA_BY_PROFILE, DNF_RATE_BY_PROFILE } from '../src/lib/evModel';
 
 const f = (rel: string) => fileURLToPath(new URL(`../${rel}`, import.meta.url));
 const PCS = f('fixtures/pcs');
@@ -140,6 +140,7 @@ const out = {
   evBeta: EV_BETA,
   winProbGamma: WIN_PROB_GAMMA,
   winProbGammaByProfile: WIN_PROB_GAMMA_BY_PROFILE,
+  dnfRateByProfile: DNF_RATE_BY_PROFILE,
   valueCoeffs: coeffs,
   route,
   riders,

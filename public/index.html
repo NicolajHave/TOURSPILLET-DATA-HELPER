@@ -187,6 +187,18 @@
     <button id="exportlog" class="ghost">Eksportér JSON</button>
     <span id="logstatus" class="muted"></span>
   </div>
+  <p class="muted" style="margin-top:14px"><b>EFTER etapen:</b> indsæt etaperesultatet
+  (JSON fra pcs-results/pcs-stageinfo-snippet) — så scores den loggede beslutning
+  automatisk: kaptajn-placering, top-10-hit, rangkorrelation (model vs faktisk) og
+  udgåede. Det er den empiriske livline: fra ~E5 kan β/γ re-fittes på tourens egne etaper.</p>
+  <div class="controls">
+    <textarea id="stageresult" placeholder='{"stage": …, "results": [{"rank":1,"status":"OK","riderName":"POGAČAR Tadej",…}, …]}' style="min-height:64px;flex:1"></textarea>
+  </div>
+  <div class="controls">
+    <button id="evalstage">Evaluér etape mod loggen</button>
+    <span id="evalstatus" class="muted"></span>
+  </div>
+  <div id="evalout"></div>
   <table id="logtbl"><thead><tr><th>Dato</th><th>Etape</th><th>Profil</th><th>Model-kaptajn</th><th>Mit hold</th><th>Min kaptajn</th><th>#kand.</th><th>Faktisk udfald (redigér efter etapen)</th></tr></thead><tbody></tbody></table>
 </div>
 </main>
@@ -292,6 +304,8 @@ const MC = { samples: 3000, top: 30, seed: 42, fieldRank: 50 };
 // γ pr. profil (MLE på etapevindere): bjerg/punch er favorit-dominerede (2.5),
 // break er lotteri (1), sprint midt imellem (1.5). Poolet γ som fallback.
 const gammaFor = (profile) => (SNAP.winProbGammaByProfile && SNAP.winProbGammaByProfile[profile]) || SNAP.winProbGamma || 1;
+// Empirisk DNF/DNS-hazard pr. etape (calibrate:dnf): bjerg 3,4 %, resten <1,2 %.
+const dnfFor = (profile) => (SNAP.dnfRateByProfile && SNAP.dnfRateByProfile[profile]) || 0;
 function mulberry32(seed) {
   let a = seed >>> 0;
   return () => {
@@ -405,7 +419,10 @@ function compute() {
     r.twp = teamWinProb(r.team, profile);
     r.evDet = valueOfRank(r.predRank, scale, c) + c.teamBonus * r.twp;
     // TTT er et holdresultat (deterministisk kæde) — ingen individuel MC dér.
-    r.ev = ttt ? r.evDet : r.evPlace + c.teamBonus * r.twp;
+    // DNF-hazard (empirisk pr. profil): udgår man, ryger −100k og al opsiden.
+    r.pDnf = dnfFor(profile);
+    const gross = ttt ? r.evDet : r.evPlace + c.teamBonus * r.twp;
+    r.ev = (1 - r.pDnf) * gross + r.pDnf * (-c.dnfPenalty);
     if (ttt) { r.sigma = 0; r.pWin = 0; }
     r.lev = r.ev > 0 ? r.ev * (1 - r.own) : -Infinity;
     r.perMio = r.price > 0 ? r.ev / (r.price / 1e6) : 0;
@@ -429,7 +446,7 @@ function compute() {
         + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder TTT) ${(r.twp * 100).toFixed(0)}%)` : '')
         + ` · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
       : r.hasForm
-      ? `HVORFOR: form ${r.form.toFixed(2)} · profil-fit(${profile}) ${r.fitP.toFixed(2)} → model-plads ${r.predRank} → MC-expΔ ${kr(r.ev)} ± ${kr(r.sigma)} · P(sejr) ${(r.pWin * 100).toFixed(1)}%`
+      ? `HVORFOR: form ${r.form.toFixed(2)} · profil-fit(${profile}) ${r.fitP.toFixed(2)} → model-plads ${r.predRank} → MC-expΔ ${kr(r.ev)} ± ${kr(r.sigma)} · P(sejr) ${(r.pWin * 100).toFixed(1)}% · DNF-risiko ${(r.pDnf * 100).toFixed(1)}%`
         + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder) ${(r.twp * 100).toFixed(0)}%)` : '')
         + (r.gcDay >= 1000 ? ` · GC-indkomst ~${kr(r.gcDay)}/dag (IKKE i expΔ — tie-breaker)` : '')
         + ` · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
@@ -778,6 +795,71 @@ $('exportlog').onclick = () => {
   navigator.clipboard?.writeText(JSON.stringify(getLogs(), null, 2));
   alert('Hele loggen (inkl. ejerandele pr. beslutning) kopieret: ' + getLogs().length + ' poster.');
 };
+
+// ---- post-etape auto-evaluering (lukker løkken: forudsagt vs faktisk) ------
+function spearman(a, b) {
+  // rang-transformér (gennemsnit ved ties) og brug klassisk ρ = 1 − 6Σd²/(n(n²−1))
+  const rankOf = (arr) => {
+    const idx = arr.map((v, i) => [v, i]).sort((x, y) => x[0] - y[0]);
+    const rk = new Array(arr.length);
+    for (let i = 0; i < idx.length;) {
+      let j = i; while (j + 1 < idx.length && idx[j + 1][0] === idx[i][0]) j++;
+      const avg = (i + j) / 2 + 1;
+      for (let k = i; k <= j; k++) rk[idx[k][1]] = avg;
+      i = j + 1;
+    }
+    return rk;
+  };
+  const ra = rankOf(a), rb = rankOf(b), n = a.length;
+  if (n < 3) return null;
+  let d2 = 0; for (let i = 0; i < n; i++) d2 += (ra[i] - rb[i]) ** 2;
+  return 1 - (6 * d2) / (n * (n * n - 1));
+}
+function evalStage() {
+  const logs = getLogs();
+  if (!logs.length) { $('evalstatus').textContent = 'ingen loggede beslutninger endnu'; return; }
+  let raw; try { raw = JSON.parse($('stageresult').value); } catch { $('evalstatus').textContent = 'ugyldig JSON'; return; }
+  const res = Array.isArray(raw) ? raw : (raw.results || []);
+  if (!res.length) { $('evalstatus').textContent = 'ingen results[] i det indsatte'; return; }
+  // faktiske placeringer pr. navnenøgle (PCS skriver "POGAČAR Tadej" — nameKey
+  // sorterer tokens og striber accenter, så det matcher holdet-navnet)
+  const actual = new Map(); const outNames = new Set();
+  for (const x of res) {
+    const k = nameKey(x.riderName || (x.riderSlug || '').replace(/-/g, ' '));
+    if (x.rank != null) actual.set(k, x.rank);
+    else if (x.status === 'DNF' || x.status === 'DNS' || x.status === 'OTL' || x.status === 'DSQ') outNames.add(k);
+  }
+  // målret nyeste post der matcher valgt etape, ellers nyeste post
+  const sel = $('logstage').value;
+  let idx = logs.length - 1;
+  if (sel) for (let i = logs.length - 1; i >= 0; i--) if (logs[i].stage === sel) { idx = i; break; }
+  const L = logs[idx];
+  const cands = L.candidates || [];
+  const withActual = cands.map((c2, i) => ({ ...c2, modelRank: i + 1, actualRank: actual.get(nameKey(c2.name)) ?? null, wentOut: outNames.has(nameKey(c2.name)) }));
+  const fin = withActual.filter((c2) => c2.actualRank != null);
+  if (fin.length < 5) { $('evalstatus').textContent = `kun ${fin.length} navne-match mod loggen — forkert etape/JSON?`; return; }
+  const rho = spearman(fin.map((c2) => c2.modelRank), fin.map((c2) => c2.actualRank));
+  const t10 = withActual.slice(0, 10).filter((c2) => (c2.actualRank ?? 999) <= 10).length;
+  const rankTxt = (n) => (n == null ? 'DNF/udenfor' : 'plads ' + n);
+  const capA = L.modelCaptain ? (actual.get(nameKey(L.modelCaptain)) ?? null) : null;
+  const myCapA = L.myCaptain ? (actual.get(nameKey(L.myCaptain)) ?? null) : null;
+  const winner = res.find((x) => x.rank === 1);
+  const winRank = winner ? withActual.findIndex((c2) => nameKey(c2.name) === nameKey(winner.riderName || '')) + 1 : 0;
+  const dnfTop15 = withActual.slice(0, 15).filter((c2) => c2.wentOut).map((c2) => c2.name);
+  const summary = `ρ=${rho == null ? '–' : rho.toFixed(2)} · model-kaptajn ${rankTxt(capA)}`
+    + (L.myCaptain ? ` · min kaptajn ${rankTxt(myCapA)}` : '')
+    + ` · top10-hit ${t10}/10` + (winRank ? ` · vinder var model-#${winRank}` : '')
+    + (dnfTop15.length ? ` · UDGÅET: ${dnfTop15.join(', ')}` : '');
+  L.outcome = summary;
+  L.evaluation = { rho: rho == null ? null : +rho.toFixed(3), matched: fin.length, top10Hit: t10, modelCaptainRank: capA, myCaptainRank: myCapA, winnerModelRank: winRank || null, dnfTop15, evaluatedAt: new Date().toISOString().slice(0, 10) };
+  setLogs(logs); renderLogs();
+  $('evalstatus').textContent = `evalueret mod "${L.stage || 'seneste post'}" (${fin.length} match)`;
+  $('evalout').innerHTML = `<p><b>Etape-evaluering:</b> ${summary}</p>`
+    + '<table><thead><tr><th>model-pl.</th><th style="text-align:left">Rytter</th><th>faktisk</th></tr></thead><tbody>'
+    + withActual.slice(0, 15).map((c2) => `<tr><td>${c2.modelRank}</td><td style="text-align:left">${c2.name}${c2.wentOut ? ' ⛔' : ''}</td><td>${c2.actualRank ?? '–'}</td></tr>`).join('')
+    + '</tbody></table><p class="muted">ρ nær 1 = modellen ramte rangordenen; ρ nær 0 = støj (forventeligt på break-dage). Gemt på log-posten — eksportér jævnligt.</p>';
+}
+$('evalstage').onclick = evalStage;
 renderLogs();
 </script>
 </body>
