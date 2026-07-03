@@ -1,0 +1,199 @@
+{
+  "race": {
+    "slug": "giro-d-italia",
+    "year": 2026
+  },
+  "stages": [
+    {
+      "stageNo": 1,
+      "date": "08/05",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 2,
+      "date": "09/05",
+      "distanceKm": null,
+      "parcoursType": "mountain_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 3,
+      "date": "10/05",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 4,
+      "date": "12/05",
+      "distanceKm": null,
+      "parcoursType": "mountain_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 5,
+      "date": "13/05",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 6,
+      "date": "14/05",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 7,
+      "date": "15/05",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 8,
+      "date": "16/05",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 9,
+      "date": "17/05",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 10,
+      "date": "19/05",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "itt",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 11,
+      "date": "20/05",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 12,
+      "date": "21/05",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 13,
+      "date": "22/05",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 14,
+      "date": "23/05",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 15,
+      "date": "24/05",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 16,
+      "date": "26/05",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 17,
+      "date": "27/05",
+      "distanceKm": null,
+      "parcoursType": "hilly_uphill_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 18,
+      "date": "28/05",
+      "distanceKm": null,
+      "parcoursType": "hilly_flat_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 19,
+      "date": "29/05",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 20,
+      "date": "30/05",
+      "distanceKm": null,
+      "parcoursType": "mountain_summit_finish",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    },
+    {
+      "stageNo": 21,
+      "date": "31/05",
+      "distanceKm": null,
+      "parcoursType": "flat",
+      "discipline": "road",
+      "verticalM": null,
+      "profileScore": null
+    }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/giro-d-italia/2026",
+  "capturedAt": "2026-07-03T11:50:35.323Z"
+}
