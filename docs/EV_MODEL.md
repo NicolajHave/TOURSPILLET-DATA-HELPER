@@ -71,3 +71,31 @@ Kalibreret EV koblet ind → kaptajn pr. etape (no-lookahead), scoret i realiser
 - `profileScoreFinal`-fangst (fix snippet-regex) → ren bjerg-vs-break-klassifikation.
 - PCS rytter-ranking → ægte markedsværdi-baseline.
 - Før-løb-form (sæson-historik via ryttersider, efter Tour-startliste) → fjerner cold-start.
+
+## Per-profil vindersandsynlighed (γ) — 3/7-2026
+`P(i vinder) ∝ strength^γ` MLE-fittet PR. PROFIL på 50 etaper (TdF+Vuelta 2025
+fit, Dauphiné/Suisse 2026 holdout), `npm run calibrate:winprob`:
+
+| profil | n | γ* | P(favorit vinder), gns. |
+|---|---:|---:|---:|
+| break | 7 | **1.0** | 3 % (lotteri — bekræfter lav-tillid) |
+| sprint | 8 | 1.5 | 8 % |
+| itt | 4 | (tynd → poolet 2) | 17 % |
+| mountain | 22 | **2.5** | 18 % |
+| punch | 9 | **2.5** | 19 % |
+
+Poolet γ=1.5 udglattede favorit-dominansen væk på bjerg/punch og gav fx Pogačar
+P(sejr)=5 % på bjerg. `WIN_PROB_GAMMA_BY_PROFILE` (evModel.ts) bruges nu af både
+fladen's Plackett-Luce-MC (kandidat-expΔ/σ/P(sejr)) og holdbonus-kanalen.
+Fladen's kandidat-expΔ er MC-forventningen over placeringsfordelingen (konveks
+kurve → lavere, ærligere niveauer end deterministisk plads-1-værdi); udsyn +
+trin 3/4 beholder den deterministiske kurve (lib-paritet) — samme rangorden.
+
+## GC/trøje-kanal (v1, synlig men ikke i expΔ) — 3/7-2026
+Dauphiné-residualerne (fører +140k/dag, høj GC +66-90k/dag) er den største
+umodellerede kanal over 21 dage. v1 i fladen: `GC/dag`-kolonne = P(gul)·140k +
+(P(top-4)−P(gul))·80k, hvor P'erne kommer fra PL-MC over gcStrength = form +
+β·(0,7·fit_mountain + 0,3·fit_itt), γ=2.5. BEVIDST ikke lagt i expΔ/leverage:
+koefficienterne er Dauphiné-skala (TdF-hypotese) — brug som tie-breaker + grund
+til at HOLDE GC-stjerner over flade dage. Kalibrér på TdF 2026-snapshots når de
+første etaper er kørt.
