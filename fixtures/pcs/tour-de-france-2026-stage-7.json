@@ -1,0 +1,18 @@
+{
+  "race": {
+    "slug": "tour-de-france",
+    "year": 2026
+  },
+  "stage": {
+    "stageNo": 7,
+    "date": null,
+    "distanceKm": 175.1,
+    "verticalM": 701,
+    "profileScore": 13,
+    "profileScoreFinal": null
+  },
+  "results": [],
+  "note": "preview (ingen resultater endnu) — overskriv med pcs-results.js efter etapen",
+  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-7/result/result",
+  "capturedAt": "2026-07-03T13:21:42.926Z"
+}

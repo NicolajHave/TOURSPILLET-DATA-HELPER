@@ -1,0 +1,18 @@
+{
+  "race": {
+    "slug": "tour-de-france",
+    "year": 2026
+  },
+  "stage": {
+    "stageNo": 9,
+    "date": null,
+    "distanceKm": 185.5,
+    "verticalM": 3244,
+    "profileScore": 124,
+    "profileScoreFinal": null
+  },
+  "results": [],
+  "note": "preview (ingen resultater endnu) — overskriv med pcs-results.js efter etapen",
+  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-9/result/result",
+  "capturedAt": "2026-07-03T13:23:13.105Z"
+}

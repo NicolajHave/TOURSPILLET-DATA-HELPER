@@ -1,0 +1,18 @@
+{
+  "race": {
+    "slug": "tour-de-france",
+    "year": 2026
+  },
+  "stage": {
+    "stageNo": 3,
+    "date": null,
+    "distanceKm": 195.9,
+    "verticalM": 3940,
+    "profileScore": 185,
+    "profileScoreFinal": null
+  },
+  "results": [],
+  "note": "preview (ingen resultater endnu) — overskriv med pcs-results.js efter etapen",
+  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-3/result/result",
+  "capturedAt": "2026-07-03T13:17:51.881Z"
+}
