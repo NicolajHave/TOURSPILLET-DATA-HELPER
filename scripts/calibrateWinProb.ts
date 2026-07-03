@@ -26,7 +26,7 @@ const races = [
 ].sort((a, b) => a.date.localeCompare(b.date) || a.stageNo - b.stageNo);
 
 // walk the timeline once, collect (strengths[], winnerIdx) per stage
-interface Obs { set: 'fit' | 'holdout'; s: number[]; win: number; }
+interface Obs { set: 'fit' | 'holdout'; s: number[]; win: number; profile: string; }
 const history = new Map<string, Result[]>();
 const obs: Obs[] = [];
 for (const st of races) {
@@ -36,7 +36,7 @@ for (const st of races) {
   if (withPrior.length >= 20 && winner) {
     const s = withPrior.map((x) => Math.max(EPS, evStrength(history.get(x.slug)!, asOf, st.profile)));
     const win = withPrior.findIndex((x) => x.slug === winner.slug);
-    if (win >= 0) obs.push({ set: st.race.endsWith('26') ? 'holdout' : 'fit', s, win });
+    if (win >= 0) obs.push({ set: st.race.endsWith('26') ? 'holdout' : 'fit', s, win, profile: st.profile });
   }
   for (const x of st.finishers) {
     if (!history.has(x.slug)) history.set(x.slug, []);
@@ -60,7 +60,27 @@ for (const g of [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 8]) {
   if (fit > best.ll) best = { g, ll: fit };
   console.log(`  ${String(g).padStart(4)}   ${fit.toFixed(3).padStart(9)}   ${ho.toFixed(3).padStart(12)}`);
 }
-console.log(`\n  ⇒ bedste γ (fit) = ${best.g}`);
+console.log(`\n  ⇒ bedste γ (fit, poolet) = ${best.g}`);
+
+// PER-PROFIL fit: favoritter dominerer bjerg/ITT (høj γ), break er lotteri (lav
+// γ). Poolet γ udglatter det væk — og undervurderer så favoritter voldsomt på
+// netop de etaper hvor der er mest værdi på spil. Fit+holdout SAMLET pr. profil
+// (få etaper pr. profil; 1 parameter, så overfit-risikoen er lille — men
+// rapportér n, og brug poolet γ som fallback ved n < 6).
+console.log('\n  PER-PROFIL (fit+holdout samlet, 1-param MLE):');
+console.log('    profil     n     γ*    P(favorit vinder) v. γ*  [gns. over profilens etaper]');
+const GRID = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 8, 10, 12];
+const byProfile: Record<string, number> = {};
+for (const prof of [...new Set(obs.map((o) => o.profile))].sort()) {
+  const po = obs.filter((o) => o.profile === prof);
+  let b = { g: best.g, ll: -Infinity };
+  for (const g of GRID) { const ll = mean(po.map((o) => logLik(o, g))); if (ll > b.ll) b = { g, ll }; }
+  const gUse = po.length >= 6 ? b.g : best.g; // tynd profil -> poolet fallback
+  byProfile[prof] = gUse;
+  const pFav = mean(po.map((o) => { const d = o.s.reduce((a, v) => a + Math.pow(v, gUse), 0); return Math.max(...o.s.map((v) => Math.pow(v, gUse) / d)); }));
+  console.log(`    ${prof.padEnd(9)} ${String(po.length).padStart(3)}   ${String(b.g).padStart(4)}${po.length < 6 ? ' →' + best.g + ' (tynd)' : '  '}   ${(pFav * 100).toFixed(0)}%`);
+}
+console.log(`\n  ⇒ WIN_PROB_GAMMA_BY_PROFILE = ${JSON.stringify(byProfile)}`);
 // sanity: implied top-team win prob at best γ, on the 2026 holdout stages
 const g = best.g;
 for (const o of obs.filter((x) => x.set === 'holdout').slice(-3)) {

@@ -101,7 +101,7 @@
       </select>
     </label>
     <label>Sortér
-      <select id="sort"><option value="lev">leverage</option><option value="ev">expectedDelta</option></select>
+      <select id="sort"><option value="lev">leverage</option><option value="ev">expectedDelta</option><option value="sigma">varians (σ)</option><option value="perMio">expΔ pr. mio. (enablers)</option></select>
     </label>
     <button id="go">Beregn</button>
     <span id="status" class="muted"></span>
@@ -112,10 +112,13 @@
 <div class="card">
   <h2><span class="step">2</span>Kandidater</h2>
   <p class="muted">Rangeret efter valgt kolonne. <b>model-pl.</b> = modellens forudsagte
-  placering (lav = stærk) drevet af form × profil-fit; <b>expΔ</b> = værdi af den placering
-  + forventet holdbonus. <b>Hold musen over en rytter</b> for hele "hvorfor".</p>
+  placering (lav = stærk) drevet af form × profil-fit; <b>expΔ</b> = Monte-Carlo-forventning
+  (3000 sims over placeringsfordelingen) + forventet holdbonus; <b>±σ</b> = spredning —
+  varians-våbnet: ved (næsten) lige expΔ, tag høj σ + lav ejer%; <b>Δ/mio</b> = expΔ pr.
+  million pris — enabler-finderen til de billige pladser. <b>Hold musen over en rytter</b>
+  for hele "hvorfor".</p>
   <table id="tbl"><thead><tr>
-    <th>#</th><th>Rytter</th><th>Hold</th><th>Ejer%</th><th>Pris</th><th title="modellens forudsagte placering">model-pl.</th><th>expΔ (kr)</th><th>leverage</th><th>⚑</th>
+    <th>#</th><th>Rytter</th><th>Hold</th><th>Ejer%</th><th>Pris</th><th title="modellens forudsagte placering">model-pl.</th><th>expΔ (kr)</th><th title="spredning på placeringsværdien (Monte-Carlo)">±σ</th><th title="expΔ pr. million pris — jo højere, jo bedre budget-værdi">Δ/mio</th><th>leverage</th><th>⚑</th>
   </tr></thead><tbody></tbody></table>
   <p class="capline" id="capline"></p>
   <p class="muted" id="exline"></p>
@@ -275,6 +278,56 @@ fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
   }
 }).catch(() => { $('meta').textContent = 'form-snapshot mangler (kør build:web)'; });
 
+// --- Plackett-Luce Monte-Carlo (spejler src/lib/forecaster.ts' mekanik) -----
+// Værdikurven er KONVEKS (exp-henfald), så E[værdi(plads)] ≠ værdi(E[plads]):
+// deterministisk "plads 4 → værdi af plads 4" undervurderer ryttere med bred
+// udfaldsfordeling. MC giver ærlige niveauer + σ (spredning) + P(sejr).
+// Vægte = kalibreret styrke^γ — SAMME model som teamWinProb (γ MLE-fittet på
+// etapevindere), IKKE forecasterens ukalibrerede wForm/wFit/wArch-defaults.
+// Seeded (mulberry32) → deterministisk og reproducerbar i loggen.
+const MC = { samples: 3000, top: 30, seed: 42, fieldRank: 50 };
+// γ pr. profil (MLE på etapevindere): bjerg/punch er favorit-dominerede (2.5),
+// break er lotteri (1), sprint midt imellem (1.5). Poolet γ som fallback.
+const gammaFor = (profile) => (SNAP.winProbGammaByProfile && SNAP.winProbGammaByProfile[profile]) || SNAP.winProbGamma || 1;
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function plMonteCarlo(rows, profile, scale, c) {
+  const g = gammaFor(profile);
+  const w = rows.map((r) => Math.pow(Math.max(0, r.strength), g));
+  const n = rows.length, TOP = Math.min(MC.top, n);
+  const vField = valueOfRank(MC.fieldRank, scale, c);
+  const sum = new Array(n).fill(0), sumSq = new Array(n).fill(0), wins = new Array(n).fill(0);
+  const rng = mulberry32(MC.seed);
+  const placed = new Array(n);
+  for (let t = 0; t < MC.samples; t++) {
+    placed.fill(false);
+    let total = 0; for (let k = 0; k < n; k++) total += w[k];
+    for (let pos = 1; pos <= TOP; pos++) {
+      let r = rng() * total, chosen = -1;
+      for (let k = 0; k < n; k++) { if (placed[k]) continue; r -= w[k]; if (r <= 0) { chosen = k; break; } }
+      if (chosen < 0) for (let k = 0; k < n; k++) if (!placed[k]) { chosen = k; break; }
+      placed[chosen] = true; total -= w[chosen];
+      const v = valueOfRank(pos, scale, c);
+      sum[chosen] += v; sumSq[chosen] += v * v;
+      if (pos === 1) wins[chosen]++;
+    }
+    for (let k = 0; k < n; k++) if (!placed[k]) { sum[k] += vField; sumSq[k] += vField * vField; }
+  }
+  rows.forEach((r, i) => {
+    const mean = sum[i] / MC.samples;
+    r.evPlace = mean;
+    r.sigma = Math.sqrt(Math.max(0, sumSq[i] / MC.samples - mean * mean));
+    r.pWin = wins[i] / MC.samples;
+  });
+}
+
 function compute() {
   if (!SNAP) { $('status').textContent = 'form-snapshot ikke indlæst'; return; }
   let raw; try { raw = JSON.parse($('snap').value); } catch { $('status').textContent = 'ugyldig JSON'; return; }
@@ -300,12 +353,17 @@ function compute() {
   } else {
     rows.sort((a, b) => b.strength - a.strength);
   }
+  if (!ttt) plMonteCarlo(rows, profile, scale, c); // sætter evPlace/sigma/pWin pr. rytter
   rows.forEach((r, idx) => {
     if (!ttt) r.predRank = idx + 1;
     r.fitP = ttt ? 0 : (r.fitObj ? (r.fitObj[profile] || 0) : 0);
     r.twp = teamWinProb(r.team, profile);
-    r.ev = valueOfRank(r.predRank, scale, c) + c.teamBonus * r.twp;
+    r.evDet = valueOfRank(r.predRank, scale, c) + c.teamBonus * r.twp;
+    // TTT er et holdresultat (deterministisk kæde) — ingen individuel MC dér.
+    r.ev = ttt ? r.evDet : r.evPlace + c.teamBonus * r.twp;
+    if (ttt) { r.sigma = 0; r.pWin = 0; }
     r.lev = r.ev > 0 ? r.ev * (1 - r.own) : -Infinity;
+    r.perMio = r.price > 0 ? r.ev / (r.price / 1e6) : 0;
   });
   const eligible = rows.filter((r) => !r.ex);
   // Ved lige expΔ: på TTT foretræk holdets tempo-motor (Ganna-typen), ellers form.
@@ -325,7 +383,7 @@ function compute() {
         + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder TTT) ${(r.twp * 100).toFixed(0)}%)` : '')
         + ` · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
       : r.hasForm
-      ? `HVORFOR: form ${r.form.toFixed(2)} · profil-fit(${profile}) ${r.fitP.toFixed(2)} → model-plads ${r.predRank} → expΔ ${kr(r.ev)}`
+      ? `HVORFOR: form ${r.form.toFixed(2)} · profil-fit(${profile}) ${r.fitP.toFixed(2)} → model-plads ${r.predRank} → MC-expΔ ${kr(r.ev)} ± ${kr(r.sigma)} · P(sejr) ${(r.pWin * 100).toFixed(1)}%`
         + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder) ${(r.twp * 100).toFixed(0)}%)` : '')
         + ` · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
       : 'Ingen 2026-form på denne rytter (ingen data) → strength 0.';
@@ -335,7 +393,10 @@ function compute() {
       + `<td><span class="ownbar" style="--w:${Math.min(100, r.own * 100).toFixed(0)}%">${(r.own * 100).toFixed(0)}%</span></td>`
       + `<td>${kr(r.price)}</td>`
       + `<td title="${ttt ? 'individuel forudsagt plads: holdets rang + rækkefølge på holdet (lederen krydser først)' : 'modellens forudsagte placering + profil-fit'}">${r.predRank}${ttt ? ` <span class="muted">(hold ${r.teamRank})</span>` : (r.hasForm ? ` <span class="muted">(fit ${r.fitP.toFixed(2)})</span>` : '')}</td>`
-      + `<td class="${r.ev >= 0 ? 'pos' : 'neg'}">${kr(r.ev)}</td><td>${lev}</td>`
+      + `<td class="${r.ev >= 0 ? 'pos' : 'neg'}">${kr(r.ev)}</td>`
+      + `<td class="muted">${ttt ? '–' : kr(r.sigma)}</td>`
+      + `<td>${kr(r.perMio)}</td>`
+      + `<td>${lev}</td>`
       + `<td><button class="flagbtn" data-name="${r.name.replace(/"/g, '&quot;')}" title="${r.ex ? 'fjern nyhedsflag' : 'udeluk (styrt/sygdom/nyhed)'}">${r.ex ? '⛔' : '⚑'}</button></td>`;
     tb.appendChild(tr);
   });
@@ -347,9 +408,18 @@ function compute() {
   });
 
   const lowConf = profile === 'break' || profile === 'itt' || profile === 'ttt';
+  // Varians-alternativ: blandt top-8 på expΔ, den med størst upside (ev+σ) og
+  // LAVERE ejerskab end kaptajnen — #1-af-30k-spillet er varians ved lige EV.
+  let varAlt = null;
+  if (captain && !ttt) {
+    const top8 = [...eligible].sort((a, b) => b.ev - a.ev).slice(0, 8).filter((r) => r !== captain);
+    const cand = top8.filter((r) => r.own < captain.own || captain.own === 0).sort((a, b) => (b.ev + b.sigma) - (a.ev + a.sigma))[0];
+    if (cand && cand.ev + cand.sigma > captain.ev) varAlt = cand;
+  }
   $('capline').innerHTML = captain
-    ? `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr · ejer ${(captain.own * 100).toFixed(0)}% · heraf forventet holdbonus ${kr(c.teamBonus * captain.twp)} kr ved P(hold vinder)=${(captain.twp * 100).toFixed(0)}%)`
+    ? `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr ± ${kr(captain.sigma)} · ejer ${(captain.own * 100).toFixed(0)}% · heraf forventet holdbonus ${kr(c.teamBonus * captain.twp)} kr ved P(hold vinder)=${(captain.twp * 100).toFixed(0)}%)`
       + (lowConf ? ' <span class="neg" style="font-weight:700">⚠ LAV TILLID</span>' : '')
+      + (varAlt ? `<br><span class="muted">Varians-alternativ: <b>${varAlt.name}</b> (expΔ ${kr(varAlt.ev)} ± ${kr(varAlt.sigma)} · ejer ${(varAlt.own * 100).toFixed(0)}%) — mere upside/kontrærhed, hvis feltet ejer kaptajnen tungt.</span>` : '')
     : 'Ingen kvalificeret kaptajn (alle udelukket?)';
   $('breakwarn').innerHTML = profile === 'break'
     ? '<p class="warn">⚠ LAV TILLID (break): modellen er svag her (recall 0,20 — kaptajn er nær gæt). Stol ikke blindt på anbefalingen.</p>'
@@ -362,7 +432,7 @@ function compute() {
   $('status').textContent = `${rows.length} aktive ryttere · profil ${profile}` + (exNames.length ? ` · ${exNames.length} udelukket` : '');
   window._decision = {
     profile, lowConfidence: lowConf, modelCaptain: captain ? captain.name : null, excluded: exNames,
-    candidates: rows.map((r) => ({ name: r.name, own: +(r.own).toFixed(4), ev: Math.round(r.ev), lev: r.lev === -Infinity ? null : Math.round(r.lev), hasForm: r.hasForm, excluded: r.ex })),
+    candidates: rows.map((r) => ({ name: r.name, own: +(r.own).toFixed(4), ev: Math.round(r.ev), sigma: Math.round(r.sigma || 0), pWin: +(r.pWin || 0).toFixed(3), lev: r.lev === -Infinity ? null : Math.round(r.lev), hasForm: r.hasForm, excluded: r.ex })),
   };
   // datalist for the transfer evaluator (field allerede sat ovenfor)
   const dl = $('riderlist'); dl.innerHTML = '';
@@ -412,7 +482,7 @@ function computeOutlook() {
     html += '<p class="muted">Break-even for et skifte: Σ(expΔ køb − expΔ sælg) over horisonten skal overstige 1 % købsgebyr (+ 0,5 %/etape rente på frigjort kontant). Trin 3/4 regner det præcist pr. skifte — vinderen her er din transfer-kandidat FØR blokken.</p>';
   }
   if (haveField) _evCache = null;
-  html += '<p class="muted">Samme rytter i toppen 2–3 dage i træk = køb ham FØR blokken (kør hold-rådgiveren). ⚠ = lav-tillids-profil.</p>';
+  html += '<p class="muted">Samme rytter i toppen 2–3 dage i træk = køb ham FØR blokken (kør hold-rådgiveren). ⚠ = lav-tillids-profil. NB: udsyn + trin 3/4 bruger den deterministiske værdikurve (niveauet er højere end kandidat-tabellens MC-forventning, men <em>rangordenen er den samme</em> — sammenligninger på tværs er konsistente).</p>';
   out.innerHTML = html;
 }
 
@@ -475,7 +545,7 @@ let _twpCache = null;
 function teamWinProb(team, profile) {
   if (!_twpCache) _twpCache = new Map();
   if (!_twpCache.has(profile)) {
-    const g = SNAP.winProbGamma || 1;
+    const g = gammaFor(profile); // ttt -> poolet γ (team-niveau), ellers per-profil
     const m = new Map();
     if (profile === 'ttt') {
       // P(hold vinder TTT) ≈ softmax over holdenes tempo-styrke (ikke individuel).
