@@ -111,11 +111,15 @@
 
 <div class="card">
   <h2><span class="step">2</span>Kandidater</h2>
+  <p class="muted">Rangeret efter valgt kolonne. <b>model-pl.</b> = modellens forudsagte
+  placering (lav = stærk) drevet af form × profil-fit; <b>expΔ</b> = værdi af den placering
+  + forventet holdbonus. <b>Hold musen over en rytter</b> for hele "hvorfor".</p>
   <table id="tbl"><thead><tr>
-    <th>#</th><th>Rytter</th><th>Hold</th><th>Ejer%</th><th>Pris</th><th>expΔ (kr)</th><th>leverage</th><th>⚑</th>
+    <th>#</th><th>Rytter</th><th>Hold</th><th>Ejer%</th><th>Pris</th><th title="modellens forudsagte placering">model-pl.</th><th>expΔ (kr)</th><th>leverage</th><th>⚑</th>
   </tr></thead><tbody></tbody></table>
   <p class="capline" id="capline"></p>
   <p class="muted" id="exline"></p>
+  <div id="outlook"></div>
 </div>
 
 <div class="card">
@@ -229,7 +233,7 @@ fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
       const prof = (o) => (s.route[idx + o] ? s.route[idx + o].profile : '');
       $('profile').value = prof(0);
       $('h1').value = prof(0); $('h2').value = prof(1); $('h3').value = prof(2);
-      if ($('snap').value.trim()) compute();
+      if ($('snap').value.trim()) compute(); else computeOutlook();
     };
   }
 }).catch(() => { $('meta').textContent = 'form-snapshot mangler (kør build:web)'; });
@@ -252,6 +256,7 @@ function compute() {
   window._field = rows; _twpCache = null; _evCache = null;
   rows.forEach((r, idx) => {
     r.predRank = idx + 1;
+    r.fitP = r.fitObj ? (r.fitObj[profile] || 0) : 0;
     r.twp = teamWinProb(r.team, profile);
     r.ev = valueOfRank(r.predRank, scale, c) + c.teamBonus * r.twp;
     r.lev = r.ev > 0 ? r.ev * (1 - r.own) : -Infinity;
@@ -267,11 +272,17 @@ function compute() {
     if (r === captain) tr.className = 'cap';
     if (r.ex) tr.className = 'ex';
     const lev = r.lev === -Infinity ? '–' : kr(r.lev);
+    tr.title = r.hasForm
+      ? `HVORFOR: form ${r.form.toFixed(2)} · profil-fit(${profile}) ${r.fitP.toFixed(2)} → model-plads ${r.predRank} → expΔ ${kr(r.ev)}`
+        + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder) ${(r.twp * 100).toFixed(0)}%)` : '')
+        + ` · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
+      : 'Ingen 2026-form på denne rytter (ingen data) → strength 0.';
     tr.innerHTML = `<td>${i + 1}</td>`
       + `<td>${r.name}${r === captain ? ' 👑' : ''}${r.hasForm ? '' : ' <span class="muted">(ingen form)</span>'}</td>`
       + `<td>${r.team}</td>`
       + `<td><span class="ownbar" style="--w:${Math.min(100, r.own * 100).toFixed(0)}%">${(r.own * 100).toFixed(0)}%</span></td>`
       + `<td>${kr(r.price)}</td>`
+      + `<td title="modellens forudsagte placering + profil-fit">${r.predRank}${r.hasForm ? ` <span class="muted">(fit ${r.fitP.toFixed(2)})</span>` : ''}</td>`
       + `<td class="${r.ev >= 0 ? 'pos' : 'neg'}">${kr(r.ev)}</td><td>${lev}</td>`
       + `<td><button class="flagbtn" data-name="${r.name.replace(/"/g, '&quot;')}" title="${r.ex ? 'fjern nyhedsflag' : 'udeluk (styrt/sygdom/nyhed)'}">${r.ex ? '⛔' : '⚑'}</button></td>`;
     tb.appendChild(tr);
@@ -306,8 +317,34 @@ function compute() {
   [...rows].sort((a, b) => a.name.localeCompare(b.name, 'da')).forEach((r) => {
     const o = document.createElement('option'); o.value = r.name; dl.appendChild(o);
   });
+  computeOutlook();
 }
 $('go').onclick = compute;
+
+/** Outlook over the next up-to-3 route stages: profile + top-3 model picks per
+ *  stage, so you can plan transfers ahead (buy the climber before the block). */
+function computeOutlook() {
+  const out = $('outlook'); if (!out || !SNAP || !SNAP.route || !SNAP.route.length) { if (out) out.innerHTML = ''; return; }
+  const sel = $('stagepick') ? $('stagepick').value : '';
+  const idx = SNAP.route.findIndex((s) => String(s.stageNo) === sel);
+  const upcoming = idx >= 0 ? SNAP.route.slice(idx, idx + 3) : SNAP.route.slice(0, 3);
+  let html = '<h3 style="font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin:18px 0 4px;color:var(--muted)">🔭 Udsyn — næste etaper</h3>';
+  html += '<table><thead><tr><th>Etape</th><th>Profil</th><th style="text-align:left">Top-picks (model) — expΔ</th></tr></thead><tbody>';
+  const haveField = !!window._field;
+  if (haveField) _evCache = new Map();
+  for (const st of upcoming) {
+    let picks = '<span class="muted">indsæt snapshot for picks</span>';
+    if (haveField) {
+      const ranked = window._field.filter((r) => !r.ex).map((r) => ({ r, ev: evOnProfile(r, st.profile) })).sort((a, b) => b.ev - a.ev).slice(0, 3);
+      picks = ranked.map((x, j) => `${j === 0 ? '👑 ' : ''}${x.r.name} <span class="muted">(${kr(x.ev)})</span>`).join(' · ');
+    }
+    const low = st.profile === 'break' || st.profile === 'itt' || st.profile === 'ttt';
+    html += `<tr><td>E${st.stageNo}${st.date ? ' · ' + st.date.slice(5) : ''}</td><td>${st.profile}${low ? ' ⚠' : ''}</td><td style="text-align:left">${picks}</td></tr>`;
+  }
+  if (haveField) _evCache = null;
+  html += '</tbody></table><p class="muted">Samme rytter i toppen 2–3 dage i træk = køb ham FØR blokken (kør hold-rådgiveren). ⚠ = lav-tillids-profil.</p>';
+  out.innerHTML = html;
+}
 
 // ---- transfer evaluator (mirrors src/lib/transferEvaluator.ts exactly) ----
 const RS = { transferFee: 0.01, interestRate: 0.005 };
