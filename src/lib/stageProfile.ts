@@ -70,6 +70,9 @@ export function classifyStage(f: StageFeatures): StageProfile {
     case 'hilly_uphill_finish':
       return 'punch';
     case 'hilly_flat_finish':
+      // flat finish but a hard day -> breakaway, not a bunch sprint. Prefer the
+      // absolute ProfileScore when scraped (>=85 = clearly hard), else vertical.
+      if (f.profileScore !== undefined && f.profileScore >= 85) return 'break';
       return f.verticalM >= 2500 ? 'break' : 'sprint';
     case 'flat':
       return 'sprint';
