@@ -90,7 +90,7 @@
     <label id="stagewrap" style="display:none">TdF-etape
       <select id="stagepick"><option value="">manuel</option></select>
     </label>
-    <label>Etapeprofil
+    <label title="Sættes automatisk når du vælger TdF-etape — ret kun hvis du vil overstyre modellens profil-læsning (fx sidevind gør en punch-etape til sprint).">Etapeprofil <span class="muted" style="text-transform:none;font-weight:400">(auto)</span>
       <select id="profile">
         <option value="sprint">sprint</option>
         <option value="punch">punch</option>
@@ -145,11 +145,21 @@
 
 <div class="card">
   <h2><span class="step">4</span>Hold-rådgiver <span class="muted" style="text-transform:none">(bedste skifte fra DIT hold — shortlist, ikke orakel)</span></h2>
-  <p class="muted">Indtast dine 8 ryttere + bank. Alle lovlige skifter evalueres over
-  horisonten fra trin 3 (max 2 pr. hold, køb ≤ salgspris + bank, ⚑-flaggede kan ikke
-  købes) og rangeres efter NetGain. Anbefalinger på break/ITT er lav-tillid — du beslutter.</p>
+  <p class="muted">Vælg dine 8 ryttere fra dropdowns (ingen tastefejl — listen kommer fra
+  snapshottet og huskes lokalt) + bank. Alle lovlige skifter evalueres over horisonten fra
+  trin 3 (max 2 pr. hold, køb ≤ salgspris + bank, ⚑-flaggede kan ikke købes) og rangeres
+  efter NetGain. Loggen i trin 5 genbruger holdet herfra. Break/ITT er lav-tillid — du beslutter.</p>
+  <div class="controls" id="teamwrap">
+    <select class="tpick" id="t1"><option value="">— rytter 1 —</option></select>
+    <select class="tpick" id="t2"><option value="">— rytter 2 —</option></select>
+    <select class="tpick" id="t3"><option value="">— rytter 3 —</option></select>
+    <select class="tpick" id="t4"><option value="">— rytter 4 —</option></select>
+    <select class="tpick" id="t5"><option value="">— rytter 5 —</option></select>
+    <select class="tpick" id="t6"><option value="">— rytter 6 —</option></select>
+    <select class="tpick" id="t7"><option value="">— rytter 7 —</option></select>
+    <select class="tpick" id="t8"><option value="">— rytter 8 —</option></select>
+  </div>
   <div class="controls">
-    <input id="advteam" list="riderlist" placeholder="mit hold: 8 navne, komma-adskilt" style="width:540px" />
     <label>Bank (kr) <input id="advbank" placeholder="0" style="width:110px" /></label>
     <button id="advgo">Find bedste skifter</button>
     <span id="advstatus" class="muted"></span>
@@ -161,12 +171,12 @@
   <h2><span class="step">5</span>Log beslutning + udfald <span class="muted" style="text-transform:none">(til leverage-måling)</span></h2>
   <p class="muted">Gemmer hele beslutnings-snapshottet — hver kandidats ejerandel PÅ
   BESLUTNINGSTIDSPUNKTET, modellens anbefaling, dine ⚑-udelukkelser og dit valgte
-  hold/kaptajn — så kontrærhed kan måles bagefter. Eksportér jævnligt som JSON;
+  hold/kaptajn — så kontrærhed kan måles bagefter. <b>Hold = dine 8 dropdowns fra trin 4</b>;
+  kaptajnen vælges blandt netop de 8 (ingen tastefejl). Eksportér jævnligt som JSON;
   ryddet cache sletter ellers localStorage.</p>
   <div class="controls">
-    <input id="logstage" placeholder="etape (fx 'TdF 2026 E5')" style="width:170px" />
-    <input id="myteam" placeholder="mit hold (8 ryttere)" style="width:290px" />
-    <input id="mycaptain" placeholder="min kaptajn" style="width:150px" />
+    <label>Etape <select id="logstage"><option value="">følger TdF-etape…</option></select></label>
+    <label>Min kaptajn <select id="mycaptain"><option value="">vælg blandt dine 8…</option></select></label>
     <button id="savelog">Gem beslutning</button>
     <button id="exportlog" class="ghost">Eksportér JSON</button>
     <span id="logstatus" class="muted"></span>
@@ -213,18 +223,44 @@ const EXKEY = 'excludedRiders';
 const getExcluded = () => new Set(JSON.parse(localStorage.getItem(EXKEY) || '[]'));
 const saveExcluded = (s) => localStorage.setItem(EXKEY, JSON.stringify([...s]));
 
+// ---- mit hold: 8 dropdowns (trin 4), genbruges af loggen (trin 5) ----------
+const TPKEY = 'myTeamPicks';
+const teamPicks = () => { const out = []; for (let i = 1; i <= 8; i++) { const v = $('t' + i) && $('t' + i).value; if (v) out.push(v); } return out; };
+function syncCaptain() {
+  const cap = $('mycaptain'); if (!cap) return;
+  const cur = cap.value;
+  cap.innerHTML = '<option value="">vælg blandt dine 8…</option>' + teamPicks().map((n) => `<option${n === cur ? ' selected' : ''}>${n}</option>`).join('');
+}
+function fillTeamSelects(rows) {
+  const saved = JSON.parse(localStorage.getItem(TPKEY) || '[]');
+  const names = rows.map((r) => r.name).sort((a, b) => a.localeCompare(b, 'da'));
+  for (let i = 1; i <= 8; i++) {
+    const sel = $('t' + i); if (!sel) continue;
+    const cur = sel.value || saved[i - 1] || '';
+    sel.innerHTML = `<option value="">— rytter ${i} —</option>` + names.map((n) => `<option${n === cur ? ' selected' : ''}>${n}</option>`).join('');
+  }
+  syncCaptain();
+}
+for (let i = 1; i <= 8; i++) {
+  const sel = $('t' + i);
+  if (sel) sel.onchange = () => { localStorage.setItem(TPKEY, JSON.stringify([1, 2, 3, 4, 5, 6, 7, 8].map((j) => ($('t' + j) ? $('t' + j).value : '')))); syncCaptain(); };
+}
+
 fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
   SNAP = s; SNAP.byKey = {}; for (const r of s.riders) SNAP.byKey[r.key] = r;
   SNAP._R = s.riders.map((r) => { const t = tokensOf(r.name); return { r, set: new Set(r.key.split(' ')), li: t.length ? t[t.length - 1] + '|' + t[0][0] : '' }; });
   $('meta').textContent = `form: ${s.riders.length} ryttere · ${s.races.join(' + ')} · as-of ${s.generatedAt}`;
   // route present -> stage picker that auto-fills profile + transfer horizon
   if (s.route && s.route.length) {
-    const sp = $('stagepick');
+    const sp = $('stagepick'), ls = $('logstage');
     s.route.forEach((st) => {
+      const label = `E${st.stageNo}${st.date ? ' · ' + st.date.slice(5) : ''} · ${st.profile}`;
       const o = document.createElement('option');
-      o.value = String(st.stageNo);
-      o.textContent = `E${st.stageNo}${st.date ? ' · ' + st.date.slice(5) : ''} · ${st.profile}`;
+      o.value = String(st.stageNo); o.textContent = label;
       sp.appendChild(o);
+      const o2 = document.createElement('option');
+      o2.value = `TdF 2026 E${st.stageNo}`; o2.textContent = label;
+      ls.appendChild(o2);
     });
     $('stagewrap').style.display = '';
     sp.onchange = () => {
@@ -233,6 +269,7 @@ fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
       const prof = (o) => (s.route[idx + o] ? s.route[idx + o].profile : '');
       $('profile').value = prof(0);
       $('h1').value = prof(0); $('h2').value = prof(1); $('h3').value = prof(2);
+      ls.value = `TdF 2026 E${sp.value}`; // loggen følger valgt etape automatisk
       if ($('snap').value.trim()) compute(); else computeOutlook();
     };
   }
@@ -251,18 +288,29 @@ function compute() {
     const strength = m ? (m.form + beta * (m.fit[profile] || 0)) : 0;
     return { name, team: teams[i.teamId]?.name || '', own: i.popularity ?? 0, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
   });
-  rows.sort((a, b) => b.strength - a.strength);
-  // field + caches SKAL sættes før EV-loopet (teamWinProb læser _field)
-  window._field = rows; _twpCache = null; _evCache = null;
+  // field + caches SKAL sættes før sort/EV-loop (teamWinProb + TTT-hold læser _field)
+  window._field = rows; _twpCache = null; _evCache = null; _tttCache = null;
+  const ttt = profile === 'ttt';
+  if (ttt) {
+    // TTT: individuel plads = holdets rang + rækkefølgen indenfor holdet
+    // (første-rytter-reglen: lederen bæres frem og krydser først).
+    const T = tttTeamStrength();
+    rows.forEach((r) => { r.predRank = T.riderRank.get(r) || 999; r.teamRank = T.rank.get(r.team) || 99; });
+    rows.sort((a, b) => a.predRank - b.predRank);
+  } else {
+    rows.sort((a, b) => b.strength - a.strength);
+  }
   rows.forEach((r, idx) => {
-    r.predRank = idx + 1;
-    r.fitP = r.fitObj ? (r.fitObj[profile] || 0) : 0;
+    if (!ttt) r.predRank = idx + 1;
+    r.fitP = ttt ? 0 : (r.fitObj ? (r.fitObj[profile] || 0) : 0);
     r.twp = teamWinProb(r.team, profile);
     r.ev = valueOfRank(r.predRank, scale, c) + c.teamBonus * r.twp;
     r.lev = r.ev > 0 ? r.ev * (1 - r.own) : -Infinity;
   });
   const eligible = rows.filter((r) => !r.ex);
-  const captain = eligible.length ? eligible.reduce((a, b) => (b.ev > a.ev ? b : a), eligible[0]) : null;
+  // Ved lige expΔ: på TTT foretræk holdets tempo-motor (Ganna-typen), ellers form.
+  const capBetter = (b, a) => b.ev > a.ev || (b.ev === a.ev && (ttt ? tttEngine(b) > tttEngine(a) : b.form > a.form));
+  const captain = eligible.length ? eligible.reduce((a, b) => (capBetter(b, a) ? b : a), eligible[0]) : null;
   const sortKey = $('sort').value;
   const view = [...rows].sort((a, b) => (b[sortKey] === -Infinity ? -1e18 : b[sortKey]) - (a[sortKey] === -Infinity ? -1e18 : a[sortKey]));
 
@@ -272,17 +320,21 @@ function compute() {
     if (r === captain) tr.className = 'cap';
     if (r.ex) tr.className = 'ex';
     const lev = r.lev === -Infinity ? '–' : kr(r.lev);
-    tr.title = r.hasForm
+    tr.title = ttt
+      ? `HVORFOR (TTT/holdtempo): ${r.team || 'ukendt hold'} = hold ${r.teamRank} · tiden tages på 1. rytter over stregen — dyreste rytter (lederen) bæres frem → individuel plads ${r.predRank} → expΔ ${kr(r.ev)}`
+        + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder TTT) ${(r.twp * 100).toFixed(0)}%)` : '')
+        + ` · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
+      : r.hasForm
       ? `HVORFOR: form ${r.form.toFixed(2)} · profil-fit(${profile}) ${r.fitP.toFixed(2)} → model-plads ${r.predRank} → expΔ ${kr(r.ev)}`
         + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder) ${(r.twp * 100).toFixed(0)}%)` : '')
         + ` · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
       : 'Ingen 2026-form på denne rytter (ingen data) → strength 0.';
     tr.innerHTML = `<td>${i + 1}</td>`
-      + `<td>${r.name}${r === captain ? ' 👑' : ''}${r.hasForm ? '' : ' <span class="muted">(ingen form)</span>'}</td>`
+      + `<td>${r.name}${r === captain ? ' 👑' : ''}${(!ttt && !r.hasForm) ? ' <span class="muted">(ingen form)</span>' : ''}</td>`
       + `<td>${r.team}</td>`
       + `<td><span class="ownbar" style="--w:${Math.min(100, r.own * 100).toFixed(0)}%">${(r.own * 100).toFixed(0)}%</span></td>`
       + `<td>${kr(r.price)}</td>`
-      + `<td title="modellens forudsagte placering + profil-fit">${r.predRank}${r.hasForm ? ` <span class="muted">(fit ${r.fitP.toFixed(2)})</span>` : ''}</td>`
+      + `<td title="${ttt ? 'individuel forudsagt plads: holdets rang + rækkefølge på holdet (lederen krydser først)' : 'modellens forudsagte placering + profil-fit'}">${r.predRank}${ttt ? ` <span class="muted">(hold ${r.teamRank})</span>` : (r.hasForm ? ` <span class="muted">(fit ${r.fitP.toFixed(2)})</span>` : '')}</td>`
       + `<td class="${r.ev >= 0 ? 'pos' : 'neg'}">${kr(r.ev)}</td><td>${lev}</td>`
       + `<td><button class="flagbtn" data-name="${r.name.replace(/"/g, '&quot;')}" title="${r.ex ? 'fjern nyhedsflag' : 'udeluk (styrt/sygdom/nyhed)'}">${r.ex ? '⛔' : '⚑'}</button></td>`;
     tb.appendChild(tr);
@@ -304,7 +356,7 @@ function compute() {
     : profile === 'itt'
     ? '<p class="warn">⚠ LAV TILLID (ITT): tynd profil-historik for tempo. Anbefalingen er usikker.</p>'
     : profile === 'ttt'
-    ? '<p class="warn">⚠ LAV TILLID (TTT): holdtempo — individuel placering er ikke mekanikken. Se på hvilket HOLD der vinder (holdbonus = P(hold vinder)·60k til alle på holdet er den vigtige kanal her).</p>' : '';
+    ? '<p class="warn">⚠ TTT (holdtempo): HOLD rangeres efter tempo-motor (gns. af holdets 5 stærkeste ITT-motorer). Holdet-reglen: <b>tiden tages på FØRSTE rytter fra hvert hold</b> — holdene bærer stjernen frem, så han krydser først. Indenfor holdet forudsiges rækkefølgen derfor efter pris (lederen først): hold 1\'s leder = plads 1, hold 1\'s nr. 2 = plads 2 osv. Stadig lav-tillid: TTT-værdikurven er ukalibreret (låner fladt-kurven), og pris-som-leder-proxy er en antagelse.</p>' : '';
   const exNames = rows.filter((r) => r.ex).map((r) => r.name);
   $('exline').textContent = exNames.length ? `⚑ udelukket på nyheder: ${exNames.join(', ')} (klik ⛔ for at fortryde)` : '';
   $('status').textContent = `${rows.length} aktive ryttere · profil ${profile}` + (exNames.length ? ` · ${exNames.length} udelukket` : '');
@@ -317,6 +369,7 @@ function compute() {
   [...rows].sort((a, b) => a.name.localeCompare(b.name, 'da')).forEach((r) => {
     const o = document.createElement('option'); o.value = r.name; dl.appendChild(o);
   });
+  fillTeamSelects(rows);
   computeOutlook();
 }
 $('go').onclick = compute;
@@ -341,8 +394,25 @@ function computeOutlook() {
     const low = st.profile === 'break' || st.profile === 'itt' || st.profile === 'ttt';
     html += `<tr><td>E${st.stageNo}${st.date ? ' · ' + st.date.slice(5) : ''}</td><td>${st.profile}${low ? ' ⚠' : ''}</td><td style="text-align:left">${picks}</td></tr>`;
   }
+  html += '</tbody></table>';
+  // KUMULATIVT: hvem er bedst SAMLET over næste 1, 2 og 3 etaper — det er den
+  // horisont et skifte skal vurderes på (køb før blokken, ikke dag-for-dag).
+  if (haveField && upcoming.length) {
+    html += '<h3 style="font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 4px;color:var(--muted)">Σ Bedst over horisonten (kumuleret expΔ)</h3>';
+    html += '<table><thead><tr><th>Horisont</th><th style="text-align:left">Top-3 samlet — Σ expΔ</th></tr></thead><tbody>';
+    for (let H = 1; H <= upcoming.length; H++) {
+      const legs = upcoming.slice(0, H);
+      const ranked = window._field.filter((r) => !r.ex)
+        .map((r) => ({ r, ev: legs.reduce((s, st) => s + evOnProfile(r, st.profile), 0) }))
+        .sort((a, b) => b.ev - a.ev).slice(0, 3);
+      const label = H === 1 ? `E${legs[0].stageNo}` : `E${legs[0].stageNo}–E${legs[legs.length - 1].stageNo}`;
+      html += `<tr><td>${label} <span class="muted">(${H})</span></td><td style="text-align:left">${ranked.map((x, j) => `${j === 0 ? '👑 ' : ''}${x.r.name} <span class="muted">(${kr(x.ev)})</span>`).join(' · ')}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    html += '<p class="muted">Break-even for et skifte: Σ(expΔ køb − expΔ sælg) over horisonten skal overstige 1 % købsgebyr (+ 0,5 %/etape rente på frigjort kontant). Trin 3/4 regner det præcist pr. skifte — vinderen her er din transfer-kandidat FØR blokken.</p>';
+  }
   if (haveField) _evCache = null;
-  html += '</tbody></table><p class="muted">Samme rytter i toppen 2–3 dage i træk = køb ham FØR blokken (kør hold-rådgiveren). ⚠ = lav-tillids-profil.</p>';
+  html += '<p class="muted">Samme rytter i toppen 2–3 dage i træk = køb ham FØR blokken (kør hold-rådgiveren). ⚠ = lav-tillids-profil.</p>';
   out.innerHTML = html;
 }
 
@@ -367,17 +437,58 @@ function describeRank(rank) {
  *  strength på profilen (grov Plackett-Luce-førstevalgs-proxy, ukalibreret).
  *  Fodrer den fremadrettede holdbonus: expectedTeamBonus = P(hold vinder)·60k
  *  til HVER rytter på holdet — stacking-kanalen fra HANDOVER §2.3. */
+// --- TTT (holdtempo) scoring -------------------------------------------------
+// En TTT er et HOLDresultat: holdet kører samlet, og individuel profil-fit er
+// meningsløs (straffede fx Pogačar til plads 103 fordi han ikke tilfældigvis
+// havde kørt en TTT i 2026). Vi rangerer i stedet HOLD efter deres tempo-motor
+// (gns. af holdets TTT_ENGINES stærkeste ITT-motorer).
+// HOLDET-REGEL: tiden registreres på FØRSTE rytter fra hvert hold over stregen
+// — så holdene bærer stjernen frem, og han krydser først. Indenfor holdet
+// forudsiger vi derfor rækkefølgen efter holdet-pris (spillets egen leder-proxy;
+// Pogačar 17M krydser før Politt 3M), tiebreak form. Hver rytter får sin egen
+// forudsagte plads: hold 1's leder = plads 1, hold 1's nr. 2 = plads 2, osv.
+const TTT_ENGINES = 5;
+const tttEngine = (r) => r.form + SNAP.evBeta * ((r.fitObj && r.fitObj.itt) || 0);
+let _tttCache = null;
+function tttTeamStrength() {
+  if (_tttCache) return _tttCache;
+  const byTeam = new Map();
+  for (const r of window._field) { if (!byTeam.has(r.team)) byTeam.set(r.team, []); byTeam.get(r.team).push(r); }
+  const strength = new Map();
+  for (const [t, arr] of byTeam) {
+    const eng = arr.map(tttEngine).sort((a, b) => b - a).slice(0, TTT_ENGINES);
+    strength.set(t, eng.reduce((s, v) => s + v, 0) / Math.max(eng.length, 1));
+  }
+  const rank = new Map(), riderRank = new Map();
+  let pos = 1;
+  [...strength.entries()].sort((a, b) => b[1] - a[1]).forEach(([t], i) => {
+    rank.set(t, i + 1);
+    // første-rytter-reglen: dyreste (lederen) forrest, tiebreak form
+    [...byTeam.get(t)].sort((a, b) => (b.price || 0) - (a.price || 0) || b.form - a.form)
+      .forEach((r) => riderRank.set(r, pos++));
+  });
+  _tttCache = { strength, rank, riderRank };
+  return _tttCache;
+}
+
 let _twpCache = null;
 function teamWinProb(team, profile) {
   if (!_twpCache) _twpCache = new Map();
   if (!_twpCache.has(profile)) {
-    const beta = SNAP.evBeta;
-    const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
     const g = SNAP.winProbGamma || 1;
-    let tot = 0; const per = new Map();
-    for (const r of window._field) { const v = Math.pow(Math.max(0, s(r)), g); tot += v; per.set(r.team, (per.get(r.team) || 0) + v); }
     const m = new Map();
-    for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
+    if (profile === 'ttt') {
+      // P(hold vinder TTT) ≈ softmax over holdenes tempo-styrke (ikke individuel).
+      const T = tttTeamStrength(); let tot = 0; const per = new Map();
+      for (const [t, v] of T.strength) { const p = Math.pow(Math.max(0, v), g); per.set(t, p); tot += p; }
+      for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
+    } else {
+      const beta = SNAP.evBeta;
+      const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
+      let tot = 0; const per = new Map();
+      for (const r of window._field) { const v = Math.pow(Math.max(0, s(r)), g); tot += v; per.set(r.team, (per.get(r.team) || 0) + v); }
+      for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
+    }
     _twpCache.set(profile, m);
   }
   return _twpCache.get(profile).get(team) || 0;
@@ -390,9 +501,15 @@ function evOnProfile(rider, profile) {
   const ck = _evCache && rider.name + '|' + profile;
   if (_evCache && _evCache.has(ck)) return _evCache.get(ck);
   const c = SNAP.valueCoeffs, beta = SNAP.evBeta;
-  const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
-  const mine = s(rider);
-  const rank = 1 + window._field.filter((r) => r !== rider && s(r) > mine).length;
+  let rank;
+  if (profile === 'ttt') {
+    // TTT: individuel plads via holdrang + første-rytter-reglen (se tttTeamStrength).
+    rank = tttTeamStrength().riderRank.get(rider) || 999;
+  } else {
+    const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
+    const mine = s(rider);
+    rank = 1 + window._field.filter((r) => r !== rider && s(r) > mine).length;
+  }
   const ev = valueOfRank(rank, scaleOf(profile), c) + c.teamBonus * teamWinProb(rider.team, profile);
   if (_evCache) _evCache.set(ck, ev);
   return ev;
@@ -453,8 +570,9 @@ $('evalgo').onclick = evalTransfer;
 // ---- squad advisor (greedy single-swap, TRIN 5d) ----
 function advise() {
   if (!window._field) { $('advstatus').textContent = 'kør "Beregn" først'; return; }
-  const names = $('advteam').value.split(',').map((s) => s.trim()).filter(Boolean);
-  if (names.length !== 8) { $('advstatus').textContent = `forventer 8 navne, fik ${names.length}`; return; }
+  const names = teamPicks();
+  if (names.length !== 8) { $('advstatus').textContent = `vælg 8 ryttere i dropdowns (valgt: ${names.length})`; return; }
+  if (new Set(names).size !== 8) { $('advstatus').textContent = 'samme rytter valgt to gange — ret dropdowns'; return; }
   const squad = []; const missing = [];
   for (const n of names) {
     const r = window._field.find((x) => x.name.toLowerCase() === n.toLowerCase());
@@ -531,7 +649,7 @@ $('savelog').onclick = () => {
     candidates: window._decision.candidates,
     transferEval: window._lastTransfer || null,
     advisorTop: window._advice || null,
-    myTeam: $('myteam').value || $('advteam').value, myCaptain: $('mycaptain').value, outcome: '',
+    myTeam: teamPicks().join(', '), myCaptain: $('mycaptain').value, outcome: '',
   });
   setLogs(logs);
   $('logstatus').textContent = `gemt · ${logs.length} poster · ${window._decision.candidates.length} kandidater m. ejerandel`;
