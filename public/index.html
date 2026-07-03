@@ -97,6 +97,7 @@
         <option value="break">break</option>
         <option value="mountain" selected>mountain</option>
         <option value="itt">itt</option>
+        <option value="ttt">ttt</option>
       </select>
     </label>
     <label>Sortér
@@ -129,9 +130,9 @@
     <datalist id="riderlist"></datalist>
   </div>
   <div class="controls">
-    <label>E+1 <select id="h1" class="hprof"><option>sprint</option><option>punch</option><option>break</option><option selected>mountain</option><option>itt</option></select></label>
-    <label>E+2 <select id="h2" class="hprof"><option value="">—</option><option>sprint</option><option>punch</option><option>break</option><option selected>mountain</option><option>itt</option></select></label>
-    <label>E+3 <select id="h3" class="hprof"><option value="" selected>—</option><option>sprint</option><option>punch</option><option>break</option><option>mountain</option><option>itt</option></select></label>
+    <label>E+1 <select id="h1" class="hprof"><option>sprint</option><option>punch</option><option>break</option><option selected>mountain</option><option>itt</option><option>ttt</option></select></label>
+    <label>E+2 <select id="h2" class="hprof"><option value="">—</option><option>sprint</option><option>punch</option><option>break</option><option selected>mountain</option><option>itt</option><option>ttt</option></select></label>
+    <label>E+3 <select id="h3" class="hprof"><option value="" selected>—</option><option>sprint</option><option>punch</option><option>break</option><option>mountain</option><option>itt</option><option>ttt</option></select></label>
     <button id="evalgo">Evaluér skifte</button>
     <span id="tstatus" class="muted"></span>
   </div>
@@ -282,7 +283,7 @@ function compute() {
     };
   });
 
-  const lowConf = profile === 'break' || profile === 'itt';
+  const lowConf = profile === 'break' || profile === 'itt' || profile === 'ttt';
   $('capline').innerHTML = captain
     ? `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr · ejer ${(captain.own * 100).toFixed(0)}% · heraf forventet holdbonus ${kr(c.teamBonus * captain.twp)} kr ved P(hold vinder)=${(captain.twp * 100).toFixed(0)}%)`
       + (lowConf ? ' <span class="neg" style="font-weight:700">⚠ LAV TILLID</span>' : '')
@@ -290,7 +291,9 @@ function compute() {
   $('breakwarn').innerHTML = profile === 'break'
     ? '<p class="warn">⚠ LAV TILLID (break): modellen er svag her (recall 0,20 — kaptajn er nær gæt). Stol ikke blindt på anbefalingen.</p>'
     : profile === 'itt'
-    ? '<p class="warn">⚠ LAV TILLID (ITT): tynd profil-historik for tempo. Anbefalingen er usikker.</p>' : '';
+    ? '<p class="warn">⚠ LAV TILLID (ITT): tynd profil-historik for tempo. Anbefalingen er usikker.</p>'
+    : profile === 'ttt'
+    ? '<p class="warn">⚠ LAV TILLID (TTT): holdtempo — individuel placering er ikke mekanikken. Se på hvilket HOLD der vinder (holdbonus = P(hold vinder)·60k til alle på holdet er den vigtige kanal her).</p>' : '';
   const exNames = rows.filter((r) => r.ex).map((r) => r.name);
   $('exline').textContent = exNames.length ? `⚑ udelukket på nyheder: ${exNames.join(', ')} (klik ⛔ for at fortryde)` : '';
   $('status').textContent = `${rows.length} aktive ryttere · profil ${profile}` + (exNames.length ? ` · ${exNames.length} udelukket` : '');

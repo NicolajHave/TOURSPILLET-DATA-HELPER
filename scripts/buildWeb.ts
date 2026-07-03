@@ -21,7 +21,7 @@ import { EV_BETA, WIN_PROB_GAMMA } from '../src/lib/evModel';
 
 const f = (rel: string) => fileURLToPath(new URL(`../${rel}`, import.meta.url));
 const PCS = f('fixtures/pcs');
-const PROFILES: StageProfile[] = ['sprint', 'punch', 'break', 'mountain', 'itt'];
+const PROFILES: StageProfile[] = ['sprint', 'punch', 'break', 'mountain', 'itt', 'ttt'];
 
 // discover 2026 races that have a stages file
 const races = readdirSync(PCS)
