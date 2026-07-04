@@ -8,20 +8,26 @@ Rækkefølgen er bevidst — hvert trin afhænger af det foregående.
 
 ---
 
-## TRIN 1 — Find Tour-spillets gameId (når holdet åbner spillet)
+## TRIN 1 — Tour-spillets gameId ✅ BEKRÆFTET = 618
 
-Værktøjet er kalibreret på Dauphiné (gameId 622). Tour-spillet får et **nyt
-gameId**.
+Værktøjet var kalibreret på Dauphiné (gameId 622). Tour-spillet **er 618**
+(bekræftet i `fixtures/holdet/tour-de-france-2026-cartridge.json`).
 
-1. Log ind på holdet, åbn Tour-spillet.
-2. Find gameId via ét af:
-   - Adresselinjen: `https://nexus-app-fantasy.holdet.dk/api/cartridges/tour-de-france-2026`
-     (slug kan variere — tjek i Network-fanen hvis den fejler)
-   - Eller Network-fanen → find kaldet `/api/games/{NYT_ID}/players`
-3. **Opdater dit daglige bogmærke** til det nye id:
-   `https://nexus-app-fantasy.holdet.dk/api/games/{NYT_ID}/players`
+**Dit daglige snapshot-bogmærke:**
+```
+https://nexus-app-fantasy.holdet.dk/api/games/618/players
+```
 
-✅ Resultat: du ved hvilket gameId dine daglige Tour-snapshots skal hentes fra.
+⚠️ **VIGTIGT — det er `nexus-app-fantasy.holdet.dk`, IKKE `www.holdet.dk`.**
+`www.holdet.dk/api/...` findes ikke (siden er blank). Faldgruber:
+- **Du skal være logget ind på holdet i samme browser** — endpointet læser din
+  session-cookie. Åbner du URL'en i en session uden login, får du tomt/fejl.
+- Er svaret stadig blankt: F12 → Network, klik rundt i Tour-spillet, find kaldet
+  `/api/games/618/players`, højreklik → "Open in new tab" (omgår CORS/preflight).
+- **Tjek `popularity`:** er den `null` for alle, er spillet ikke låst endnu —
+  vent til efter transfer-deadline og hent igen. Er der tal (fx `0.42`), er du klar.
+
+✅ Resultat: ét request giver hele feltet med priser + ejerandele.
 
 ## TRIN 2 — Verificér Tour-rulesettet (KRITISK)
 
@@ -96,13 +102,19 @@ automatisk, men bekræft det.)
 ## Den daglige rutine under Touren (4.-26. juli)
 
 Hver dag, før næste etapes deadline:
-1. Hent dagens Tour-snapshot (nyt gameId-bogmærke) → indsæt i fladen.
-2. Vælg morgendagens profil → Beregn.
-3. Beslut: kaptajn (fra tillid/expectedDelta — IKKE på break/ITT), differentiering
-   (fra leverage-listen). Respektér lav-tillid-advarslerne.
-4. **Log beslutningen** før etapen + ejerandele.
-5. Efter etapen: noter faktisk udfald i loggen.
-6. Eksportér loggen som JSON med jævne mellemrum (localStorage kan forsvinde).
+1. **Hent snapshot:** `https://nexus-app-fantasy.holdet.dk/api/games/618/players`
+   (logget ind). Gem som `fixtures/holdet/tour-de-france-2026-after-stage-{n}.json`
+   (n = seneste kørte etape; før E1 = 0) og upload til GitHub.
+2. **Indsæt samme JSON i fladen** (trin 1) → vælg etapen fra TdF-etape-dropdown
+   (profil auto-udfyldes) → Beregn. Leverage-kolonnen virker nu på ægte ejerskab.
+3. **Valgfrit hurtig-read i terminal:** `npm run analyze:snapshot` (bruger
+   after-stage-0 som default; eller giv sti + profil) → chalk/leverage/enabler/TTT.
+4. Beslut: kaptajn (fra tillid/expectedDelta — IKKE på break/ITT), differentiering
+   (fra leverage-listen). Respektér lav-tillid-advarslerne. Tjek ⚑ for nyheder/styrt.
+5. **Log beslutningen** (trin 5) før etapen — ejerandele-ved-beslutning gemmes.
+6. Efter etapen: indsæt etaperesultatet i trin 5 → "Evaluér etape mod loggen"
+   (auto-score: ρ, kaptajn-plads, top-10-hit). Eksportér loggen som JSON jævnligt
+   (localStorage kan forsvinde).
 
 ## Det loggen skal bevise
 
