@@ -27,7 +27,9 @@ export const WIN_PROB_GAMMA = 1.5;
  *  undervurderede favoritter på præcis de etaper hvor værdien ligger.
  *  ttt = team-niveau → WIN_PROB_GAMMA. */
 export const WIN_PROB_GAMMA_BY_PROFILE: Record<StageProfile, number> = {
-  break: 1, itt: 2, mountain: 2.5, punch: 2.5, sprint: 1.5, ttt: WIN_PROB_GAMMA,
+  // Genfittet 4/7-2026 efter profileFit-shrinkage (Lipowitz-fixet): punch
+  // 2.5→2, itt 2→2.5 (stadig tynd, n=4). Break/mountain/sprint uændrede.
+  break: 1, itt: 2.5, mountain: 2.5, punch: 2, sprint: 1.5, ttt: WIN_PROB_GAMMA,
 };
 
 /** Empirisk DNF/DNS-hazard pr. rytter pr. etape (npm run calibrate:dnf; 51

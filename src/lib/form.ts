@@ -47,12 +47,22 @@ export function placingScore(rank: number): number {
 /**
  * Profile-fit: recency-weighted average placing score on a SPECIFIC profile.
  * "How well does this rider do on mountain summit finishes, lately?"
+ *
+ * SHRINKAGE (priorWeight): et rent vægtet gennemsnit gør n=1 katastrofal —
+ * recency-vægten forkorter sig selv væk, så én enkelt gammel sejr giver
+ * fit = 1,0 (maksimum!) uanset alder. Casen der afslørede det: Lipowitz'
+ * eneste sprint-klassificerede 2026-resultat var en januar-endagssejr →
+ * fit_sprint 1,0 → han toppede alle sprintetaper foran ægte sprintere med
+ * 10+ resultater. Fantom-observationen (kvalitet 0, fuld vægt) i nævneren
+ * skrumper tynde profiler mod 0 og genindfører alders-effekten for n=1,
+ * mens ryttere med mange resultater næsten ikke påvirkes.
  */
 export function profileFit(
   results: Result[],
   profile: StageProfile,
   asOf: Date,
   halfLifeDays = 120, // profile aptitude is more stable than form -> longer memory
+  priorWeight = 1,
 ): number {
   const lambda = Math.LN2 / halfLifeDays;
   let num = 0;
@@ -65,5 +75,5 @@ export function profileFit(
     num += w * (r.finished && r.rank != null ? placingScore(r.rank) : 0);
     den += w;
   }
-  return den === 0 ? 0 : +(num / den).toFixed(3);
+  return den === 0 ? 0 : +(num / (den + priorWeight)).toFixed(3);
 }
