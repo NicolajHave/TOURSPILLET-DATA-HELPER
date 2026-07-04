@@ -103,6 +103,9 @@
     <label>Sortér
       <select id="sort"><option value="lev">leverage</option><option value="ev">expectedDelta</option><option value="sigma">varians (σ)</option><option value="perMio">expΔ pr. mio. (enablers)</option><option value="gcDay">GC-indkomst/dag</option></select>
     </label>
+    <label title="Filtrér kandidatlisten til bunden af markedet — hvad har du at rykke med på de billige pladser? Kombinér med sortering 'expΔ pr. mio.' for enabler-jagten.">Prisloft
+      <select id="pricecap"><option value="">alle</option><option value="4500000">≤ 4,5 mio (bunden)</option></select>
+    </label>
     <button id="go">Beregn</button>
     <span id="status" class="muted"></span>
   </div>
@@ -111,7 +114,9 @@
 
 <div class="card">
   <h2><span class="step">2</span>Kandidater</h2>
-  <p class="muted">Rangeret efter valgt kolonne. <b>model-pl.</b> = modellens forudsagte
+  <p class="muted">Top 50 efter valgt sortering. <b>Prisloft ≤ 4,5 mio</b> viser kun bunden af
+  markedet — kombinér med sortering <b>expΔ pr. mio.</b> for at se, hvad du har at rykke med
+  på de billige pladser (kaptajn/leverage regner stadig på hele feltet). <b>model-pl.</b> = modellens forudsagte
   placering (lav = stærk) drevet af form × profil-fit; <b>expΔ</b> = Monte-Carlo-forventning
   (3000 sims over placeringsfordelingen) + forventet holdbonus; <b>±σ</b> = spredning —
   varians-våbnet: ved (næsten) lige expΔ, tag høj σ + lav ejer%; <b>Δ/mio</b> = expΔ pr.
@@ -491,10 +496,14 @@ function compute() {
   const capBetter = (b, a) => b.ev > a.ev || (b.ev === a.ev && (ttt ? tttEngine(b) > tttEngine(a) : b.form > a.form));
   const captain = eligible.length ? eligible.reduce((a, b) => (capBetter(b, a) ? b : a), eligible[0]) : null;
   const sortKey = $('sort').value;
-  const view = [...rows].sort((a, b) => (b[sortKey] === -Infinity ? -1e18 : b[sortKey]) - (a[sortKey] === -Infinity ? -1e18 : a[sortKey]));
+  // Prisloft filtrerer kun VISNINGEN (bunden af markedet) — kaptajn/leverage/
+  // beslutningslog regner stadig på hele feltet.
+  const priceCap = parseInt($('pricecap').value || '0', 10);
+  const view = [...rows].filter((r) => !priceCap || r.price <= priceCap)
+    .sort((a, b) => (b[sortKey] === -Infinity ? -1e18 : b[sortKey]) - (a[sortKey] === -Infinity ? -1e18 : a[sortKey]));
 
   const tb = $('tbl').querySelector('tbody'); tb.innerHTML = '';
-  view.slice(0, 40).forEach((r, i) => {
+  view.slice(0, 50).forEach((r, i) => {
     const tr = document.createElement('tr');
     if (r === captain) tr.className = 'cap';
     if (r.ex) tr.className = 'ex';
@@ -550,7 +559,9 @@ function compute() {
     ? '<p class="warn">⚠ TTT (officielle regler, docs/RULES.md): hold 1-5 betaler <b>200k/150k/100k/50k/25k til ALLE holdets ryttere</b> — ingen individuel etapetabel. Tiden tages på 1. rytter pr. hold → GC efter etapen følger kryds-rækkefølgen (lederen forrest) → vinderholdet besætter GC 1-8 og høster sammenlagt-vækst (125k..30k) samme aften — derfor spredning indenfor holdet i expΔ. HUSK manuelt (kan ikke modelleres): pointtrøjen til hurtigste ved mellemtiden + bjergtrøjen til hurtigste op ad sidste stigning (25k hver). Lav-tillid: pris-som-leder-proxy og holdorden er antagelser.</p>' : '';
   const exNames = rows.filter((r) => r.ex).map((r) => r.name);
   $('exline').textContent = exNames.length ? `⚑ udelukket på nyheder: ${exNames.join(', ')} (klik ⛔ for at fortryde)` : '';
-  $('status').textContent = `${rows.length} aktive ryttere · profil ${profile}` + (exNames.length ? ` · ${exNames.length} udelukket` : '');
+  $('status').textContent = `${rows.length} aktive ryttere · profil ${profile}`
+    + (priceCap ? ` · prisloft ≤ ${(priceCap / 1e6).toLocaleString('da-DK')} mio: ${view.length} i bunden` : '')
+    + (exNames.length ? ` · ${exNames.length} udelukket` : '');
   window._decision = {
     profile, lowConfidence: lowConf, modelCaptain: captain ? captain.name : null, excluded: exNames,
     candidates: rows.map((r) => ({ name: r.name, own: +(r.own).toFixed(4), ev: Math.round(r.ev), sigma: Math.round(r.sigma || 0), pWin: +(r.pWin || 0).toFixed(3), gcDay: Math.round(r.gcDay || 0), lev: r.lev === -Infinity ? null : Math.round(r.lev), hasForm: r.hasForm, excluded: r.ex })),
@@ -564,6 +575,8 @@ function compute() {
   computeOutlook();
 }
 $('go').onclick = compute;
+$('pricecap').onchange = () => { if ($('snap').value.trim()) compute(); };
+$('sort').onchange = () => { if ($('snap').value.trim()) compute(); };
 
 /** Outlook over the next up-to-3 route stages: profile + top-3 model picks per
  *  stage, so you can plan transfers ahead (buy the climber before the block). */
