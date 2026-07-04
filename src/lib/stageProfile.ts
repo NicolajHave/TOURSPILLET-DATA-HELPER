@@ -68,6 +68,11 @@ export function classifyStage(f: StageFeatures): StageProfile {
     case 'mountain_flat_finish':
       return 'break';            // big climbing, valley/descent finish -> breakaway
     case 'hilly_uphill_finish':
+      // PCS-ikonet undervurderer af og til rigtige bjergetaper (TdF26 E10:
+      // Puy Mary-etapen, 3791 hm / ps 261, ikon = hilly_uphill — ekspert-
+      // valideret som klassements-/bjergetape, jf. 2016/2024-precedens).
+      // Absolut hårdhed vinder over ikonet.
+      if ((f.profileScore !== undefined && f.profileScore >= 200) || f.verticalM >= 3000) return 'mountain';
       return 'punch';
     case 'hilly_flat_finish':
       // flat finish but a hard day -> breakaway, not a bunch sprint. Prefer the
