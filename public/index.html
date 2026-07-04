@@ -426,7 +426,7 @@ function tttMonteCarlo(rows) {
   const teams = [...T.strength.keys()];
   const g = gammaFor('ttt');
   const w = teams.map((t) => Math.pow(Math.max(0, T.strength.get(t)), g));
-  const members = new Map(teams.map((t) => [t, rows.filter((r) => r.team === t).sort((a, b) => (b.price || 0) - (a.price || 0) || b.form - a.form)]));
+  const members = T.sorted; // afslutter-orden (punch), delt med tttTeamStrength
   const sum = new Map(rows.map((r) => [r, 0])), sumSq = new Map(rows.map((r) => [r, 0]));
   const winT = new Map(teams.map((t) => [t, 0]));
   const rng = mulberry32(MC.seed + 2);
@@ -442,9 +442,10 @@ function tttMonteCarlo(rows) {
     if (order.length) winT.set(order[0], winT.get(order[0]) + 1);
     const gain = new Map();
     order.forEach((t, p) => { for (const m of members.get(t)) gain.set(m, (gain.get(m) || 0) + PAY_TTT[p]); });
+    // GC-toppen: kun holdets ~4 overlevere tæller (motorerne taber 30-90 sek.)
     let gcRank = 1;
     outer: for (const t of order) {
-      for (const m of members.get(t)) {
+      for (const m of members.get(t).slice(0, TTT_SURVIVORS)) {
         if (gcRank > 10) break outer;
         gain.set(m, (gain.get(m) || 0) + GC_DAILY[gcRank - 1] + (gcRank === 1 ? YELLOW : 0));
         gcRank++;
@@ -520,7 +521,7 @@ function compute() {
     if (r.ex) tr.className = 'ex';
     const lev = r.lev === -Infinity ? '–' : kr(r.lev);
     tr.title = ttt
-      ? `HVORFOR (TTT, officielle regler): ${r.team || 'ukendt hold'} = hold ${r.teamRank} (tempo-motor) · holdplacering 1-5 betaler 200k/150k/100k/50k/25k til ALLE på holdet · P(holdet vinder) ${(r.pWin * 100).toFixed(0)}% · GC efter etapen følger kryds-rækkefølgen (lederen/dyreste forrest): forventet GC-plads ${r.predRank}${r.predRank <= 10 ? ` → +${kr(GC_DAILY[r.predRank - 1] + (r.predRank === 1 ? YELLOW : 0))} sammenlagt-vækst` : ''} → MC-expΔ ${kr(r.ev)} ± ${kr(r.sigma)} · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
+      ? `HVORFOR (TTT, officielle regler): ${r.team || 'ukendt hold'} = hold ${r.teamRank} (tempo-motor) · holdplacering 1-5 betaler 200k/150k/100k/50k/25k til ALLE på holdet · P(holdet vinder) ${(r.pWin * 100).toFixed(0)}% · GC efter etapen: AFSLUTTEREN (bedste punch) krydser først, kun ~4 overlevere pr. hold tæller i toppen — forventet GC-plads ${r.predRank}${r.predRank <= 10 ? ` → +${kr(GC_DAILY[r.predRank - 1] + (r.predRank === 1 ? YELLOW : 0))} sammenlagt-vækst` : ''} → MC-expΔ ${kr(r.ev)} ± ${kr(r.sigma)} · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
       : r.hasForm
       ? `HVORFOR: form ${r.form.toFixed(2)} · profil-fit(${profile}) ${r.fitP.toFixed(2)} → model-plads ${r.predRank} → MC-expΔ ${kr(r.ev)} ± ${kr(r.sigma)} · P(sejr) ${(r.pWin * 100).toFixed(1)}% · DNF-risiko ${(r.pDnf * 100).toFixed(1)}%`
         + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder) ${(r.twp * 100).toFixed(0)}%)` : '')
@@ -567,7 +568,7 @@ function compute() {
     : profile === 'itt'
     ? '<p class="warn">⚠ LAV TILLID (ITT): tynd profil-historik for tempo. Anbefalingen er usikker.</p>'
     : profile === 'ttt'
-    ? '<p class="warn">⚠ TTT (officielle regler, docs/RULES.md): hold 1-5 betaler <b>200k/150k/100k/50k/25k til ALLE holdets ryttere</b> — ingen individuel etapetabel. Tiden tages på 1. rytter pr. hold → GC efter etapen følger kryds-rækkefølgen (lederen forrest) → vinderholdet besætter GC 1-8 og høster sammenlagt-vækst (125k..30k) samme aften — derfor spredning indenfor holdet i expΔ. HUSK manuelt (kan ikke modelleres): pointtrøjen til hurtigste ved mellemtiden + bjergtrøjen til hurtigste op ad sidste stigning (25k hver). Lav-tillid: pris-som-leder-proxy og holdorden er antagelser.</p>' : '';
+    ? '<p class="warn">⚠ TTT (officielle regler, docs/RULES.md): hold 1-5 betaler <b>200k/150k/100k/50k/25k til ALLE holdets ryttere</b> — ingen individuel etapetabel. Tiden tages på 1. rytter pr. hold, og med individuelle tider gælder: <b>afslutteren</b> (holdets bedste punch — kaptajnen afleveres i bunden og spurter til toppen) krydser først og tager evt. gul; kun <b>~4 overlevere pr. hold</b> tæller i GC-toppen (motorerne brændes af på stigningerne og taber 30-90 sek.). HUSK manuelt (kan ikke modelleres): pointtrøjen til hurtigste ved mellemtiden + bjergtrøjen til hurtigste op ad sidste stigning (25k hver). Lav-tillid: punch-som-afslutter-proxy og holdorden er antagelser — valideret mod holdenes egne E1-udmeldinger (5/6 match).</p>' : '';
   const exNames = rows.filter((r) => r.ex).map((r) => r.name);
   $('exline').textContent = exNames.length ? `⚑ udelukket på nyheder: ${exNames.join(', ')} (klik ⛔ for at fortryde)` : '';
   $('status').textContent = `${rows.length} aktive ryttere · profil ${profile}`
@@ -665,25 +666,39 @@ function describeRank(rank) {
 // forudsagte plads: hold 1's leder = plads 1, hold 1's nr. 2 = plads 2, osv.
 const TTT_ENGINES = 5;
 const tttEngine = (r) => r.form + SNAP.evBeta * ((r.fitObj && r.fitObj.itt) || 0);
+// Kryds-rækkefølgen indenfor holdet: AFSLUTTEREN krydser først — kaptajnen
+// afleveres i bunden af målbakken og spurter til toppen, mens motorerne
+// (Ganna-typen) brændes af på stigningerne. Proxy = holdets bedste PUNCH-
+// styrke (form + β·punch-fit), tiebreak pris. Valideret mod holdenes egne
+// udmeldinger til E1 2026: rammer Pogačar/UAE, Vingegaard/Visma,
+// Pedersen/Lidl, Evenepoel/RBH, Baudin/EF (pris-proxyen pegede fejlagtigt
+// på motoren Ganna hos INEOS).
+const finisherStrength = (r) => r.form + SNAP.evBeta * ((r.fitObj && r.fitObj.punch) || 0);
+const finisherOrder = (a, b) => finisherStrength(b) - finisherStrength(a) || (b.price || 0) - (a.price || 0);
+// Kun de første SURVIVORS pr. hold overlever stigningerne og tæller i
+// GC-toppen — de tunge motorer taber 30-90 sek. og interleaves IKKE.
+// (Auvergne/ekspert-konsensus: holdene får ~4 mand med over Montjuic-finaler.)
+const TTT_SURVIVORS = 4;
 let _tttCache = null;
 function tttTeamStrength() {
   if (_tttCache) return _tttCache;
   const byTeam = new Map();
   for (const r of window._field) { if (!byTeam.has(r.team)) byTeam.set(r.team, []); byTeam.get(r.team).push(r); }
-  const strength = new Map();
+  const strength = new Map(), sorted = new Map();
   for (const [t, arr] of byTeam) {
     const eng = arr.map(tttEngine).sort((a, b) => b - a).slice(0, TTT_ENGINES);
     strength.set(t, eng.reduce((s, v) => s + v, 0) / Math.max(eng.length, 1));
+    sorted.set(t, [...arr].sort(finisherOrder));
   }
+  const orderedTeams = [...strength.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t);
   const rank = new Map(), riderRank = new Map();
+  orderedTeams.forEach((t, i) => rank.set(t, i + 1));
+  // GC-orden: hvert holds 4 overlevere (afslutter-orden) FØR næste holds —
+  // derefter alle de afbrændte motorer i samme holdorden.
   let pos = 1;
-  [...strength.entries()].sort((a, b) => b[1] - a[1]).forEach(([t], i) => {
-    rank.set(t, i + 1);
-    // første-rytter-reglen: dyreste (lederen) forrest, tiebreak form
-    [...byTeam.get(t)].sort((a, b) => (b.price || 0) - (a.price || 0) || b.form - a.form)
-      .forEach((r) => riderRank.set(r, pos++));
-  });
-  _tttCache = { strength, rank, riderRank };
+  for (const t of orderedTeams) sorted.get(t).slice(0, TTT_SURVIVORS).forEach((r) => riderRank.set(r, pos++));
+  for (const t of orderedTeams) sorted.get(t).slice(TTT_SURVIVORS).forEach((r) => riderRank.set(r, pos++));
+  _tttCache = { strength, rank, riderRank, sorted };
   return _tttCache;
 }
 
@@ -909,7 +924,7 @@ function tournamentSim(myNames, myCapName) {
     const T = tttTeamStrength(); const teams = [...T.strength.keys()];
     const gT = gammaFor('ttt');
     const wT = teams.map((t) => Math.pow(Math.max(0, T.strength.get(t)), gT));
-    const members = new Map(teams.map((t) => [t, rows.filter((r) => r.team === t).sort((a, b) => (b.price || 0) - (a.price || 0) || b.form - a.form)]));
+    const members = T.sorted; // afslutter-orden (punch), delt med tttTeamStrength
     drawSample = () => {
       delta.fill(0); top15.fill(0);
       const placed = new Set(); let tot = wT.reduce((a, b) => a + b, 0);
@@ -922,7 +937,7 @@ function tournamentSim(myNames, myCapName) {
       }
       order.forEach((t, p) => { for (const m of members.get(t)) delta[m._ti] += PAY_TTT[p]; });
       let gcRank = 1;
-      outer: for (const t of order) for (const m of members.get(t)) {
+      outer: for (const t of order) for (const m of members.get(t).slice(0, TTT_SURVIVORS)) {
         if (gcRank > 10) break outer;
         delta[m._ti] += GC_DAILY[gcRank - 1] + (gcRank === 1 ? YELLOW : 0); gcRank++;
       }
