@@ -626,6 +626,27 @@ function computeOutlook() {
       html += `<tr><td>${label} <span class="muted">(${H})</span></td><td style="text-align:left">${ranked.map((x, j) => { const gc = gcDayOf(x.r) * H; return `${j === 0 ? '👑 ' : ''}${x.r.name} <span class="muted">(${kr(x.ev)}${gc >= 1000 ? ` +GC ${kr(gc)}` : ''})</span>`; }).join(' · ')}</td></tr>`;
     }
     html += '</tbody></table>';
+    // TOP-10 over HELE horisonten (dagens etape + de næste 2) — fuldt felt og
+    // bunden (≤ 4,5 mio): hvad har du at rykke med, både i toppen og på de
+    // billige pladser, målt på samme 3-etapers Σ expΔ.
+    const H = upcoming.length;
+    const hLabel = H === 1 ? `E${upcoming[0].stageNo}` : `E${upcoming[0].stageNo}–E${upcoming[H - 1].stageNo}`;
+    const scored = window._field.filter((r) => !r.ex)
+      .map((r) => ({ r, ev: upcoming.reduce((s, st) => s + evOnProfile(r, st.profile), 0) }))
+      .sort((a, b) => b.ev - a.ev);
+    const top10tbl = (list, title) => {
+      let h = `<h3 style="font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 4px;color:var(--muted)">${title}</h3>`
+        + `<table><thead><tr><th>#</th><th style="text-align:left">Rytter</th><th style="text-align:left">Hold</th><th>Pris</th><th>Ejer%</th><th>Σ expΔ (${hLabel})</th><th title="forventet sammenlagt-vækst over horisontens dage — IKKE i Σ expΔ">+GC (${H} dg)</th></tr></thead><tbody>`;
+      list.slice(0, 10).forEach((x, i) => {
+        const gc = gcDayOf(x.r) * H;
+        h += `<tr><td>${i + 1}</td><td style="text-align:left">${x.r.name}</td><td style="text-align:left">${(x.r.team || '').slice(0, 24)}</td>`
+          + `<td>${kr(x.r.price)}</td><td>${(x.r.own * 100).toFixed(0)}%</td>`
+          + `<td class="${x.ev >= 0 ? 'pos' : 'neg'}">${kr(x.ev)}</td><td class="muted">${gc >= 1000 ? kr(gc) : '–'}</td></tr>`;
+      });
+      return h + '</tbody></table>';
+    };
+    html += top10tbl(scored, `🏅 Top-10 over horisonten (${hLabel}) — fuldt felt`);
+    html += top10tbl(scored.filter((x) => x.r.price <= 4500000), `🧱 Top-10 over horisonten (${hLabel}) — bunden (≤ 4,5 mio)`);
     html += '<p class="muted">Break-even for et skifte: Σ(expΔ køb − expΔ sælg) over horisonten skal overstige 1 % købsgebyr (+ 0,5 %/etape rente på frigjort kontant). Trin 3/4 regner det præcist pr. skifte — vinderen her er din transfer-kandidat FØR blokken.</p>';
   }
   if (haveField) _evCache = null;
