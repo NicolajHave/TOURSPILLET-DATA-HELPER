@@ -224,7 +224,7 @@
     <span id="valuestatus" class="muted"></span>
   </div>
   <div id="valueout"></div>
-  <table id="logtbl"><thead><tr><th>Dato</th><th>Etape</th><th>Profil</th><th>Model-kaptajn</th><th>Mit hold</th><th>Min kaptajn</th><th>#kand.</th><th>Faktisk udfald (redigér efter etapen)</th></tr></thead><tbody></tbody></table>
+  <table id="logtbl"><thead><tr><th>Dato</th><th>Etape</th><th>Profil</th><th>Model-kaptajn</th><th>Mit hold</th><th>Min kaptajn</th><th>#kand.</th><th>Faktisk udfald (redigér efter etapen)</th><th>slet</th></tr></thead><tbody></tbody></table>
 </div>
 </main>
 
@@ -1109,10 +1109,19 @@ function renderLogs() {
     tr.innerHTML = `<td>${l.savedAt}</td><td>${l.stage || ''}</td><td>${l.profile}${l.lowConfidence ? ' ⚠' : ''}</td>`
       + `<td>${l.modelCaptain || ''}</td><td style="text-align:left">${l.myTeam || ''}</td><td>${l.myCaptain || ''}</td>`
       + `<td>${(l.candidates || []).length}</td>`
-      + `<td><input data-i="${idx}" class="outcome" value="${(l.outcome || '').replace(/"/g, '&quot;')}" placeholder="fyld ud efter etapen" style="width:220px"/></td>`;
+      + `<td><input data-i="${idx}" class="outcome" value="${(l.outcome || '').replace(/"/g, '&quot;')}" placeholder="fyld ud efter etapen" style="width:220px"/></td>`
+      + `<td><button class="dellog" data-i="${idx}" title="slet denne log-post permanent" style="color:var(--neg);border-color:var(--neg)">✕</button></td>`;
     tb.appendChild(tr);
   });
   tb.querySelectorAll('input.outcome').forEach((inp) => { inp.onchange = () => { const L = getLogs(); L[+inp.dataset.i].outcome = inp.value; setLogs(L); }; });
+  tb.querySelectorAll('button.dellog').forEach((btn) => {
+    btn.onclick = () => {
+      const L = getLogs(); const i = +btn.dataset.i; const post = L[i];
+      if (!confirm(`Slet log-posten for "${post.stage || post.savedAt}" (kaptajn ${post.myCaptain || '?'})? Kan ikke fortrydes.`)) return;
+      L.splice(i, 1); setLogs(L); renderLogs();
+      $('logstatus').textContent = `slettet · ${L.length} poster tilbage`;
+    };
+  });
 }
 $('savelog').onclick = () => {
   if (!window._decision) { alert('Kør "Beregn" først — så gemmes ejerandele pr. kandidat med beslutningen.'); return; }
