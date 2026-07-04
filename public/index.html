@@ -93,7 +93,7 @@
     <label title="Sættes automatisk når du vælger TdF-etape — ret kun hvis du vil overstyre modellens profil-læsning (fx sidevind gør en punch-etape til sprint).">Etapeprofil <span class="muted" style="text-transform:none;font-weight:400">(auto)</span>
       <select id="profile">
         <option value="sprint">sprint</option>
-        <option value="punch">punch</option>
+        <option value="punch">punch (blød)</option><option value="punch_steep">punch_steep (mur)</option>
         <option value="break">break</option>
         <option value="mountain" selected>mountain</option>
         <option value="itt">itt</option>
@@ -146,9 +146,9 @@
     <datalist id="riderlist"></datalist>
   </div>
   <div class="controls">
-    <label>E+1 <select id="h1" class="hprof"><option>sprint</option><option>punch</option><option>break</option><option selected>mountain</option><option>itt</option><option>ttt</option></select></label>
-    <label>E+2 <select id="h2" class="hprof"><option value="">—</option><option>sprint</option><option>punch</option><option>break</option><option selected>mountain</option><option>itt</option><option>ttt</option></select></label>
-    <label>E+3 <select id="h3" class="hprof"><option value="" selected>—</option><option>sprint</option><option>punch</option><option>break</option><option>mountain</option><option>itt</option><option>ttt</option></select></label>
+    <label>E+1 <select id="h1" class="hprof"><option>sprint</option><option>punch</option><option>punch_steep</option><option>break</option><option selected>mountain</option><option>itt</option><option>ttt</option></select></label>
+    <label>E+2 <select id="h2" class="hprof"><option value="">—</option><option>sprint</option><option>punch</option><option>punch_steep</option><option>break</option><option selected>mountain</option><option>itt</option><option>ttt</option></select></label>
+    <label>E+3 <select id="h3" class="hprof"><option value="" selected>—</option><option>sprint</option><option>punch</option><option>punch_steep</option><option>break</option><option>mountain</option><option>itt</option><option>ttt</option></select></label>
     <button id="evalgo">Evaluér skifte</button>
     <span id="tstatus" class="muted"></span>
   </div>
@@ -563,7 +563,9 @@ function compute() {
       + (lowConf ? ' <span class="neg" style="font-weight:700">⚠ LAV TILLID</span>' : '')
       + (varAlt ? `<br><span class="muted">Varians-alternativ: <b>${varAlt.name}</b> (expΔ ${kr(varAlt.ev)} ± ${kr(varAlt.sigma)} · ejer ${(varAlt.own * 100).toFixed(0)}%) — mere upside/kontrærhed, hvis feltet ejer kaptajnen tungt.</span>` : '')
     : 'Ingen kvalificeret kaptajn (alle udelukket?)';
-  $('breakwarn').innerHTML = profile === 'break'
+  $('breakwarn').innerHTML = profile === 'punch_steep'
+    ? '<p class="warn" style="border-left-color:var(--green);background:#e9f5ec">ℹ PUNCH (MUR-finale, fx Montjuïc): kræver BÅDE punch og klatreevne — fit = 0,6·punch + 0,4·klatring. Rene sprintere (Merlier/Kooij-typen) sorteres fra, som de blev på TdF25\'s mur-etaper (nr. 27-179). Vindertypen: Pogačar/MvdP/Vingegaard.</p>'
+    : profile === 'break'
     ? '<p class="warn">⚠ LAV TILLID (break): modellen er svag her (recall 0,20 — kaptajn er nær gæt). Stol ikke blindt på anbefalingen.</p>'
     : profile === 'itt'
     ? '<p class="warn">⚠ LAV TILLID (ITT): tynd profil-historik for tempo. Anbefalingen er usikker.</p>'

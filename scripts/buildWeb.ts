@@ -97,6 +97,11 @@ const asOf = new Date(maxDate);
 const riders = [...history.entries()].map(([key, results]) => {
   const fit: Record<string, number> = {};
   for (const p of PROFILES) fit[p] = profileFit(results, p, asOf);
+  // AFLEDT: stejl punch (mur-finale) kræver BÅDE punch og klatreevne — rene
+  // sprintere vinder blød punch (drag-spurt) men ender nr. 27-179 på mure
+  // (TdF25 E2/E4/E7). Ingen historik-rækker klassificeres punch_steep; fittet
+  // afledes: 0.6·punch + 0.4·max(mountain, break).
+  fit['punch_steep'] = +(0.6 * fit['punch'] + 0.4 * Math.max(fit['mountain'], fit['break'])).toFixed(3);
   return { key, name: rawNameByKey.get(key)!, form: form(results, asOf), fit, n: results.length };
 });
 
@@ -122,17 +127,20 @@ try {
         if (info.verticalM != null || info.profileScore != null) merged++;
       } catch { /* no per-stage file yet */ }
       const [dd, mm] = (s.date ?? '').split(/[/.]/);
-      return {
-        stageNo: s.stageNo,
-        date: dd && mm ? `2026-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}` : null,
-        profile: classifyStage({
-          distanceKm: info.distanceKm ?? s.distanceKm ?? 0,
-          verticalM: info.verticalM ?? s.verticalM ?? 0,
-          profileScore: info.profileScore ?? s.profileScore ?? undefined,
-          parcoursType: s.parcoursType ?? undefined,
-          summitFinish: s.summitFinish ?? undefined, discipline: s.discipline ?? 'road',
-        }),
-      };
+      const ps = info.profileScore ?? s.profileScore ?? undefined;
+      let profile = classifyStage({
+        distanceKm: info.distanceKm ?? s.distanceKm ?? 0,
+        verticalM: info.verticalM ?? s.verticalM ?? 0,
+        profileScore: ps,
+        parcoursType: s.parcoursType ?? undefined,
+        summitFinish: s.summitFinish ?? undefined, discipline: s.discipline ?? 'road',
+      });
+      // RUTE-forfinelse (rører ikke historik-klassifikationen): punch med høj
+      // absolut hårdhed (ps>=100) = mur-finale (E2 Montjuïc: ps 137) → stejl
+      // punch, hvor rene sprintere sorteres fra. Bløde punch (Vuelta-typen,
+      // ps 22-25) forbliver 'punch'.
+      if (profile === 'punch' && ps !== undefined && ps >= 100) profile = 'punch_steep';
+      return { stageNo: s.stageNo, date: dd && mm ? `2026-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}` : null, profile };
     });
   console.log(`route: ${route!.length} TdF 2026-etaper klassificeret (auto-horisont aktiv); ${merged} m. per-etape-info (vert/ps).`);
 } catch { console.log('route: fixtures/pcs/tour-de-france-2026-stages.json mangler — horisont-profiler forbliver manuelle.'); }

@@ -29,7 +29,9 @@ export const WIN_PROB_GAMMA = 1.5;
 export const WIN_PROB_GAMMA_BY_PROFILE: Record<StageProfile, number> = {
   // Genfittet 4/7-2026 efter profileFit-shrinkage (Lipowitz-fixet): punch
   // 2.5→2, itt 2→2.5 (stadig tynd, n=4). Break/mountain/sprint uændrede.
-  break: 1, itt: 2.5, mountain: 2.5, punch: 2, sprint: 1.5, ttt: WIN_PROB_GAMMA,
+  // punch_steep: låner punch-γ (afledt profil, ingen egen kalibreringsdata —
+  // TdF25-stejl-punch indgik i punch-fittet).
+  break: 1, itt: 2.5, mountain: 2.5, punch: 2, punch_steep: 2, sprint: 1.5, ttt: WIN_PROB_GAMMA,
 };
 
 /** Empirisk DNF/DNS-hazard pr. rytter pr. etape (npm run calibrate:dnf; 51
@@ -38,7 +40,7 @@ export const WIN_PROB_GAMMA_BY_PROFILE: Record<StageProfile, number> = {
  *  <1,2 %. Forecasterens flade 3 %-default var for høj overalt UNDTAGEN bjerg.
  *  ttt: ingen events i data → itt-raten (nærmeste analog). */
 export const DNF_RATE_BY_PROFILE: Record<StageProfile, number> = {
-  break: 0.0113, itt: 0.008, mountain: 0.0343, punch: 0.0078, sprint: 0.0087, ttt: 0.008,
+  break: 0.0113, itt: 0.008, mountain: 0.0343, punch: 0.0078, punch_steep: 0.0078, sprint: 0.0087, ttt: 0.008,
 };
 export const DNF_RATE_POOLED = 0.0194;
 

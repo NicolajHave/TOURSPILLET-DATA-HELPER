@@ -15,7 +15,11 @@ export type Discipline = 'road' | 'itt' | 'ttt';
 
 export type StageProfile =
   | 'sprint'    // flat bunch sprint
-  | 'punch'     // short steep / uphill finish, reduced bunch
+  | 'punch'       // short/uphill drag finish, reduced bunch — hurtige mænd kan vinde
+  | 'punch_steep' // MUR-finale (Montjuïc/Mur-de-Bretagne-typen) — puncheur-KLATRERE
+                  // vinder, rene sprintere ender nr. 27-179 (TdF25 E2/E4/E7 ground
+                  // truth). AFLEDT profil: ingen historik-rækker klassificeres hertil;
+                  // fit = 0.6·punch + 0.4·max(mountain, break) (buildWeb).
   | 'break'     // medium/high mountain WITHOUT summit finish — breakaway day
   | 'mountain'  // high mountain summit finish — GC + climbers
   | 'itt'       // individual time trial
@@ -42,6 +46,7 @@ export interface ArchetypeWeights {
 const WEIGHTS: Record<StageProfile, ArchetypeWeights> = {
   sprint:   { sprinter: 0.70, puncheur: 0.15, climber: 0.00, gc: 0.05, rouleur: 0.10 },
   punch:    { sprinter: 0.15, puncheur: 0.55, climber: 0.10, gc: 0.15, rouleur: 0.05 },
+  punch_steep: { sprinter: 0.05, puncheur: 0.45, climber: 0.25, gc: 0.20, rouleur: 0.05 },
   break:    { sprinter: 0.05, puncheur: 0.25, climber: 0.35, gc: 0.10, rouleur: 0.25 },
   mountain: { sprinter: 0.00, puncheur: 0.05, climber: 0.45, gc: 0.45, rouleur: 0.05 },
   itt:      { sprinter: 0.05, puncheur: 0.05, climber: 0.10, gc: 0.40, rouleur: 0.40 },
