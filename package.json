@@ -20,7 +20,8 @@
     "build:web": "tsx scripts/buildWeb.ts",
     "coverage:riders": "tsx scripts/riderCoverage.ts",
     "calibrate:winprob": "tsx scripts/calibrateWinProb.ts",
-    "calibrate:dnf": "tsx scripts/calibrateDnf.ts"
+    "calibrate:dnf": "tsx scripts/calibrateDnf.ts",
+    "analyze:snapshot": "tsx scripts/analyzeSnapshot.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
