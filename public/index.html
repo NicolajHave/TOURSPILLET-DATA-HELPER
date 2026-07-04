@@ -1029,6 +1029,38 @@ function tournamentSim(myNames, myCapName) {
   };
 }
 
+// Renderer er adskilt fra selve simuleringen (dyr: 1500 samples × 200
+// modstandere): kaptajn-valg er allerede beregnet for alle 8 i res.captains
+// (næsten gratis, se tournamentSim), så et kaptajnskifte skal kun GENTEGNE,
+// ikke gensimulere. Rækkerne er klikbare, og #mycaptain-dropdownen er
+// tovejs-synkroniseret med tabellen — begge opdaterer samme cache.
+function renderTournament(res, capName) {
+  const chosen = res.captains.find((x) => x.name === capName) || res.captains[0];
+  res.captains.forEach((x) => { x.isChosen = x === chosen; });
+  if ($('mycaptain').value !== chosen.name && [...$('mycaptain').options].some((o) => o.value === chosen.name)) {
+    $('mycaptain').value = chosen.name;
+  }
+  let html = `<p><b>Mit hold vs ${OPP_N} chalk-modstandere</b> (profil ${res.profile}, ${TSAMPLES} sims — kaptajn <b>${chosen.name}</b>):
+    E[percentil] <b>${(chosen.pct * 100).toFixed(0)}%</b> · P(dagens top 10%) <b class="pos">${(chosen.top10 * 100).toFixed(1)}%</b>
+    · P(bund 25%) <b class="${chosen.bot25 > 0.3 ? 'neg' : ''}">${(chosen.bot25 * 100).toFixed(1)}%</b>
+    · E[mit hold] ${kr(chosen.ev)} vs E[modstander] ${kr(res.oppEv)}</p>`;
+  html += '<table><thead><tr><th style="text-align:left">Kaptajn-valg (klik for at vælge)</th><th>E[percentil]</th><th>P(top 10%)</th><th>P(bund 25%)</th><th>E[total]</th></tr></thead><tbody>';
+  res.captains.forEach((x) => {
+    html += `<tr class="capRow${x.isChosen ? ' cap' : ''}" data-name="${x.name.replace(/"/g, '&quot;')}" style="cursor:pointer" title="klik for at gøre ${x.name} til din kaptajn"><td style="text-align:left">${x.name}${x.isChosen ? ' 👑' : ''}</td><td>${(x.pct * 100).toFixed(0)}%</td><td>${(x.top10 * 100).toFixed(1)}%</td><td>${(x.bot25 * 100).toFixed(1)}%</td><td>${kr(x.ev)}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  html += '<p class="muted">Turnerings-logik: P(top 10%) er dit våben over 21 dage — E[percentil] alene vinder ikke en turnering på 30.000. '
+    + 'Høj P(top10) + høj P(bund25) = varians-spil (stacking/kontrær kaptajn); lav bund25 + middel top10 = sikkert spil. '
+    + 'Klik en række for at gøre den rytter til din kaptajn (synkroniserer med "Min kaptajn" i trin 5 — ingen gensimulering nødvendig). '
+    + 'Begrænsninger: modstandere er ejerskabs-vægtede træk (ikke rigtige holdkombinationer m. budget/max-2), DNF ikke i sim, holdbonus kun vinderhold, GC/dag som konstant. '
+    + '<b>Vigtigst:</b> feltet = DAGENS ejerskab — konkurrenterne når også at skifte før senere etaper (chalk-drift), så percentilen er skarpest for den FØRSTKOMMENDE etape og optimistisk længere ude.</p>';
+  $('tourout').innerHTML = html;
+  $('tourout').querySelectorAll('tr.capRow').forEach((tr) => {
+    tr.onclick = () => renderTournament(res, tr.dataset.name);
+  });
+  $('tourstatus').textContent = `OK · korrelation via fælles udfald (stacking tæller)`;
+  window._tournament = { profile: res.profile, captain: chosen.name, pct: +chosen.pct.toFixed(3), top10: +chosen.top10.toFixed(3), bot25: +chosen.bot25.toFixed(3), ev: Math.round(chosen.ev), oppEv: Math.round(res.oppEv) };
+}
 function tournamentCheck() {
   if (!window._field) { $('tourstatus').textContent = 'kør "Beregn" først'; return; }
   const names = teamPicks();
@@ -1038,26 +1070,19 @@ function tournamentCheck() {
     const res = tournamentSim(names, $('mycaptain').value);
     if (!res) { $('tourstatus').textContent = 'kunne ikke matche holdet mod feltet'; return; }
     if (res.error) { $('tourstatus').textContent = '⚠ ' + res.error; $('tourout').innerHTML = ''; return; }
-    const chosen = res.captains.find((x) => x.isChosen) || res.captains[0];
-    let html = `<p><b>Mit hold vs ${OPP_N} chalk-modstandere</b> (profil ${res.profile}, ${TSAMPLES} sims — kaptajn <b>${chosen.name}</b>):
-      E[percentil] <b>${(chosen.pct * 100).toFixed(0)}%</b> · P(dagens top 10%) <b class="pos">${(chosen.top10 * 100).toFixed(1)}%</b>
-      · P(bund 25%) <b class="${chosen.bot25 > 0.3 ? 'neg' : ''}">${(chosen.bot25 * 100).toFixed(1)}%</b>
-      · E[mit hold] ${kr(chosen.ev)} vs E[modstander] ${kr(res.oppEv)}</p>`;
-    html += '<table><thead><tr><th style="text-align:left">Kaptajn-valg (samme 8)</th><th>E[percentil]</th><th>P(top 10%)</th><th>P(bund 25%)</th><th>E[total]</th></tr></thead><tbody>';
-    res.captains.forEach((x) => {
-      html += `<tr${x.isChosen ? ' class="cap"' : ''}><td style="text-align:left">${x.name}${x.isChosen ? ' 👑' : ''}</td><td>${(x.pct * 100).toFixed(0)}%</td><td>${(x.top10 * 100).toFixed(1)}%</td><td>${(x.bot25 * 100).toFixed(1)}%</td><td>${kr(x.ev)}</td></tr>`;
-    });
-    html += '</tbody></table>';
-    html += '<p class="muted">Turnerings-logik: P(top 10%) er dit våben over 21 dage — E[percentil] alene vinder ikke en turnering på 30.000. '
-      + 'Høj P(top10) + høj P(bund25) = varians-spil (stacking/kontrær kaptajn); lav bund25 + middel top10 = sikkert spil. '
-      + 'Begrænsninger: modstandere er ejerskabs-vægtede træk (ikke rigtige holdkombinationer m. budget/max-2), DNF ikke i sim, holdbonus kun vinderhold, GC/dag som konstant. '
-      + '<b>Vigtigst:</b> feltet = DAGENS ejerskab — konkurrenterne når også at skifte før senere etaper (chalk-drift), så percentilen er skarpest for den FØRSTKOMMENDE etape og optimistisk længere ude.</p>';
-    $('tourout').innerHTML = html;
-    $('tourstatus').textContent = `OK · korrelation via fælles udfald (stacking tæller)`;
-    window._tournament = { profile: res.profile, captain: chosen.name, pct: +chosen.pct.toFixed(3), top10: +chosen.top10.toFixed(3), bot25: +chosen.bot25.toFixed(3), ev: Math.round(chosen.ev), oppEv: Math.round(res.oppEv) };
+    window._tournamentRes = res; // cache til gratis gentegning ved kaptajnskifte
+    renderTournament(res, $('mycaptain').value || res.captains[0].name);
   }, 30);
 }
 $('tourgo').onclick = tournamentCheck;
+// "Min kaptajn" (trin 5) er tovejs-synkroniseret: skift den her, og tabellen
+// (hvis allerede beregnet for samme 8) gentegnes gratis uden ny simulering.
+$('mycaptain').addEventListener('change', () => {
+  const res = window._tournamentRes;
+  if (res && res.captains.some((x) => x.name === $('mycaptain').value)) {
+    renderTournament(res, $('mycaptain').value);
+  }
+});
 
 // ---- local decision + outcome log (the leverage-measurement record) ----
 const LS = 'paperTrades';
