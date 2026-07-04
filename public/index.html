@@ -210,6 +210,20 @@
     <span id="evalstatus" class="muted"></span>
   </div>
   <div id="evalout"></div>
+  <p class="muted" style="margin-top:14px"><b>FACIT — indsæt næste holdet-snapshot</b> (samme
+  nexus-URL, hentet EFTER etapen = de nye priser). Prisændringen ER den faktiske holdet-scoring:
+  en rytter der stiger 200k gav 200k i vækst. Så måles det, der virkelig tæller — <b>tjente dit
+  hold flere kroner end feltet?</b> (leverage i rigtige penge, ikke bare rang-korrelation). NB:
+  indsæt FØR du uploader det nye snapshot og genindlæser fladen (den bruger det aktuelt
+  indlæste snapshot som "før"-priser).</p>
+  <div class="controls">
+    <textarea id="valuesnap" placeholder='{"items":[{"personId":…,"price":…}, …],"_embedded":{…}}  ← næste dags holdet /players' style="min-height:64px;flex:1"></textarea>
+  </div>
+  <div class="controls">
+    <button id="evalvalue">Evaluér faktisk værdi (holdet-point)</button>
+    <span id="valuestatus" class="muted"></span>
+  </div>
+  <div id="valueout"></div>
   <table id="logtbl"><thead><tr><th>Dato</th><th>Etape</th><th>Profil</th><th>Model-kaptajn</th><th>Mit hold</th><th>Min kaptajn</th><th>#kand.</th><th>Faktisk udfald (redigér efter etapen)</th></tr></thead><tbody></tbody></table>
 </div>
 </main>
@@ -473,7 +487,7 @@ function compute() {
     const p = persons[i.personId] || {}; const name = `${p.firstName || ''} ${p.lastName || ''}`.trim();
     const m = matchForm(name);
     const strength = m ? (m.form + beta * (m.fit[profile] || 0)) : 0;
-    return { name, team: teams[i.teamId]?.name || '', own: i.popularity ?? 0, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
+    return { name, personId: i.personId, team: teams[i.teamId]?.name || '', own: i.popularity ?? 0, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
   });
   // field + caches SKAL sættes før sort/EV-loop (teamWinProb + TTT-hold læser _field)
   window._field = rows; _twpCache = null; _evCache = null; _tttCache = null; _gcCache = null;
@@ -578,7 +592,7 @@ function compute() {
     + (exNames.length ? ` · ${exNames.length} udelukket` : '');
   window._decision = {
     profile, lowConfidence: lowConf, modelCaptain: captain ? captain.name : null, excluded: exNames,
-    candidates: rows.map((r) => ({ name: r.name, own: +(r.own).toFixed(4), ev: Math.round(r.ev), sigma: Math.round(r.sigma || 0), pWin: +(r.pWin || 0).toFixed(3), gcDay: Math.round(r.gcDay || 0), lev: r.lev === -Infinity ? null : Math.round(r.lev), hasForm: r.hasForm, excluded: r.ex })),
+    candidates: rows.map((r) => ({ name: r.name, own: +(r.own).toFixed(4), price: r.price, ev: Math.round(r.ev), sigma: Math.round(r.sigma || 0), pWin: +(r.pWin || 0).toFixed(3), gcDay: Math.round(r.gcDay || 0), lev: r.lev === -Infinity ? null : Math.round(r.lev), hasForm: r.hasForm, excluded: r.ex })),
   };
   // datalist for the transfer evaluator (field allerede sat ovenfor)
   const dl = $('riderlist'); dl.innerHTML = '';
@@ -1186,6 +1200,73 @@ function evalStage() {
     + '</tbody></table><p class="muted">ρ nær 1 = modellen ramte rangordenen; ρ nær 0 = støj (forventeligt på break-dage). Gemt på log-posten — eksportér jævnligt.</p>';
 }
 $('evalstage').onclick = evalStage;
+
+// ---- FACIT: realiseret holdet-værdi (de faktiske point) --------------------
+// Prisændringen mellem to holdet-snapshots ER holdet-scoringen. Vi joiner
+// næste-dags-snapshot (efter) mod beslutningens priser (før, gemt i loggen —
+// eller det aktuelt indlæste snapshot for gamle logs uden pris) og måler:
+// realiseret Δ pr. rytter, dit holds samlede vækst (kaptajn tæller dobbelt),
+// og — det afgørende — om dit hold slog FELTET (ejerskabs-vægtet gns. = hvad
+// den gennemsnitlige manager fik). Det er leverage i rigtige kroner.
+function evalValue() {
+  const logs = getLogs();
+  if (!logs.length) { $('valuestatus').textContent = 'ingen loggede beslutninger endnu'; return; }
+  let raw; try { raw = JSON.parse($('valuesnap').value); } catch { $('valuestatus').textContent = 'ugyldig JSON'; return; }
+  const items = raw.items || (Array.isArray(raw) ? raw : []);
+  if (!items.length) { $('valuestatus').textContent = 'ingen items[] i snapshottet'; return; }
+  const persons = raw._embedded?.persons || {};
+  // efter-pris pr. navnenøgle (personId → navn via _embedded, ellers _field-opslag)
+  const afterByKey = new Map();
+  for (const it of items) {
+    const p = persons[it.personId];
+    let nm = p ? `${p.firstName || ''} ${p.lastName || ''}`.trim() : null;
+    if (!nm && window._field) { const f = window._field.find((r) => r.personId === it.personId); nm = f && f.name; }
+    if (nm && it.price != null) afterByKey.set(nameKey(nm), it.price);
+  }
+  if (afterByKey.size < 30) { $('valuestatus').textContent = `kun ${afterByKey.size} priser tydet — mangler _embedded.persons i snapshottet?`; return; }
+
+  // målret samme log-post som etape-evalueringen
+  const sel = $('logstage').value;
+  let idx = logs.length - 1;
+  if (sel) for (let i = logs.length - 1; i >= 0; i--) if (logs[i].stage === sel) { idx = i; break; }
+  const L = logs[idx];
+  const cands = L.candidates || [];
+  // før-pris: loggens gemte pris, ellers aktuelt indlæst snapshot (gamle logs)
+  const beforeOf = (nm) => { const c2 = cands.find((x) => nameKey(x.name) === nameKey(nm)); if (c2 && c2.price != null) return c2.price; const f = window._field && window._field.find((r) => nameKey(r.name) === nameKey(nm)); return f ? f.price : null; };
+  const deltaOf = (nm) => { const a = afterByKey.get(nameKey(nm)); const b = beforeOf(nm); return (a != null && b != null) ? a - b : null; };
+
+  // FELT-baseline: ejerskabs-vægtet gns. realiseret Δ (hvad gennemsnits-manageren fik)
+  let wSum = 0, wDen = 0, allSum = 0, allN = 0;
+  for (const c2 of cands) { const d = deltaOf(c2.name); if (d == null) continue; allSum += d; allN++; wSum += (c2.own || 0) * d; wDen += (c2.own || 0); }
+  const fieldWeighted = wDen > 0 ? wSum / wDen : 0; // gns. ejet rytters gevinst
+  const fieldMean = allN > 0 ? allSum / allN : 0;
+
+  // dit hold + kaptajn (kaptajn tæller dobbelt: vækst×1 bonus)
+  const team = (L.myTeam || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const capN = L.myCaptain || '';
+  let teamTotal = 0; const teamRows = [];
+  for (const nm of team) { const d = deltaOf(nm) || 0; const isCap = nameKey(nm) === nameKey(capN); teamTotal += d + (isCap ? d : 0); teamRows.push({ nm, d, isCap }); }
+  teamRows.sort((a, b) => b.d - a.d);
+  const capDelta = deltaOf(capN);
+  const modelCapDelta = L.modelCaptain ? deltaOf(L.modelCaptain) : null;
+  // per-rytter felt-snit (8 ryttere): dit holds snit vs ejerskabs-vægtet felt
+  const teamPer = team.length ? teamRows.reduce((s, r) => s + r.d, 0) / team.length : 0;
+  const beatField = teamPer - fieldWeighted;
+
+  const summary = `REALISERET: mit hold ${kr(teamTotal)} kr (m. kaptajn×2) · pr. rytter ${kr(teamPer)} vs felt(ejer-vægtet) ${kr(fieldWeighted)} → ${beatField >= 0 ? 'SLOG feltet +' : 'under feltet '}${kr(beatField)}/rytter`
+    + ` · min kaptajn ${capN} ${kr(capDelta || 0)}` + (L.modelCaptain ? ` · model-kaptajn ${L.modelCaptain} ${kr(modelCapDelta || 0)}` : '');
+  L.realized = { teamTotal: Math.round(teamTotal), teamPerRider: Math.round(teamPer), fieldWeighted: Math.round(fieldWeighted), fieldMean: Math.round(fieldMean), beatFieldPerRider: Math.round(beatField), myCaptainDelta: capDelta == null ? null : Math.round(capDelta), modelCaptainDelta: modelCapDelta == null ? null : Math.round(modelCapDelta), evaluatedAt: new Date().toISOString().slice(0, 10) };
+  // sammenlæg med evt. eksisterende outcome-tekst
+  L.outcome = (L.outcome ? L.outcome + ' | ' : '') + summary;
+  setLogs(logs); renderLogs();
+  $('valuestatus').textContent = `facit mod "${L.stage || 'seneste'}" · ${afterByKey.size} priser`;
+  $('valueout').innerHTML = `<p><b>Facit (realiseret holdet-værdi):</b> ${summary}</p>`
+    + '<table><thead><tr><th style="text-align:left">Mit hold</th><th>realiseret Δ (kr)</th></tr></thead><tbody>'
+    + teamRows.map((r) => `<tr class="${r.isCap ? 'cap' : ''}"><td style="text-align:left">${r.nm}${r.isCap ? ' 👑' : ''}</td><td class="${r.d >= 0 ? 'pos' : 'neg'}">${kr(r.d)}${r.isCap ? ` <span class="muted">(×2 = ${kr(r.d * 2)})</span>` : ''}</td></tr>`).join('')
+    + '</tbody></table>'
+    + '<p class="muted">Δ = ny pris − pris ved beslutning (loggens gemte pris; for ældre logs uden pris bruges det aktuelt indlæste snapshot). "Slog feltet" = dit holds gns. rytter-vækst minus den ejerskabs-vægtede felt-gevinst (hvad chalk-manageren fik). Positivt over tid = din kontrærhed betaler sig. Gemt på log-posten.</p>';
+}
+$('evalvalue').onclick = evalValue;
 renderLogs();
 </script>
 </body>
