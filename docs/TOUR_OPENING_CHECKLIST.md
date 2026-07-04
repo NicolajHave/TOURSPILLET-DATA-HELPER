@@ -105,8 +105,11 @@ Hver dag, før næste etapes deadline:
 1. **Hent snapshot:** `https://nexus-app-fantasy.holdet.dk/api/games/618/players`
    (logget ind). Gem som `fixtures/holdet/tour-de-france-2026-after-stage-{n}.json`
    (n = seneste kørte etape; før E1 = 0) og upload til GitHub.
-2. **Indsæt samme JSON i fladen** (trin 1) → vælg etapen fra TdF-etape-dropdown
-   (profil auto-udfyldes) → Beregn. Leverage-kolonnen virker nu på ægte ejerskab.
+2. **Vent ~2 min på deploy → åbn fladen:** den AUTO-INDLÆSER det nyeste
+   uploadede snapshot (se meta-linjen: "efter E{n}"). Vælg etapen fra
+   TdF-etape-dropdown (profil auto-udfyldes) → Beregn. Manuel indsætning i
+   trin 1 er kun nødvendig, hvis du vil beslutte FØR upload/deploy — det er
+   samme JSON, to veje ind (paste overskriver bare det auto-indlæste).
 3. **Valgfrit hurtig-read i terminal:** `npm run analyze:snapshot` (bruger
    after-stage-0 som default; eller giv sti + profil) → chalk/leverage/enabler/TTT.
 4. **Vejr-tjek (manuel — ingen datakilde i modellen):** slå etapens rute op på
