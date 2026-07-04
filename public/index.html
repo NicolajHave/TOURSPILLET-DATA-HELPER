@@ -279,6 +279,17 @@ fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
   SNAP = s; SNAP.byKey = {}; for (const r of s.riders) SNAP.byKey[r.key] = r;
   SNAP._R = s.riders.map((r) => { const t = tokensOf(r.name); return { r, set: new Set(r.key.split(' ')), li: t.length ? t[t.length - 1] + '|' + t[0][0] : '' }; });
   $('meta').textContent = `form: ${s.riders.length} ryttere · ${s.races.join(' + ')} · as-of ${s.generatedAt}`;
+  // Auto-indlæs nyeste uploadede holdet-snapshot (bundtet af buildWeb ved
+  // deploy). Manuel paste overskriver bare feltet — samme JSON, to veje ind.
+  if (s.holdetSnapshotFile) {
+    fetch('./data/holdet-snapshot.json').then((r) => (r.ok ? r.text() : null)).then((txt) => {
+      if (txt && !$('snap').value.trim()) {
+        $('snap').value = txt;
+        const m = s.holdetSnapshotFile.match(/after-stage-(\d+)/);
+        $('meta').textContent += ` · holdet-snapshot AUTO-INDLÆST (efter E${m ? m[1] : '?'}) — vælg etape og Beregn; indsæt kun selv hvis du har et nyere`;
+      }
+    }).catch(() => {});
+  }
   // route present -> stage picker that auto-fills profile + transfer horizon
   if (s.route && s.route.length) {
     const sp = $('stagepick'), ls = $('logstage');

@@ -137,8 +137,26 @@ try {
   console.log(`route: ${route!.length} TdF 2026-etaper klassificeret (auto-horisont aktiv); ${merged} m. per-etape-info (vert/ps).`);
 } catch { console.log('route: fixtures/pcs/tour-de-france-2026-stages.json mangler — horisont-profiler forbliver manuelle.'); }
 
+// Nyeste holdet-snapshot (after-stage-N) bundtes med, så fladen auto-indlæser
+// det ved load — manuel paste er så kun nødvendig for at beslutte FØR
+// upload/deploy (samme JSON, to veje ind).
+let holdetSnapshotFile: string | null = null;
+try {
+  const hs = readdirSync(f('fixtures/holdet'))
+    .map((x) => x.match(/^tour-de-france-2026-after-stage-(\d+)\.json$/))
+    .filter(Boolean)
+    .sort((a, b) => Number(a![1]) - Number(b![1]));
+  if (hs.length) {
+    holdetSnapshotFile = hs[hs.length - 1]![0];
+    mkdirSync(f('public/data'), { recursive: true });
+    writeFileSync(f('public/data/holdet-snapshot.json'), readFileSync(f(`fixtures/holdet/${holdetSnapshotFile}`)));
+    console.log(`holdet-snapshot: ${holdetSnapshotFile} bundtet til auto-indlæsning i fladen.`);
+  }
+} catch { /* ingen holdet-fixtures endnu */ }
+
 const out = {
   generatedAt: asOf.toISOString().slice(0, 10),
+  holdetSnapshotFile,
   races,
   stageCount: stages.length,
   evBeta: EV_BETA,
