@@ -172,6 +172,11 @@
     <span id="advstatus" class="muted"></span>
   </div>
   <div id="advout"></div>
+  <div class="controls" style="margin-top:12px">
+    <button id="tourgo">🏆 Turnerings-check (mit hold vs feltet)</button>
+    <span id="tourstatus" class="muted"></span>
+  </div>
+  <div id="tourout"></div>
 </div>
 
 <div class="card">
@@ -831,6 +836,167 @@ function advise() {
 }
 $('advgo').onclick = advise;
 
+// ---- 🏆 TURNERINGS-SIM: mit hold vs feltet ---------------------------------
+// Målet er #1 af 30.000 — det afgøres af FORDELINGEN af HELE mit holds udbytte
+// relativt til feltets, ikke af summen af per-rytter-EV'er. Vi simulerer etapen
+// (samme PL-kerne) og udregner pr. udfald mit holds total (placeringsværdi +
+// vinderholds-bonus + GC/dag + kaptajn×2 + etapebonus) mod OPP_N modstander-
+// hold trukket ∝ de ÆGTE ejerandele (chalk-feltet, kaptajn = mest ejede).
+// KORRELATION kommer gratis: holdkammerater scorer i SAMME udfald — stacking
+// øger varians (turnerings-upside), hvilket per-rytter-EV aldrig kunne se.
+// Ærlige begrænsninger (vises i UI): modstandere er ejerskabs-vægtede træk
+// (ikke rigtige holdkombinationer m. budget/max-2-regler); DNF ikke i sim;
+// holdbonus kun vinderholdet (60k, empirisk bekræftet); GC/dag som konstant.
+const OPP_N = 200, TSAMPLES = 1500;
+function tournamentSim(myNames, myCapName) {
+  const rows = window._field, profile = $('profile').value, c = SNAP.valueCoeffs;
+  const scale = scaleOf(profile), ttt = profile === 'ttt';
+  rows.forEach((r, i) => { r._ti = i; });
+  const n = rows.length;
+  const my = myNames.map((nm) => rows.find((r) => r.name === nm)).filter(Boolean);
+  const myCap = rows.find((r) => r.name === myCapName) || my[0];
+  if (my.length !== 8 || !myCap) return null;
+
+  // modstander-hold: vægtet uden tilbagelægning ∝ ejerskab (chalk-feltet)
+  const pool = rows.filter((r) => r.own > 0);
+  if (pool.length < 30) return { error: `kun ${pool.length} ryttere med ejerskab — snapshot uden ejerandele?` };
+  const rng = mulberry32(MC.seed + 3);
+  const opps = [];
+  for (let k = 0; k < OPP_N; k++) {
+    const idx = new Set(); const squad = [];
+    for (let p = 0; p < 8; p++) {
+      let tot = 0; for (let i = 0; i < pool.length; i++) if (!idx.has(i)) tot += pool[i].own;
+      let x = rng() * tot, ch = -1;
+      for (let i = 0; i < pool.length; i++) { if (idx.has(i)) continue; x -= pool[i].own; if (x <= 0) { ch = i; break; } }
+      if (ch < 0) for (let i = 0; i < pool.length; i++) if (!idx.has(i)) { ch = i; break; }
+      idx.add(ch); squad.push(pool[ch]);
+    }
+    opps.push({ squad, cap: squad.reduce((a, b) => (b.own > a.own ? b : a), squad[0]) });
+  }
+
+  // GC/dag som konstant pr. hold (kaptajnens tæller dobbelt); ikke på ttt
+  // (dér ER GC-væksten i selve samplen via kryds-rækkefølgen).
+  const gcConst = (sq, cap) => ttt ? 0 : sq.reduce((s, r) => s + gcDayOf(r), 0) + gcDayOf(cap);
+
+  // per-sample delta-generator
+  const delta = new Float64Array(n); const top15 = new Uint8Array(n);
+  let drawSample;
+  if (ttt) {
+    const T = tttTeamStrength(); const teams = [...T.strength.keys()];
+    const gT = gammaFor('ttt');
+    const wT = teams.map((t) => Math.pow(Math.max(0, T.strength.get(t)), gT));
+    const members = new Map(teams.map((t) => [t, rows.filter((r) => r.team === t).sort((a, b) => (b.price || 0) - (a.price || 0) || b.form - a.form)]));
+    drawSample = () => {
+      delta.fill(0); top15.fill(0);
+      const placed = new Set(); let tot = wT.reduce((a, b) => a + b, 0);
+      const order = [];
+      for (let p = 0; p < Math.min(5, teams.length); p++) {
+        let x = rng() * tot, ch = -1;
+        for (let k = 0; k < teams.length; k++) { if (placed.has(k)) continue; x -= wT[k]; if (x <= 0) { ch = k; break; } }
+        if (ch < 0) for (let k = 0; k < teams.length; k++) if (!placed.has(k)) { ch = k; break; }
+        placed.add(ch); tot -= wT[ch]; order.push(teams[ch]);
+      }
+      order.forEach((t, p) => { for (const m of members.get(t)) delta[m._ti] += PAY_TTT[p]; });
+      let gcRank = 1;
+      outer: for (const t of order) for (const m of members.get(t)) {
+        if (gcRank > 10) break outer;
+        delta[m._ti] += GC_DAILY[gcRank - 1] + (gcRank === 1 ? YELLOW : 0); gcRank++;
+      }
+    };
+  } else {
+    const g = gammaFor(profile);
+    const w = rows.map((r) => Math.pow(Math.max(0, r.strength), g));
+    const vField = valueOfRank(MC.fieldRank, scale, c);
+    const TOP = Math.min(MC.top, n); const placed = new Array(n);
+    drawSample = () => {
+      top15.fill(0); placed.fill(false);
+      let tot = 0; for (let k = 0; k < n; k++) tot += w[k];
+      let winnerTeam = null;
+      for (let pos = 1; pos <= TOP; pos++) {
+        let x = rng() * tot, ch = -1;
+        for (let k = 0; k < n; k++) { if (placed[k]) continue; x -= w[k]; if (x <= 0) { ch = k; break; } }
+        if (ch < 0) for (let k = 0; k < n; k++) if (!placed[k]) { ch = k; break; }
+        placed[ch] = true; tot -= w[ch];
+        delta[ch] = valueOfRank(pos, scale, c);
+        if (pos === 1) winnerTeam = rows[ch].team;
+        if (pos <= 15) top15[ch] = 1;
+      }
+      for (let k = 0; k < n; k++) { if (!placed[k]) delta[k] = vField; if (rows[k].team === winnerTeam) delta[k] += c.teamBonus; }
+    };
+  }
+
+  const squadTotal = (sq, cap) => {
+    let s = 0, t15 = 0;
+    for (const r of sq) { s += delta[r._ti]; t15 += top15[r._ti]; }
+    return s + delta[cap._ti] + (ETAPEBONUS[t15] || 0);
+  };
+
+  // metrics pr. kaptajn-valg (næsten gratis: base + kaptajn-delta pr. sample)
+  const capStats = my.map(() => ({ pctSum: 0, top10: 0, bot25: 0, evSum: 0 }));
+  const myGc = my.reduce((s, r) => s + (ttt ? 0 : gcDayOf(r)), 0);
+  let oppEvSum = 0;
+  for (let t = 0; t < TSAMPLES; t++) {
+    drawSample();
+    const oppTotals = opps.map((o) => squadTotal(o.squad, o.cap) + gcConst(o.squad, o.cap)).sort((a, b) => a - b);
+    oppEvSum += oppTotals.reduce((a, b) => a + b, 0) / OPP_N;
+    let base = 0, t15 = 0;
+    for (const r of my) { base += delta[r._ti]; t15 += top15[r._ti]; }
+    base += (ETAPEBONUS[t15] || 0) + myGc;
+    my.forEach((capR, ci) => {
+      const tot = base + delta[capR._ti] + (ttt ? 0 : gcDayOf(capR));
+      // percentil via binær søgning i sorterede modstander-totaler
+      let lo = 0, hi = OPP_N;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (oppTotals[mid] < tot) lo = mid + 1; else hi = mid; }
+      const pct = lo / OPP_N;
+      const st = capStats[ci];
+      st.pctSum += pct; st.evSum += tot;
+      if (pct >= 0.9) st.top10++;
+      if (pct <= 0.25) st.bot25++;
+    });
+  }
+  return {
+    profile, my, myCap,
+    oppEv: oppEvSum / TSAMPLES,
+    captains: my.map((r, ci) => ({
+      name: r.name, isChosen: r === myCap,
+      pct: capStats[ci].pctSum / TSAMPLES,
+      top10: capStats[ci].top10 / TSAMPLES,
+      bot25: capStats[ci].bot25 / TSAMPLES,
+      ev: capStats[ci].evSum / TSAMPLES,
+    })).sort((a, b) => b.top10 - a.top10 || b.pct - a.pct),
+  };
+}
+
+function tournamentCheck() {
+  if (!window._field) { $('tourstatus').textContent = 'kør "Beregn" først'; return; }
+  const names = teamPicks();
+  if (names.length !== 8 || new Set(names).size !== 8) { $('tourstatus').textContent = 'vælg 8 forskellige ryttere i dropdowns først'; return; }
+  $('tourstatus').textContent = 'simulerer…';
+  setTimeout(() => {
+    const res = tournamentSim(names, $('mycaptain').value);
+    if (!res) { $('tourstatus').textContent = 'kunne ikke matche holdet mod feltet'; return; }
+    if (res.error) { $('tourstatus').textContent = '⚠ ' + res.error; $('tourout').innerHTML = ''; return; }
+    const chosen = res.captains.find((x) => x.isChosen) || res.captains[0];
+    let html = `<p><b>Mit hold vs ${OPP_N} chalk-modstandere</b> (profil ${res.profile}, ${TSAMPLES} sims — kaptajn <b>${chosen.name}</b>):
+      E[percentil] <b>${(chosen.pct * 100).toFixed(0)}%</b> · P(dagens top 10%) <b class="pos">${(chosen.top10 * 100).toFixed(1)}%</b>
+      · P(bund 25%) <b class="${chosen.bot25 > 0.3 ? 'neg' : ''}">${(chosen.bot25 * 100).toFixed(1)}%</b>
+      · E[mit hold] ${kr(chosen.ev)} vs E[modstander] ${kr(res.oppEv)}</p>`;
+    html += '<table><thead><tr><th style="text-align:left">Kaptajn-valg (samme 8)</th><th>E[percentil]</th><th>P(top 10%)</th><th>P(bund 25%)</th><th>E[total]</th></tr></thead><tbody>';
+    res.captains.forEach((x) => {
+      html += `<tr${x.isChosen ? ' class="cap"' : ''}><td style="text-align:left">${x.name}${x.isChosen ? ' 👑' : ''}</td><td>${(x.pct * 100).toFixed(0)}%</td><td>${(x.top10 * 100).toFixed(1)}%</td><td>${(x.bot25 * 100).toFixed(1)}%</td><td>${kr(x.ev)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    html += '<p class="muted">Turnerings-logik: P(top 10%) er dit våben over 21 dage — E[percentil] alene vinder ikke en turnering på 30.000. '
+      + 'Høj P(top10) + høj P(bund25) = varians-spil (stacking/kontrær kaptajn); lav bund25 + middel top10 = sikkert spil. '
+      + 'Begrænsninger: modstandere er ejerskabs-vægtede træk (ikke rigtige holdkombinationer m. budget/max-2), DNF ikke i sim, holdbonus kun vinderhold, GC/dag som konstant. '
+      + '<b>Vigtigst:</b> feltet = DAGENS ejerskab — konkurrenterne når også at skifte før senere etaper (chalk-drift), så percentilen er skarpest for den FØRSTKOMMENDE etape og optimistisk længere ude.</p>';
+    $('tourout').innerHTML = html;
+    $('tourstatus').textContent = `OK · korrelation via fælles udfald (stacking tæller)`;
+    window._tournament = { profile: res.profile, captain: chosen.name, pct: +chosen.pct.toFixed(3), top10: +chosen.top10.toFixed(3), bot25: +chosen.bot25.toFixed(3), ev: Math.round(chosen.ev), oppEv: Math.round(res.oppEv) };
+  }, 30);
+}
+$('tourgo').onclick = tournamentCheck;
+
 // ---- local decision + outcome log (the leverage-measurement record) ----
 const LS = 'paperTrades';
 const getLogs = () => JSON.parse(localStorage.getItem(LS) || '[]');
@@ -857,6 +1023,7 @@ $('savelog').onclick = () => {
     candidates: window._decision.candidates,
     transferEval: window._lastTransfer || null,
     advisorTop: window._advice || null,
+    tournament: window._tournament || null,
     myTeam: teamPicks().join(', '), myCaptain: $('mycaptain').value, outcome: '',
   });
   setLogs(logs);

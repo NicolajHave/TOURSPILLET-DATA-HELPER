@@ -109,12 +109,27 @@ Hver dag, før næste etapes deadline:
    (profil auto-udfyldes) → Beregn. Leverage-kolonnen virker nu på ægte ejerskab.
 3. **Valgfrit hurtig-read i terminal:** `npm run analyze:snapshot` (bruger
    after-stage-0 som default; eller giv sti + profil) → chalk/leverage/enabler/TTT.
-4. Beslut: kaptajn (fra tillid/expectedDelta — IKKE på break/ITT), differentiering
+4. **Vejr-tjek (manuel — ingen datakilde i modellen):** slå etapens rute op på
+   Windy/YR om morgenen. Kun to ting flytter beslutninger:
+   - **Sidevind >30 km/t på flad/åben etape** → vifter/echelons: spurtetapen
+     bliver et varians-lotteri. Reaktion: overstyr evt. Etapeprofil-dropdownen
+     (sprint → break = "lotteri-mode"), vær forsigtig med spurter-kaptajn, og
+     foretræk ryttere fra klassiker-stærke hold (Visma/UAE/Lidl-Trek).
+   - **Regn på nedkørsler / ekstrem varme** → styrt/udgåelses-risiko op: brug
+     ⚑ på udsatte ryttere frem for at ændre modellen.
+   Alt andet vejr: ignorér — kvantificering uden data er falsk præcision.
+5. Beslut: kaptajn (fra tillid/expectedDelta — IKKE på break/ITT), differentiering
    (fra leverage-listen). Respektér lav-tillid-advarslerne. Tjek ⚑ for nyheder/styrt.
-5. **Log beslutningen** (trin 5) før etapen — ejerandele-ved-beslutning gemmes.
-6. Efter etapen: indsæt etaperesultatet i trin 5 → "Evaluér etape mod loggen"
-   (auto-score: ρ, kaptajn-plads, top-10-hit). Eksportér loggen som JSON jævnligt
-   (localStorage kan forsvinde).
+6. **🏆 Turnerings-check (trin 4):** med dine 8 valgt → "Turnerings-check" viser
+   E[percentil], P(dagens top 10%) og P(bund 25%) mod 200 chalk-modstandere
+   trukket fra de ægte ejerandele — plus kaptajn-tabellen (samme 8, forskellig
+   kaptajn). P(top 10%) er turnerings-våbnet; E[percentil] alene vinder ikke.
+7. **Log beslutningen** (trin 5) før etapen — ejerandele-ved-beslutning gemmes.
+8. Efter etapen: kør `pcs-results.js` på etapens PCS-side → upload som
+   `fixtures/pcs/tour-de-france-2026-stage-{n}.json` (holder modellens FORM
+   frisk — buildWeb samler den op ved næste deploy) → indsæt samme JSON i trin 5
+   → "Evaluér etape mod loggen" (auto-score: ρ, kaptajn-plads, top-10-hit).
+   Eksportér loggen som JSON jævnligt (localStorage kan forsvinde).
 
 ## Det loggen skal bevise
 

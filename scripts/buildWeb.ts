@@ -87,8 +87,12 @@ for (const st of stages) {
 }
 console.log(`riders: ${riderFiles.length} sæson-filer (${cov.exact} eksakt + ${cov.fallback} fallback profiler, ${cov.dropped} classification droppet) + ${filled} kun-fra-stage-filer.`);
 
-// as-of = day before the Tour start (all pre-Tour form counts, nothing future).
-const asOf = new Date('2026-07-03');
+// as-of = SENESTE resultatdato i data (dynamisk!). Hardcodet dato ville få
+// no-lookahead-reglen i form.ts til at IGNORERE nye tour-etaper efterhånden
+// som de uploades — formen skal altid stå på "dagen for seneste resultat".
+let maxDate = '2026-07-03';
+for (const results of history.values()) for (const r of results) if (r.date > maxDate) maxDate = r.date;
+const asOf = new Date(maxDate);
 
 const riders = [...history.entries()].map(([key, results]) => {
   const fit: Record<string, number> = {};
