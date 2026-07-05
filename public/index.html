@@ -158,10 +158,11 @@
 
 <div class="card">
   <h2><span class="step">4</span>Hold-rådgiver <span class="muted" style="text-transform:none">(bedste skifte fra DIT hold — shortlist, ikke orakel)</span></h2>
-  <p class="muted">Vælg dine 8 ryttere fra dropdowns (ingen tastefejl — listen kommer fra
-  snapshottet og huskes lokalt) + bank. Alle lovlige skifter evalueres over horisonten fra
-  trin 3 (max 2 pr. hold, køb ≤ salgspris + bank, ⚑-flaggede kan ikke købes) og rangeres
-  efter NetGain. Loggen i trin 5 genbruger holdet herfra. Break/ITT er lav-tillid — du beslutter.</p>
+  <p class="muted">Vælg dine 8 ryttere fra dropdowns (huskes lokalt) + evt. bank. Værktøjet
+  prøver ALLE lovlige enkelt-skifter (max 2 pr. hold, køb ≤ salgspris + bank, ⚑-flaggede kan
+  ikke købes) over de kommende etaper fra trin 3 og viser <b>de bedste — hvor mange kr hvert
+  skifte tjener dig</b>. Grøn dom-linje = det bedste skifte; er intet skifte over 0, siger den
+  "behold holdet". Loggen i trin 5 genbruger holdet herfra. Break/ITT er lav-tillid — du beslutter.</p>
   <div class="controls" id="teamwrap">
     <select class="tpick" id="t1"><option value="">— rytter 1 —</option></select>
     <select class="tpick" id="t2"><option value="">— rytter 2 —</option></select>
@@ -898,19 +899,23 @@ function advise() {
 
   let html = '';
   if (!top.length || top[0].best.netGain <= 0) {
-    html += '<p class="warn" style="border-left-color:var(--green);background:#e9f5ec">✋ Intet skifte slår gebyret over denne horisont — <b>behold holdet</b> (spar 1 %-gebyret). Det er en reel anbefaling, ikke en fejl.</p>';
+    html += '<p class="capline" style="border-left-color:var(--green);background:#e9f5ec">✋ <b>BEHOLD HOLDET</b> — intet skifte slår 1 %-gebyret over horisonten. Det er en reel anbefaling (spar gebyret), ikke en fejl.</p>';
+  } else {
+    const b = top[0];
+    html += `<p class="capline" style="border-left-color:var(--green);background:#e9f5ec;font-size:1.05rem">✅ <b>BEDSTE SKIFTE</b>: sælg ${b.X.name}, køb <b>${b.Y.name}</b> → du tjener ca. <b>+${kr(b.best.netGain)} kr</b> over ${b.best.H} etape${b.best.H > 1 ? 'r' : ''}. Sikkerhed: ${describeRank(b.best.requiredRank)}.</p>`;
   }
   if (top.length) {
-    html += '<table><thead><tr><th>#</th><th style="text-align:left">Sælg</th><th style="text-align:left">Køb</th><th>ejer%</th><th>H</th><th>netto (kr)</th><th title="ændring i forventet etapebonus (BANK, dagens profil) — superlineær top-15-koncentration">Δbonus/dag</th><th>leverage-just.</th><th style="text-align:left">Break-even</th></tr></thead><tbody>';
+    html += '<table><thead><tr><th>#</th><th style="text-align:left">Skift (sælg → køb)</th><th title="købsrytterens ejerandel — lav % = mere kontrær/differentierende">køb ejer%</th><th>Du tjener (kr)</th><th style="text-align:left">Sikkerhed</th><th title="samme gevinst vægtet for kontrærhed (lav ejer% tæller ekstra)">m. leverage</th></tr></thead><tbody>';
     top.forEach((p, i) => {
-      html += `<tr><td>${i + 1}</td><td style="text-align:left">${p.X.name}${p.X.ex ? ' ⚑' : ''}</td>`
-        + `<td style="text-align:left"><b>${p.Y.name}</b></td><td>${(p.Y.own * 100).toFixed(0)}%</td><td>${p.best.H}</td>`
-        + `<td class="${p.best.netGain >= 0 ? 'pos' : 'neg'}">${kr(p.best.netGain)}</td>`
-        + `<td class="${p.dBonus >= 0 ? 'pos' : 'neg'}">${kr(p.dBonus)}</td>`
-        + `<td class="${p.best.leverageAdjusted >= 0 ? 'pos' : 'neg'}">${kr(p.best.leverageAdjusted)}</td>`
-        + `<td style="text-align:left">${describeRank(p.best.requiredRank)}</td></tr>`;
+      const bonusHint = Math.abs(p.dBonus) >= 3000 ? ` <span class="${p.dBonus >= 0 ? 'pos' : 'neg'}" title="ændring i forventet etapebonus i banken (dagens profil, superlineær top-15) — tie-breaker, ikke i 'du tjener'">${p.dBonus >= 0 ? '↑' : '↓'}bonus ${kr(p.dBonus)}</span>` : '';
+      html += `<tr><td>${i + 1}</td>`
+        + `<td style="text-align:left">${p.X.name}${p.X.ex ? ' ⚑' : ''} → <b>${p.Y.name}</b>${bonusHint}</td>`
+        + `<td>${(p.Y.own * 100).toFixed(0)}%</td>`
+        + `<td class="${p.best.netGain >= 0 ? 'pos' : 'neg'}"><b>${p.best.netGain >= 0 ? '+' : ''}${kr(p.best.netGain)}</b></td>`
+        + `<td style="text-align:left">${describeRank(p.best.requiredRank)}</td>`
+        + `<td class="${p.best.leverageAdjusted >= 0 ? 'pos muted' : 'neg muted'}">${p.best.leverageAdjusted >= 0 ? '+' : ''}${kr(p.best.leverageAdjusted)}</td></tr>`;
     });
-    html += '</tbody></table><p class="muted">Δbonus/dag er IKKE i netto-tallet (den gælder kun dagens profil) — brug den som tie-breaker: etapebonussen er superlineær (8 i top-15 = 400k, 2×4 = 70k), så koncentration på etapetypen betaler.</p>';
+    html += '</tbody></table><p class="muted"><b>Du tjener</b> = kr over horisonten efter gebyr (sorteret bedst øverst). <b>Sikkerhed</b> = hvor godt køb-rytteren mindst skal køre. <b>m. leverage</b> vægter for kontrærhed. <b>↑bonus</b> = ekstra etapebonus i banken hvis skiftet koncentrerer dit hold på dagens etapetype (bonus for 8 i top-15 = 400k, superlineær) — tie-breaker, ikke i "du tjener".</p>';
   }
   $('advout').innerHTML = html;
   $('advstatus').textContent = `${proposals.length} lovlige skifter evalueret · horisont ${profiles.join(' → ')} · bank ${kr(bank)} · E[etapebonus i dag] ${kr(baseBonus)}`;
