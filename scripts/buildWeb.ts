@@ -73,19 +73,29 @@ for (const file of riderFiles) {
     history.get(key)!.push({ riderId: 0, date: r.date, profile, rank: r.rank, finished: true });
   }
 }
-// SECONDARY: 2026 stage results for riders WITHOUT a season file (the missing
-// startlist riders still get some form from the races we scraped per-stage).
-let filled = 0;
+// Keys der stammer fra en rytter-fil (sæson-historik til juni). Rytter-filerne
+// er hentet FØR Touren (capturedAt ~30/6), så tour-de-france-2026-etaperne er
+// IKKE i dem → de kan foldes ind uden dobbelttælling. Dauphiné/Suisse/Giro er
+// derimod allerede i filerne, så dem må vi ikke tilføje igen.
+const filedKeys = new Set(history.keys());
+// SECONDARY: 2026 stage results. For ryttere UDEN sæson-fil: alle etaper
+// (cold-start). For ryttere MED fil: KUN den live Tour (E1+), så deres form
+// opdateres løbende med tourens egne resultater, uden at dobbelttælle for-løb.
+let filled = 0, liveFolded = 0;
 for (const st of stages) {
   for (const fin of st.finishers) {
     const key = nameKey(fin.slug.replace(/-/g, ' '));
-    if (history.has(key)) continue; // already covered by a rider file
-    if (!rawNameByKey.has(key)) { rawNameByKey.set(key, fin.slug); filled++; }
-    if (!history.has(key)) history.set(key, []);
+    if (filedKeys.has(key)) {
+      if (st.race !== 'tour-de-france') continue; // for-løb ligger allerede i filen
+      liveFolded++;
+    } else {
+      if (!rawNameByKey.has(key)) { rawNameByKey.set(key, fin.slug); filled++; }
+      if (!history.has(key)) history.set(key, []);
+    }
     history.get(key)!.push({ riderId: 0, date: st.date, profile: st.profile, rank: fin.rank, finished: true });
   }
 }
-console.log(`riders: ${riderFiles.length} sæson-filer (${cov.exact} eksakt + ${cov.fallback} fallback profiler, ${cov.dropped} classification droppet) + ${filled} kun-fra-stage-filer.`);
+console.log(`riders: ${riderFiles.length} sæson-filer (${cov.exact} eksakt + ${cov.fallback} fallback profiler, ${cov.dropped} classification droppet) + ${filled} kun-fra-stage-filer + ${liveFolded} live-Tour-resultater foldet ind i eksisterende ryttere.`);
 
 // as-of = SENESTE resultatdato i data (dynamisk!). Hardcodet dato ville få
 // no-lookahead-reglen i form.ts til at IGNORERE nye tour-etaper efterhånden
