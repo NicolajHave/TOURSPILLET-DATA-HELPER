@@ -431,6 +431,33 @@ function gcProbs() {
 }
 const gcDayOf = (r) => gcProbs().get(r) || 0;
 
+// --- BREAK-fix: på ægte udbryder-etaper "sidder favoritterne op" ------------
+// Rå form floater GC-stjernerne højt (de ER stærkest på papiret), men på en
+// break-dag lader de udbruddet gå og ruller selv i bunken → de TABER værdi
+// (bunke ≈ −65k), mens dagens præmie går til en klatrestærk udbryder. Uden
+// dette anbefaler modellen GC-for-GC-skifter på break (E4/E9/E13-fælden).
+// Model: (1) top-N GC-ledere (rangeret på bjerg-styrke = form + β·bjerg-fit)
+// demoteres til bunke; (2) resten rangeres på en klatrevægtet udbryder-score
+// (0.6·bjerg + 0.4·break-fit) i stedet for rå form. Break er STADIG lav-tillid
+// (lotteri) — dette stopper bare det systematiske GC-bias.
+const BREAK_GC_LEADERS = 12;
+let _gcLeadCache = null;
+function breakGcLeaders() {
+  if (_gcLeadCache) return _gcLeadCache;
+  const beta = SNAP.evBeta;
+  const mtn = (r) => r.form + beta * ((r.fitObj && r.fitObj.mountain) || 0);
+  _gcLeadCache = new Set([...window._field].sort((a, b) => mtn(b) - mtn(a)).slice(0, BREAK_GC_LEADERS));
+  return _gcLeadCache;
+}
+// Effektiv styrke på break-profilen (delt af felt-sort, teamWinProb, evOnProfile).
+// GC-leder → −1 (Math.max(0,·) i MC/softmax nulstiller ham → altid bunke).
+function breakStrength(r) {
+  if (!r.hasForm) return 0;
+  if (breakGcLeaders().has(r)) return -1;
+  const beta = SNAP.evBeta, f = r.fitObj || {};
+  return r.form + beta * (0.6 * (f.mountain || 0) + 0.4 * (f.break || 0));
+}
+
 // TTT efter OFFICIELLE regler (docs/RULES.md): ingen individuel etapetabel —
 // hold 1-5 betaler 200k/150k/100k/50k/25k til ALLE holdets ryttere. Tiden
 // registreres på FØRSTE rytter fra hvert hold → GC efter etapen ordnes efter
@@ -492,7 +519,10 @@ function compute() {
     return { name, personId: i.personId, team: teams[i.teamId]?.name || '', own: i.popularity ?? 0, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
   });
   // field + caches SKAL sættes før sort/EV-loop (teamWinProb + TTT-hold læser _field)
-  window._field = rows; _twpCache = null; _evCache = null; _tttCache = null; _gcCache = null;
+  window._field = rows; _twpCache = null; _evCache = null; _tttCache = null; _gcCache = null; _gcLeadCache = null;
+  // BREAK-fix: erstat rå-form-styrken med udbryder-scoren (GC-ledere → bunke).
+  // Skal ske EFTER window._field er sat (breakGcLeaders læser hele feltet).
+  if (profile === 'break') rows.forEach((r) => { r.strength = breakStrength(r); });
   const ttt = profile === 'ttt';
   if (ttt) {
     // TTT: predRank = forventet GC-plads efter etapen (kryds-rækkefølge:
@@ -753,7 +783,7 @@ function teamWinProb(team, profile) {
       for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
     } else {
       const beta = SNAP.evBeta;
-      const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
+      const s = profile === 'break' ? breakStrength : (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
       let tot = 0; const per = new Map();
       for (const r of window._field) { const v = Math.pow(Math.max(0, s(r)), g); tot += v; per.set(r.team, (per.get(r.team) || 0) + v); }
       for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
@@ -778,7 +808,7 @@ function evOnProfile(rider, profile) {
     const tr = T.rank.get(rider.team) || 99, rr = T.riderRank.get(rider) || 999;
     ev = (tr <= 5 ? PAY_TTT[tr - 1] : 0) + (rr <= 10 ? GC_DAILY[rr - 1] + (rr === 1 ? YELLOW : 0) : 0);
   } else {
-    const s = (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
+    const s = profile === 'break' ? breakStrength : (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
     const mine = s(rider);
     const rank = 1 + window._field.filter((r) => r !== rider && s(r) > mine).length;
     ev = valueOfRank(rank, scaleOf(profile), c) + c.teamBonus * teamWinProb(rider.team, profile);
