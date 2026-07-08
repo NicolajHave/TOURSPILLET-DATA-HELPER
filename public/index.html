@@ -438,10 +438,13 @@ const gcDayOf = (r) => gcProbs().get(r) || 0;
 // GC-stjernerne SAD OP og kun fik GC-indkomst (Pogačar +34k, Vingegaard +24k,
 // Evenepoel +4k, Del Toro −6k). Derfor: (1) top-12 GC-ledere (bjerg-styrke)
 // demoteres til bunke på break — deres GC-kanal vises separat i +GC-kolonnen;
-// (2) resten rangeres 0.6·bjerg + 0.4·break-fit. NB: E4-udbruddet var
-// klassiker-tungt (Pedersen/Simmons/Vacek), så specialist-vægten er usikker —
-// revurderes mod det RIGTIGE etaperesultat (v5-snippet). Hvem der kommer med
-// i udbruddet er et lotteri → break forbliver LAV-TILLID (⚠).
+// (2) resten rangeres 0.6·bjerg + 0.4·break-fit. Backtest mod det RIGTIGE
+// E4-etaperesultat (as-of 6/7): INGEN variant forudsiger udbruddets
+// sammensætning (bedste = denne: 1/10, ρ≈0.07; ren break-fit/punch-blend/ren
+// form alle ≤0/10) — Pedersen/Simmons/Frigo var usynlige for alle boards.
+// Boardet svarer altså på "hvem KAN betale hvis han kommer med", ikke "hvem
+// kommer med" → break er og bliver LAV-TILLID (⚠): spar transfers, og
+// kaptajn-valget er GC-flooren (stabil GC-dobling) vs. billet i lotteriet.
 const BREAK_GC_LEADERS = 12;
 let _gcLeadCache = null;
 function breakGcLeaders() {
