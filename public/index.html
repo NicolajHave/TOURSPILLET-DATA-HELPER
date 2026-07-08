@@ -431,18 +431,30 @@ function gcProbs() {
 }
 const gcDayOf = (r) => gcProbs().get(r) || 0;
 
-// --- BREAK-score: klatrevægtet styrke (E4-backtestet) -----------------------
-// TdF26's break-dage er mellembjergs-hybrider (E4/E9/E13: ps ~108-124, vert
-// 2300-3250 m) — IKKE flade transitions-dage. E4-facit: udbruddet tog sejren
-// (Træen, model-#152 = lotteri), men GC-gruppen kørte ind 2.-11. og VANDT
-// værdi (Pogačar 4., +34k). Backtest af tre boards mod E4 (as-of 6/7):
-//   rå form+break-fit 4/10 ρ=0.53 · GC-demotion 1/10 ρ=0.29 (falsificeret!)
-//   klatrevægt UDEN demotion 6/10 (9/10 top-15) ρ=0.65 ← denne.
-// Rangér ALLE på 0.6·bjerg + 0.4·break-fit i stedet for rå form — det renser
-// støjen (Godon/Schmid-typen) uden at smide favoritterne ud. Vinderen er
-// stadig ofte en outsider fra udbruddet → break forbliver LAV-TILLID.
+// --- BREAK-score: GC-demotion + blandet specialist-vægt ----------------------
+// REALISERET E4-facit (efter-3 → efter-4, holdet-priser — IKKE PCS-tabellen,
+// som viste sig at være GC-stillingen): udbruddet tog hele værdien (Pedersen
+// +513k, Simmons +366k, Vacek +322k, Træen +248k, Quinn +221k), mens
+// GC-stjernerne SAD OP og kun fik GC-indkomst (Pogačar +34k, Vingegaard +24k,
+// Evenepoel +4k, Del Toro −6k). Derfor: (1) top-12 GC-ledere (bjerg-styrke)
+// demoteres til bunke på break — deres GC-kanal vises separat i +GC-kolonnen;
+// (2) resten rangeres 0.6·bjerg + 0.4·break-fit. NB: E4-udbruddet var
+// klassiker-tungt (Pedersen/Simmons/Vacek), så specialist-vægten er usikker —
+// revurderes mod det RIGTIGE etaperesultat (v5-snippet). Hvem der kommer med
+// i udbruddet er et lotteri → break forbliver LAV-TILLID (⚠).
+const BREAK_GC_LEADERS = 12;
+let _gcLeadCache = null;
+function breakGcLeaders() {
+  if (_gcLeadCache) return _gcLeadCache;
+  const beta = SNAP.evBeta;
+  const mtn = (r) => r.form + beta * ((r.fitObj && r.fitObj.mountain) || 0);
+  _gcLeadCache = new Set([...window._field].sort((a, b) => mtn(b) - mtn(a)).slice(0, BREAK_GC_LEADERS));
+  return _gcLeadCache;
+}
+// GC-leder → −1 (Math.max(0,·) i MC/softmax nulstiller ham → altid bunke).
 function breakStrength(r) {
   if (!r.hasForm) return 0;
+  if (breakGcLeaders().has(r)) return -1;
   const beta = SNAP.evBeta, f = r.fitObj || {};
   return r.form + beta * (0.6 * (f.mountain || 0) + 0.4 * (f.break || 0));
 }
@@ -508,8 +520,9 @@ function compute() {
     return { name, personId: i.personId, team: teams[i.teamId]?.name || '', own: i.popularity ?? 0, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
   });
   // field + caches SKAL sættes før sort/EV-loop (teamWinProb + TTT-hold læser _field)
-  window._field = rows; _twpCache = null; _evCache = null; _tttCache = null; _gcCache = null;
-  // BREAK: klatrevægtet score i stedet for rå form (se breakStrength).
+  window._field = rows; _twpCache = null; _evCache = null; _tttCache = null; _gcCache = null; _gcLeadCache = null;
+  // BREAK: GC-demotion + specialist-score (se breakStrength). Skal ske EFTER
+  // window._field er sat (breakGcLeaders læser hele feltet).
   if (profile === 'break') rows.forEach((r) => { r.strength = breakStrength(r); });
   const ttt = profile === 'ttt';
   if (ttt) {
