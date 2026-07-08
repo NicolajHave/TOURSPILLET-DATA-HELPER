@@ -1,13 +1,15 @@
-// scripts/snippets/pcs-results.js (v4)
+// scripts/snippets/pcs-results.js (v5)
 // Kør i browser-konsollen på en PCS etape-resultatside.
 // Håndterer både /race/{slug}/{år}/stage-N og race.php?id1=...-URL-formaterne.
 //
-// v4 (TTT-fix): (1) vælger nu den STØRSTE rytter-tabel (det samlede resultat),
-// ikke bare den første — TTT-sider viser hold-undertabeller først, hvilket gav
-// kun ét holds 8 ryttere. (2) Position-fallback for rang: mangler en etape en
-// ren rang-kolonne (kan ske på TTT under individuel-tids-regler), udledes rang
-// af rækkefølgen (rytterne står i mål-orden), mens ægte DNF/DNS/OTL/DSQ forbliver
-// uden rang. Normale etaper er upåvirkede (deres rang-kolonne bruges direkte).
+// v5 (GC-bug-fix): v4's "største tabel"-heuristik greb på TdF26-E4 den SAMLEDE
+// STILLING i stedet for etaperesultatet (GC-tabellen kan have flere
+// rytter-links end etapetabellen). Nu: blandt STORE tabeller (≥20 rytter-links)
+// vælges den FØRSTE i dokument-orden uden 'Prev'-kolonne — 'Prev' (forrige
+// placering) findes kun i stillings-/GC-tabeller på PCS. TTT-fixet er bevaret:
+// hold-undertabeller à 8 ryttere ligger under tærsklen. Konsollen viser nu
+// OGSÅ valgt tabel-header + top-3 — TJEK ALTID dén linje før upload!
+// v4-features bevaret: position-fallback for rang på TTT-sider.
 // v3-features bevaret: distance, højdemeter, ProfileScore (+final).
 (() => {
   const src = location.pathname + location.search;
@@ -16,14 +18,25 @@
   const race = m ? { slug: m[1], year: +m[2] } : { slug: null, year: null };
   const stageNo = m ? (m[4] ? 0 : m[3] ? +m[3] : null) : null;
 
-  // Vælg tabellen med FLEST rytter-links (det samlede resultat), ikke den første.
-  // (TTT-sider har hold-undertabeller à 8 ryttere før hovedtabellen.)
-  const tables = [...document.querySelectorAll('table')]
-    .map((t) => ({ t, n: t.querySelectorAll('a[href*="rider"]').length }))
-    .filter((x) => x.n > 0)
-    .sort((a, b) => b.n - a.n);
-  if (!tables.length) { console.warn('Ingen resultattabel fundet — kopiér denne besked til Claude.'); return; }
-  const table = tables[0].t;
+  // Tabelvalg (v5): STORE tabeller = ≥20 rytter-links OG ≥halvdelen af den
+  // største (filtrerer TTT-hold-undertabeller à 8 fra). Blandt dem: den FØRSTE
+  // i dokument-orden uden 'Prev'-kolonne i headeren — 'Prev' er GC-/stillings-
+  // kendetegnet på PCS, og etaperesultatet står før stillingerne i DOM'en.
+  const all = [...document.querySelectorAll('table')]
+    .map((t, i) => ({
+      t, i,
+      n: t.querySelectorAll('a[href*="rider"]').length,
+      head: ((t.querySelector('thead') || {}).innerText || '').replace(/\s+/g, ' ').trim(),
+    }))
+    .filter((x) => x.n > 0);
+  if (!all.length) { console.warn('Ingen resultattabel fundet — kopiér denne besked til Claude.'); return; }
+  const maxN = Math.max(...all.map((x) => x.n));
+  const big = all.filter((x) => x.n >= Math.min(20, maxN) && x.n >= maxN * 0.5);
+  const isStanding = (x) => /\bPrev\b/i.test(x.head);
+  const pick = big.find((x) => !isStanding(x)) || big[0];
+  const table = pick.t;
+  const tableNote = `tabel #${pick.i} [${pick.head.slice(0, 50) || 'uden header'}] valgt blandt ${big.length} store` +
+    (big.some((x) => x !== pick && !isStanding(x)) ? ' ⚠ FLERE ikke-GC-kandidater — verificér top-3!' : '');
 
   const DNF_TOKENS = /^(DNF|DNS|OTL|DSQ|NR|DF|HD|AB)\b/i;
   let pos = 0;
@@ -77,8 +90,10 @@
     capturedAt: new Date().toISOString(),
   };
   copy(JSON.stringify(out, null, 2));
+  const top3 = results.filter((r) => r.rank != null).sort((a, b) => a.rank - b.rank).slice(0, 3)
+    .map((r) => `${r.rank}. ${r.riderName}`).join(' · ');
   console.log(`PCS: ${results.length} resultater (${race.slug ?? '?'} ${race.year ?? '?'}, etape ${stageNo ?? '?'}), rang-kilde: ${rankSource}. `
-    + `Vinder: ${results.find((r) => r.rank === 1)?.riderName ?? '?'}. `
+    + `${tableNote}. TOP-3: ${top3}. `
     + `ProfileScore=${profileScore ?? '?'} final=${profileScoreFinal ?? '?'} vert=${verticalM ?? '?'}m. `
-    + `Ser antal/vinder forkert ud? Send konsol-linjen til Claude.`);
+    + `Er top-3 IKKE etapens podium (fx samlet stilling i stedet)? Send konsol-linjen til Claude.`);
 })();
