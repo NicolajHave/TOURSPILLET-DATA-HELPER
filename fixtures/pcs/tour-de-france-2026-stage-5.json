@@ -5,14 +5,1280 @@
   },
   "stage": {
     "stageNo": 5,
-    "date": null,
     "distanceKm": 158.3,
     "verticalM": 1395,
     "profileScore": 58,
     "profileScoreFinal": null
   },
-  "results": [],
-  "note": "preview (ingen resultater endnu) — overskriv med pcs-results.js efter etapen",
-  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-5/result/result",
-  "capturedAt": "2026-07-03T13:18:22.373Z"
+  "results": [
+    {
+      "rank": 1,
+      "status": "OK",
+      "riderSlug": "olav-kooij",
+      "riderName": "KOOIJ Olav",
+      "team": "Decathlon CMA CGM Team"
+    },
+    {
+      "rank": 2,
+      "status": "OK",
+      "riderSlug": "max-kanter",
+      "riderName": "KANTER Max",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": 3,
+      "status": "OK",
+      "riderSlug": "tim-merlier",
+      "riderName": "MERLIER Tim",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": 4,
+      "status": "OK",
+      "riderSlug": "huub-artz",
+      "riderName": "ARTZ Huub",
+      "team": "Lotto Intermarché"
+    },
+    {
+      "rank": 5,
+      "status": "OK",
+      "riderSlug": "jasper-philipsen",
+      "riderName": "PHILIPSEN Jasper",
+      "team": "Alpecin - Premier Tech"
+    },
+    {
+      "rank": 6,
+      "status": "OK",
+      "riderSlug": "mads-pedersen",
+      "riderName": "PEDERSEN Mads",
+      "team": "NSN Cycling Team"
+    },
+    {
+      "rank": 7,
+      "status": "OK",
+      "riderSlug": "biniam-girmay",
+      "riderName": "GIRMAY Biniam",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": 8,
+      "status": "OK",
+      "riderSlug": "milan-fretin",
+      "riderName": "FRETIN Milan",
+      "team": "Cofidis"
+    },
+    {
+      "rank": 9,
+      "status": "OK",
+      "riderSlug": "anthony-turgis",
+      "riderName": "TURGIS Anthony",
+      "team": "TotalEnergies"
+    },
+    {
+      "rank": 10,
+      "status": "OK",
+      "riderSlug": "soren-waerenskjold",
+      "riderName": "WÆRENSKJOLD Søren",
+      "team": "Uno-X Mobility"
+    },
+    {
+      "rank": 11,
+      "status": "OK",
+      "riderSlug": "jenno-berckmoes",
+      "riderName": "BERCKMOES Jenno",
+      "team": "Lotto Intermarché"
+    },
+    {
+      "rank": 12,
+      "status": "OK",
+      "riderSlug": "pascal-ackermann",
+      "riderName": "ACKERMANN Pascal",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": 13,
+      "status": "OK",
+      "riderSlug": "clement-russo",
+      "riderName": "RUSSO Clément",
+      "team": "Groupama - FDJ United"
+    },
+    {
+      "rank": 14,
+      "status": "OK",
+      "riderSlug": "rick-pluimers",
+      "riderName": "PLUIMERS Rick",
+      "team": "Tudor Pro Cycling Team"
+    },
+    {
+      "rank": 15,
+      "status": "OK",
+      "riderSlug": "pavel-bittner",
+      "riderName": "BITTNER Pavel",
+      "team": "Netcompany INEOS"
+    },
+    {
+      "rank": 16,
+      "status": "OK",
+      "riderSlug": "dorian-godon",
+      "riderName": "GODON Dorian",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": 17,
+      "status": "OK",
+      "riderSlug": "fernando-gaviria",
+      "riderName": "GAVIRIA Fernando",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": 18,
+      "status": "OK",
+      "riderSlug": "phil-bauhaus",
+      "riderName": "BAUHAUS Phil",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": 19,
+      "status": "OK",
+      "riderSlug": "mike-teunissen",
+      "riderName": "TEUNISSEN Mike",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": 20,
+      "status": "OK",
+      "riderSlug": "aaron-gate",
+      "riderName": "GATE Aaron",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": 21,
+      "status": "OK",
+      "riderSlug": "tadej-pogacar",
+      "riderName": "POGAČAR Tadej",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": 22,
+      "status": "OK",
+      "riderSlug": "remco-evenepoel",
+      "riderName": "EVENEPOEL Remco",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": 23,
+      "status": "OK",
+      "riderSlug": "paul-seixas",
+      "riderName": "SEIXAS Paul",
+      "team": "Decathlon CMA CGM Team"
+    },
+    {
+      "rank": 24,
+      "status": "OK",
+      "riderSlug": "tom-pidcock",
+      "riderName": "PIDCOCK Tom",
+      "team": "Pinarello Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": 25,
+      "status": "OK",
+      "riderSlug": "richard-carapaz",
+      "riderName": "CARAPAZ Richard",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": 26,
+      "status": "OK",
+      "riderSlug": "ilan-van-wilder",
+      "riderName": "VAN WILDER Ilan",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": 27,
+      "status": "OK",
+      "riderSlug": "maxim-van-gils",
+      "riderName": "VAN GILS Maxim",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": 28,
+      "status": "OK",
+      "riderSlug": "thymen-arensman",
+      "riderName": "ARENSMAN Thymen",
+      "team": "Netcompany INEOS"
+    },
+    {
+      "rank": 29,
+      "status": "OK",
+      "riderSlug": "tom-van-asbroeck",
+      "riderName": "VAN ASBROECK Tom",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": 30,
+      "status": "OK",
+      "riderSlug": "sean-quinn",
+      "riderName": "QUINN Sean",
+      "team": "NSN Cycling Team"
+    },
+    {
+      "rank": 31,
+      "status": "OK",
+      "riderSlug": "mathias-vacek",
+      "riderName": "VACEK Mathias",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": 32,
+      "status": "OK",
+      "riderSlug": "isaac-del-toro",
+      "riderName": "DEL TORO Isaac",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": 33,
+      "status": "OK",
+      "riderSlug": "matteo-jorgenson",
+      "riderName": "JORGENSON Matteo",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": 34,
+      "status": "OK",
+      "riderSlug": "mattias-skjelmose-jensen",
+      "riderName": "SKJELMOSE Mattias",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": 35,
+      "status": "OK",
+      "riderSlug": "juan-ayuso-pesquera",
+      "riderName": "AYUSO Juan",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": 36,
+      "status": "OK",
+      "riderSlug": "ramses-debruyne",
+      "riderName": "DEBRUYNE Ramses",
+      "team": "Alpecin - Premier Tech"
+    },
+    {
+      "rank": 37,
+      "status": "OK",
+      "riderSlug": "jordan-jegat",
+      "riderName": "JEGAT Jordan",
+      "team": "TotalEnergies"
+    },
+    {
+      "rank": 38,
+      "status": "OK",
+      "riderSlug": "brandon-mcnulty",
+      "riderName": "MCNULTY Brandon",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": 39,
+      "status": "OK",
+      "riderSlug": "tobias-halland-johannessen",
+      "riderName": "JOHANNESSEN Tobias Halland",
+      "team": "Uno-X Mobility"
+    },
+    {
+      "rank": 40,
+      "status": "OK",
+      "riderSlug": "yannis-voisard",
+      "riderName": "VOISARD Yannis",
+      "team": "Tudor Pro Cycling Team"
+    },
+    {
+      "rank": 41,
+      "status": "OK",
+      "riderSlug": "antonio-tiberi",
+      "riderName": "TIBERI Antonio",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": 42,
+      "status": "OK",
+      "riderSlug": "sergio-higuita",
+      "riderName": "HIGUITA Sergio",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": 43,
+      "status": "OK",
+      "riderSlug": "kevin-vauquelin",
+      "riderName": "VAUQUELIN Kévin",
+      "team": "Netcompany INEOS"
+    },
+    {
+      "rank": 44,
+      "status": "OK",
+      "riderSlug": "egan-bernal",
+      "riderName": "BERNAL Egan",
+      "team": "Netcompany INEOS"
+    },
+    {
+      "rank": 45,
+      "status": "OK",
+      "riderSlug": "harold-tejada",
+      "riderName": "TEJADA Harold",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": 46,
+      "status": "OK",
+      "riderSlug": "jonas-rickaert",
+      "riderName": "RICKAERT Jonas",
+      "team": "Alpecin - Premier Tech"
+    },
+    {
+      "rank": 47,
+      "status": "OK",
+      "riderSlug": "florian-lipowitz",
+      "riderName": "LIPOWITZ Florian",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": 48,
+      "status": "OK",
+      "riderSlug": "guillaume-martin",
+      "riderName": "MARTIN Guillaume",
+      "team": "Groupama - FDJ United"
+    },
+    {
+      "rank": 49,
+      "status": "OK",
+      "riderSlug": "toms-skujins",
+      "riderName": "SKUJIŅŠ Toms",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": 50,
+      "status": "OK",
+      "riderSlug": "cees-bol",
+      "riderName": "BOL Cees",
+      "team": "Decathlon CMA CGM Team"
+    },
+    {
+      "rank": 51,
+      "status": "OK",
+      "riderSlug": "hugo-page",
+      "riderName": "PAGE Hugo",
+      "team": "Cofidis"
+    },
+    {
+      "rank": 52,
+      "status": "OK",
+      "riderSlug": "davide-piganzoli",
+      "riderName": "PIGANZOLI Davide",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": 53,
+      "status": "OK",
+      "riderSlug": "jonas-vingegaard",
+      "riderName": "VINGEGAARD Jonas",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": 54,
+      "status": "OK",
+      "riderSlug": "torstein-traeen",
+      "riderName": "TRÆEN Torstein",
+      "team": "Uno-X Mobility"
+    },
+    {
+      "rank": 55,
+      "status": "OK",
+      "riderSlug": "joris-delbove",
+      "riderName": "DELBOVE Joris",
+      "team": "TotalEnergies"
+    },
+    {
+      "rank": 56,
+      "status": "OK",
+      "riderSlug": "raul-garcia-pierna",
+      "riderName": "GARCÍA PIERNA Raúl",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": 57,
+      "status": "OK",
+      "riderSlug": "davide-ballerini",
+      "riderName": "BALLERINI Davide",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": 58,
+      "status": "OK",
+      "riderSlug": "julius-van-den-berg",
+      "riderName": "VAN DEN BERG Julius",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": 59,
+      "status": "OK",
+      "riderSlug": "jefferson-cepeda-hernandez",
+      "riderName": "CEPEDA Jefferson Alveiro",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": 60,
+      "status": "OK",
+      "riderSlug": "frits-biesterbos",
+      "riderName": "BIESTERBOS Frits",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": 61,
+      "status": "OK",
+      "riderSlug": "piet-allegaert",
+      "riderName": "ALLEGAERT Piet",
+      "team": "Cofidis"
+    },
+    {
+      "rank": 62,
+      "status": "OK",
+      "riderSlug": "felix-grossschartner",
+      "riderName": "GROSSSCHARTNER Felix",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": 63,
+      "status": "OK",
+      "riderSlug": "adam-yates",
+      "riderName": "YATES Adam",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": 64,
+      "status": "OK",
+      "riderSlug": "lenny-martinez",
+      "riderName": "MARTINEZ Lenny",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": 65,
+      "status": "OK",
+      "riderSlug": "georg-zimmermann",
+      "riderName": "ZIMMERMANN Georg",
+      "team": "Lotto Intermarché"
+    },
+    {
+      "rank": 66,
+      "status": "OK",
+      "riderSlug": "lewis-askey",
+      "riderName": "ASKEY Lewis",
+      "team": "NSN Cycling Team"
+    },
+    {
+      "rank": 67,
+      "status": "OK",
+      "riderSlug": "lorenzo-germani",
+      "riderName": "GERMANI Lorenzo",
+      "team": "Groupama - FDJ United"
+    },
+    {
+      "rank": 68,
+      "status": "OK",
+      "riderSlug": "ion-izagirre",
+      "riderName": "IZAGIRRE Ion",
+      "team": "Cofidis"
+    },
+    {
+      "rank": 69,
+      "status": "OK",
+      "riderSlug": "bruno-armirail",
+      "riderName": "ARMIRAIL Bruno",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": 70,
+      "status": "OK",
+      "riderSlug": "einer-rubio",
+      "riderName": "RUBIO Einer",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": 71,
+      "status": "OK",
+      "riderSlug": "jose-felix-parra",
+      "riderName": "PARRA José Félix",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": 72,
+      "status": "OK",
+      "riderSlug": "cian-uijtdebroeks",
+      "riderName": "UIJTDEBROEKS Cian",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": 73,
+      "status": "OK",
+      "riderSlug": "daan-hoole",
+      "riderName": "HOOLE Daan",
+      "team": "Decathlon CMA CGM Team"
+    },
+    {
+      "rank": 74,
+      "status": "OK",
+      "riderSlug": "tobias-foss",
+      "riderName": "FOSS Tobias",
+      "team": "Netcompany INEOS"
+    },
+    {
+      "rank": 75,
+      "status": "OK",
+      "riderSlug": "mathis-le-berre",
+      "riderName": "LE BERRE Mathis",
+      "team": "TotalEnergies"
+    },
+    {
+      "rank": 76,
+      "status": "OK",
+      "riderSlug": "nils-politt",
+      "riderName": "POLITT Nils",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": 77,
+      "status": "OK",
+      "riderSlug": "mattia-cattaneo",
+      "riderName": "CATTANEO Mattia",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": 78,
+      "status": "OK",
+      "riderSlug": "ben-o-connor",
+      "riderName": "O'CONNOR Ben",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": 79,
+      "status": "OK",
+      "riderSlug": "tim-marsman",
+      "riderName": "MARSMAN Tim",
+      "team": "Alpecin - Premier Tech"
+    },
+    {
+      "rank": 80,
+      "status": "OK",
+      "riderSlug": "edward-planckaert",
+      "riderName": "PLANCKAERT Edward",
+      "team": "Alpecin - Premier Tech"
+    },
+    {
+      "rank": 81,
+      "status": "OK",
+      "riderSlug": "jake-stewart",
+      "riderName": "STEWART Jake",
+      "team": "NSN Cycling Team"
+    },
+    {
+      "rank": 82,
+      "status": "OK",
+      "riderSlug": "jonas-abrahamsen",
+      "riderName": "ABRAHAMSEN Jonas",
+      "team": "Uno-X Mobility"
+    },
+    {
+      "rank": 83,
+      "status": "OK",
+      "riderSlug": "xabier-mikel-azparren-irurzun",
+      "riderName": "AZPARREN Xabier Mikel",
+      "team": "Pinarello Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": 84,
+      "status": "OK",
+      "riderSlug": "krists-neilands",
+      "riderName": "NEILANDS Krists",
+      "team": "NSN Cycling Team"
+    },
+    {
+      "rank": 85,
+      "status": "OK",
+      "riderSlug": "quinn-simmons",
+      "riderName": "SIMMONS Quinn",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": 86,
+      "status": "OK",
+      "riderSlug": "xandro-meurisse",
+      "riderName": "MEURISSE Xandro",
+      "team": "Pinarello Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": 87,
+      "status": "OK",
+      "riderSlug": "nico-denz",
+      "riderName": "DENZ Nico",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": 88,
+      "status": "OK",
+      "riderSlug": "sepp-kuss",
+      "riderName": "KUSS Sepp",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": 89,
+      "status": "OK",
+      "riderSlug": "derek-gee",
+      "riderName": "GEE-WEST Derek",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": 90,
+      "status": "OK",
+      "riderSlug": "nicolas-vinokurov",
+      "riderName": "VINOKUROV Nicolas",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": 91,
+      "status": "OK",
+      "riderSlug": "tim-wellens",
+      "riderName": "WELLENS Tim",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": 92,
+      "status": "OK",
+      "riderSlug": "tim-van-dijke",
+      "riderName": "VAN DIJKE Tim",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": 93,
+      "status": "OK",
+      "riderSlug": "lars-craps",
+      "riderName": "CRAPS Lars",
+      "team": "Lotto Intermarché"
+    },
+    {
+      "rank": 94,
+      "status": "OK",
+      "riderSlug": "brent-van-moer",
+      "riderName": "VAN MOER Brent",
+      "team": "Pinarello Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": 95,
+      "status": "OK",
+      "riderSlug": "lennert-van-eetvelt",
+      "riderName": "VAN EETVELT Lennert",
+      "team": "Lotto Intermarché"
+    },
+    {
+      "rank": 96,
+      "status": "OK",
+      "riderSlug": "quinten-hermans",
+      "riderName": "HERMANS Quinten",
+      "team": "Pinarello Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": 97,
+      "status": "OK",
+      "riderSlug": "carlos-verona",
+      "riderName": "VERONA Carlos",
+      "team": "Lidl - Trek"
+    },
+    {
+      "rank": 98,
+      "status": "OK",
+      "riderSlug": "nicolas-prodhomme",
+      "riderName": "PRODHOMME Nicolas",
+      "team": "Decathlon CMA CGM Team"
+    },
+    {
+      "rank": 99,
+      "status": "OK",
+      "riderSlug": "nelson-oliveira",
+      "riderName": "OLIVEIRA Nelson",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": 100,
+      "status": "OK",
+      "riderSlug": "magnus-cort-nielsen",
+      "riderName": "CORT Magnus",
+      "team": "Uno-X Mobility"
+    },
+    {
+      "rank": 101,
+      "status": "OK",
+      "riderSlug": "john-degenkolb",
+      "riderName": "DEGENKOLB John",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": 102,
+      "status": "OK",
+      "riderSlug": "george-bennett",
+      "riderName": "BENNETT George",
+      "team": "NSN Cycling Team"
+    },
+    {
+      "rank": 103,
+      "status": "OK",
+      "riderSlug": "anders-skaarseth",
+      "riderName": "SKAARSETH Anders",
+      "team": "Uno-X Mobility"
+    },
+    {
+      "rank": 104,
+      "status": "OK",
+      "riderSlug": "julian-alaphilippe",
+      "riderName": "ALAPHILIPPE Julian",
+      "team": "Tudor Pro Cycling Team"
+    },
+    {
+      "rank": 105,
+      "status": "OK",
+      "riderSlug": "robert-stannard",
+      "riderName": "STANNARD Robert",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": 106,
+      "status": "OK",
+      "riderSlug": "michal-kwiatkowski",
+      "riderName": "KWIATKOWSKI Michał",
+      "team": "Netcompany INEOS"
+    },
+    {
+      "rank": 107,
+      "status": "OK",
+      "riderSlug": "javier-romo",
+      "riderName": "ROMO Javier",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": 108,
+      "status": "OK",
+      "riderSlug": "matej-mohoric",
+      "riderName": "MOHORIČ Matej",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": 109,
+      "status": "OK",
+      "riderSlug": "filippo-ganna",
+      "riderName": "GANNA Filippo",
+      "team": "Netcompany INEOS"
+    },
+    {
+      "rank": 110,
+      "status": "OK",
+      "riderSlug": "florian-vermeersch",
+      "riderName": "VERMEERSCH Florian",
+      "team": "UAE Team Emirates - XRG"
+    },
+    {
+      "rank": 111,
+      "status": "OK",
+      "riderSlug": "edoardo-affini",
+      "riderName": "AFFINI Edoardo",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": 112,
+      "status": "OK",
+      "riderSlug": "baptiste-veistroffer",
+      "riderName": "VEISTROFFER Baptiste",
+      "team": "Lotto Intermarché"
+    },
+    {
+      "rank": 113,
+      "status": "OK",
+      "riderSlug": "pablo-castrillo-zapater",
+      "riderName": "CASTRILLO Pablo",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": 114,
+      "status": "OK",
+      "riderSlug": "felix-engelhardt",
+      "riderName": "ENGELHARDT Felix",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": 115,
+      "status": "OK",
+      "riderSlug": "alexandre-delettre",
+      "riderName": "DELETTRE Alexandre",
+      "team": "TotalEnergies"
+    },
+    {
+      "rank": 116,
+      "status": "OK",
+      "riderSlug": "niklas-markl",
+      "riderName": "MÄRKL Niklas",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": 117,
+      "status": "OK",
+      "riderSlug": "romain-gregoire",
+      "riderName": "GRÉGOIRE Romain",
+      "team": "Groupama - FDJ United"
+    },
+    {
+      "rank": 118,
+      "status": "OK",
+      "riderSlug": "clement-braz-afonso",
+      "riderName": "BRAZ AFONSO Clément",
+      "team": "Groupama - FDJ United"
+    },
+    {
+      "rank": 119,
+      "status": "OK",
+      "riderSlug": "mauro-schmid",
+      "riderName": "SCHMID Mauro",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": 120,
+      "status": "OK",
+      "riderSlug": "jai-hindley",
+      "riderName": "HINDLEY Jai",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": 121,
+      "status": "OK",
+      "riderSlug": "per-strand-hagenes",
+      "riderName": "HAGENES Per Strand",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": 122,
+      "status": "OK",
+      "riderSlug": "marco-haller",
+      "riderName": "HALLER Marco",
+      "team": "Tudor Pro Cycling Team"
+    },
+    {
+      "rank": 123,
+      "status": "OK",
+      "riderSlug": "matteo-trentin",
+      "riderName": "TRENTIN Matteo",
+      "team": "Tudor Pro Cycling Team"
+    },
+    {
+      "rank": 124,
+      "status": "OK",
+      "riderSlug": "thibault-guernalec",
+      "riderName": "GUERNALEC Thibault",
+      "team": "TotalEnergies"
+    },
+    {
+      "rank": 125,
+      "status": "OK",
+      "riderSlug": "liam-slock",
+      "riderName": "SLOCK Liam",
+      "team": "Lotto Intermarché"
+    },
+    {
+      "rank": 126,
+      "status": "OK",
+      "riderSlug": "warren-barguil",
+      "riderName": "BARGUIL Warren",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": 127,
+      "status": "OK",
+      "riderSlug": "quentin-pacher",
+      "riderName": "PACHER Quentin",
+      "team": "Groupama - FDJ United"
+    },
+    {
+      "rank": 128,
+      "status": "OK",
+      "riderSlug": "mathieu-van-der-poel",
+      "riderName": "VAN DER POEL Mathieu",
+      "team": "Alpecin - Premier Tech"
+    },
+    {
+      "rank": 129,
+      "status": "OK",
+      "riderSlug": "abel-balderstone-roumens",
+      "riderName": "BALDERSTONE Abel",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": 130,
+      "status": "OK",
+      "riderSlug": "kasper-asgreen",
+      "riderName": "ASGREEN Kasper",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": 131,
+      "status": "OK",
+      "riderSlug": "frank-van-den-broek",
+      "riderName": "VAN DEN BROEK Frank",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": 132,
+      "status": "OK",
+      "riderSlug": "robbe-dhondt",
+      "riderName": "DHONDT Robbe",
+      "team": "Team Picnic PostNL"
+    },
+    {
+      "rank": 133,
+      "status": "OK",
+      "riderSlug": "alex-kirsch",
+      "riderName": "KIRSCH Alex",
+      "team": "Cofidis"
+    },
+    {
+      "rank": 134,
+      "status": "OK",
+      "riderSlug": "ben-healy",
+      "riderName": "HEALY Ben",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": 135,
+      "status": "OK",
+      "riderSlug": "vlad-van-mechelen",
+      "riderName": "VAN MECHELEN Vlad",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": 136,
+      "status": "OK",
+      "riderSlug": "matthew-riccitello",
+      "riderName": "RICCITELLO Matthew",
+      "team": "Decathlon CMA CGM Team"
+    },
+    {
+      "rank": 137,
+      "status": "OK",
+      "riderSlug": "tiesj-benoot",
+      "riderName": "BENOOT Tiesj",
+      "team": "Decathlon CMA CGM Team"
+    },
+    {
+      "rank": 138,
+      "status": "OK",
+      "riderSlug": "matheo-vercher",
+      "riderName": "VERCHER Mattéo",
+      "team": "TotalEnergies"
+    },
+    {
+      "rank": 139,
+      "status": "OK",
+      "riderSlug": "anders-halland-johannessen",
+      "riderName": "JOHANNESSEN Anders Halland",
+      "team": "Uno-X Mobility"
+    },
+    {
+      "rank": 140,
+      "status": "OK",
+      "riderSlug": "anthon-charmig",
+      "riderName": "CHARMIG Anthon",
+      "team": "Uno-X Mobility"
+    },
+    {
+      "rank": 141,
+      "status": "OK",
+      "riderSlug": "alex-baudin",
+      "riderName": "BAUDIN Alex",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": 142,
+      "status": "OK",
+      "riderSlug": "valentin-paret-peintre",
+      "riderName": "PARET-PEINTRE Valentin",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": 143,
+      "status": "OK",
+      "riderSlug": "jenthe-biermans",
+      "riderName": "BIERMANS Jenthe",
+      "team": "Cofidis"
+    },
+    {
+      "rank": 144,
+      "status": "OK",
+      "riderSlug": "alex-aranburu",
+      "riderName": "ARANBURU Alex",
+      "team": "Cofidis"
+    },
+    {
+      "rank": 145,
+      "status": "OK",
+      "riderSlug": "benjamin-thomas-2",
+      "riderName": "THOMAS Benjamin",
+      "team": "Cofidis"
+    },
+    {
+      "rank": 146,
+      "status": "OK",
+      "riderSlug": "silvan-dillier",
+      "riderName": "DILLIER Silvan",
+      "team": "Alpecin - Premier Tech"
+    },
+    {
+      "rank": 147,
+      "status": "OK",
+      "riderSlug": "alfred-wright",
+      "riderName": "WRIGHT Fred",
+      "team": "Pinarello Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": 148,
+      "status": "OK",
+      "riderSlug": "kamil-gradek",
+      "riderName": "GRADEK Kamil",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": 149,
+      "status": "OK",
+      "riderSlug": "ewen-costiou",
+      "riderName": "COSTIOU Ewen",
+      "team": "Groupama - FDJ United"
+    },
+    {
+      "rank": 150,
+      "status": "OK",
+      "riderSlug": "pascal-eenkhoorn",
+      "riderName": "EENKHOORN Pascal",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": 151,
+      "status": "OK",
+      "riderSlug": "michael-valgren-andersen",
+      "riderName": "VALGREN Michael",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": 152,
+      "status": "OK",
+      "riderSlug": "luke-durbridge",
+      "riderName": "DURBRIDGE Luke",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": 153,
+      "status": "OK",
+      "riderSlug": "max-walker",
+      "riderName": "WALKER Max",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": 154,
+      "status": "OK",
+      "riderSlug": "damien-howson",
+      "riderName": "HOWSON Damien",
+      "team": "Pinarello Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": 155,
+      "status": "OK",
+      "riderSlug": "damiano-caruso",
+      "riderName": "CARUSO Damiano",
+      "team": "Bahrain - Victorious"
+    },
+    {
+      "rank": 156,
+      "status": "OK",
+      "riderSlug": "marco-frigo",
+      "riderName": "FRIGO Marco",
+      "team": "NSN Cycling Team"
+    },
+    {
+      "rank": 157,
+      "status": "OK",
+      "riderSlug": "marc-hirschi",
+      "riderName": "HIRSCHI Marc",
+      "team": "Tudor Pro Cycling Team"
+    },
+    {
+      "rank": 158,
+      "status": "OK",
+      "riderSlug": "simone-velasco",
+      "riderName": "VELASCO Simone",
+      "team": "XDS Astana Team"
+    },
+    {
+      "rank": 159,
+      "status": "OK",
+      "riderSlug": "jan-tratnik",
+      "riderName": "TRATNIK Jan",
+      "team": "Red Bull - BORA - hansgrohe"
+    },
+    {
+      "rank": 160,
+      "status": "OK",
+      "riderSlug": "luke-plapp",
+      "riderName": "PLAPP Luke",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": 161,
+      "status": "OK",
+      "riderSlug": "chris-harper",
+      "riderName": "HARPER Chris",
+      "team": "Pinarello Q36.5 Pro Cycling Team"
+    },
+    {
+      "rank": 162,
+      "status": "OK",
+      "riderSlug": "michel-hessmann",
+      "riderName": "HESSMANN Michel",
+      "team": "Movistar Team"
+    },
+    {
+      "rank": 163,
+      "status": "OK",
+      "riderSlug": "michael-storer",
+      "riderName": "STORER Michael",
+      "team": "Tudor Pro Cycling Team"
+    },
+    {
+      "rank": 164,
+      "status": "OK",
+      "riderSlug": "emiel-verstrynge",
+      "riderName": "VERSTRYNGE Emiel",
+      "team": "Alpecin - Premier Tech"
+    },
+    {
+      "rank": 165,
+      "status": "OK",
+      "riderSlug": "nicolas-breuillard",
+      "riderName": "BREUILLARD Nicolas",
+      "team": "TotalEnergies"
+    },
+    {
+      "rank": 166,
+      "status": "OK",
+      "riderSlug": "georg-steinhauser",
+      "riderName": "STEINHAUSER Georg",
+      "team": "EF Education - EasyPost"
+    },
+    {
+      "rank": 167,
+      "status": "OK",
+      "riderSlug": "joshua-tarling",
+      "riderName": "TARLING Joshua",
+      "team": "Netcompany INEOS"
+    },
+    {
+      "rank": 168,
+      "status": "OK",
+      "riderSlug": "sebastian-berwick",
+      "riderName": "BERWICK Sebastian",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": 169,
+      "status": "OK",
+      "riderSlug": "joel-nicolau",
+      "riderName": "NICOLAU Joel",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": 170,
+      "status": "OK",
+      "riderSlug": "victor-campenaerts",
+      "riderName": "CAMPENAERTS Victor",
+      "team": "Team Visma | Lease a Bike"
+    },
+    {
+      "rank": 171,
+      "status": "OK",
+      "riderSlug": "stefano-oldani",
+      "riderName": "OLDANI Stefano",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": 172,
+      "status": "OK",
+      "riderSlug": "jakub-otruba",
+      "riderName": "OTRUBA Jakub",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": 173,
+      "status": "OK",
+      "riderSlug": "louis-vervaeke",
+      "riderName": "VERVAEKE Louis",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": 174,
+      "status": "OK",
+      "riderSlug": "jasper-stuyven",
+      "riderName": "STUYVEN Jasper",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": 175,
+      "status": "OK",
+      "riderSlug": "dylan-van-baarle",
+      "riderName": "VAN BAARLE Dylan",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": 176,
+      "status": "OK",
+      "riderSlug": "bert-van-lerberghe",
+      "riderName": "VAN LERBERGHE Bert",
+      "team": "Soudal Quick-Step"
+    },
+    {
+      "rank": 177,
+      "status": "OK",
+      "riderSlug": "aurelien-paret-peintre",
+      "riderName": "PARET-PEINTRE Aurélien",
+      "team": "Decathlon CMA CGM Team"
+    },
+    {
+      "rank": 178,
+      "status": "OK",
+      "riderSlug": "matis-louvel",
+      "riderName": "LOUVEL Matis",
+      "team": "NSN Cycling Team"
+    },
+    {
+      "rank": 179,
+      "status": "OK",
+      "riderSlug": "michael-matthews",
+      "riderName": "MATTHEWS Michael",
+      "team": "Team Jayco AlUla"
+    },
+    {
+      "rank": 180,
+      "status": "OK",
+      "riderSlug": "alex-molenaar",
+      "riderName": "MOLENAAR Alex",
+      "team": "Caja Rural - Seguros RGA"
+    },
+    {
+      "rank": 181,
+      "status": "OK",
+      "riderSlug": "arvid-de-kleijn",
+      "riderName": "DE KLEIJN Arvid",
+      "team": "Tudor Pro Cycling Team"
+    }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-5/result",
+  "capturedAt": "2026-07-09T05:37:17.455Z"
 }
