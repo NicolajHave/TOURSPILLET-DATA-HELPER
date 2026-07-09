@@ -257,10 +257,38 @@ function matchForm(name) {
   c = SNAP._R.filter((x) => x.li === li); if (c.length === 1) return c[0].r;
   return null;
 }
-function valueOfRank(rank, scale, c) {
-  return c.baseline[scale] + c.premiumRank1[scale] * Math.exp(-c.decayK * (rank - 1));
+// ---- OFFICIEL VÆRDIMOTOR (ruleset 117, docs/RULES.md) ----------------------
+// Vækst = etapetabel + spurt-/bjergpoint(×3k) + GC-tabel + trøjer + holdbonus
+// − sen ankomst (−3k/min, maks −90k). Facit-dekomponering bekræfter 1:1
+// (Kooij E5: 200k + 60k hold + ~50 pt×3k ≈ +470k ✓ · Pogačar E4: ~GC 80k
+// − ~15 min ≈ +34k ✓). Erstatter den empiriske eksponentialkurve fra
+// Dauphiné (hvis bjerg-baseline −67,5k netop VAR sen ankomst-straffen).
+const PAY_STAGE = [200000, 150000, 130000, 120000, 110000, 100000, 95000, 90000, 85000, 80000, 70000, 55000, 40000, 30000, 15000];
+// Spurt-/bjergpoint: 3.000 kr/pt. Finish-point efter TdF-skala pr. etapetype
+// (flad 50/30/20…, punch 30/25/22…, bjerg/break/itt 20/17/15…). Mellemspurter
+// og KOM-point undervejs er IKKE modelleret (typisk udbruddet, lille bias).
+const PTS_FINISH = {
+  sprint:      [50, 30, 20, 18, 16, 14, 12, 10, 8, 7, 6, 5, 4, 3, 2],
+  punch:       [30, 25, 22, 19, 17, 15, 13, 11, 9, 7, 6, 5, 4, 3, 2],
+  punch_steep: [30, 25, 22, 19, 17, 15, 13, 11, 9, 7, 6, 5, 4, 3, 2],
+  mountain:    [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+  break:       [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+  itt:         [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+};
+const PTS_KR = 3000;
+// Felt-værdi (plads >15) = forventet sen ankomst-straf. Kalibreret på
+// realiserede TdF-facit (median uden for top-15): E5 sprint 0 · E2 steep −33k
+// · E4 break −36k · E3 bjerg −60k (p10 = −90k = reglernes loft, bekræftet).
+const FIELD_VALUE = { sprint: 0, punch: -15000, punch_steep: -30000, mountain: -60000, break: -35000, itt: -12000, ttt: 0 };
+// Holdbonus: etapens hold 1/2/3 → 60/30/20k til ALLE holdets ryttere.
+// EV-kanal ≈ 110k·P(hold vinder) (P(2.)≈P(3.)≈P(1.)-tilnærmelse).
+const PAY_TEAM = [60000, 30000, 20000];
+const TEAM_KR = 110000;
+function valueOfRank(rank, profile) {
+  const r = Math.round(rank);
+  if (r >= 1 && r <= 15) return PAY_STAGE[r - 1] + PTS_KR * ((PTS_FINISH[profile] || PTS_FINISH.break)[r - 1] || 0);
+  return FIELD_VALUE[profile] ?? 0;
 }
-const scaleOf = (p) => (p === 'mountain' || p === 'break') ? 'mountain' : 'flat';
 const kr = (n) => Math.round(n).toLocaleString('da-DK');
 
 // ---- nyheds-/styrtflag (manuel fundamental-input, persisteret) ----
@@ -338,7 +366,7 @@ fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
 // Vægte = kalibreret styrke^γ — SAMME model som teamWinProb (γ MLE-fittet på
 // etapevindere), IKKE forecasterens ukalibrerede wForm/wFit/wArch-defaults.
 // Seeded (mulberry32) → deterministisk og reproducerbar i loggen.
-const MC = { samples: 3000, top: 30, seed: 42, fieldRank: 50 };
+const MC = { samples: 3000, top: 15, seed: 42 }; // top-15 = betalingsgrænsen (officiel tabel)
 // γ pr. profil (MLE på etapevindere): bjerg/punch er favorit-dominerede (2.5),
 // break er lotteri (1), sprint midt imellem (1.5). Poolet γ som fallback.
 const gammaFor = (profile) => (SNAP.winProbGammaByProfile && SNAP.winProbGammaByProfile[profile]) || SNAP.winProbGamma || 1;
@@ -362,11 +390,11 @@ function mulberry32(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-function plMonteCarlo(rows, profile, scale, c) {
+function plMonteCarlo(rows, profile) {
   const g = gammaFor(profile);
   const w = rows.map((r) => Math.pow(Math.max(0, r.strength), g));
   const n = rows.length, TOP = Math.min(MC.top, n);
-  const vField = valueOfRank(MC.fieldRank, scale, c);
+  const vField = FIELD_VALUE[profile] ?? 0;
   const sum = new Array(n).fill(0), sumSq = new Array(n).fill(0), wins = new Array(n).fill(0), top15 = new Array(n).fill(0);
   const rng = mulberry32(MC.seed);
   const placed = new Array(n);
@@ -378,7 +406,7 @@ function plMonteCarlo(rows, profile, scale, c) {
       for (let k = 0; k < n; k++) { if (placed[k]) continue; r -= w[k]; if (r <= 0) { chosen = k; break; } }
       if (chosen < 0) for (let k = 0; k < n; k++) if (!placed[k]) { chosen = k; break; }
       placed[chosen] = true; total -= w[chosen];
-      const v = valueOfRank(pos, scale, c);
+      const v = valueOfRank(pos, profile);
       sum[chosen] += v; sumSq[chosen] += v * v;
       if (pos === 1) wins[chosen]++;
       if (pos <= 15) top15[chosen]++;   // → etapebonus-kanalen (BANK)
@@ -513,7 +541,7 @@ function compute() {
   if (!SNAP) { $('status').textContent = 'form-snapshot ikke indlæst'; return; }
   let raw; try { raw = JSON.parse($('snap').value); } catch { $('status').textContent = 'ugyldig JSON'; return; }
   const persons = raw._embedded?.persons || {}, teams = raw._embedded?.teams || {};
-  const profile = $('profile').value, scale = scaleOf(profile), c = SNAP.valueCoeffs, beta = SNAP.evBeta;
+  const profile = $('profile').value, beta = SNAP.evBeta;
   const excluded = getExcluded();
 
   let rows = (raw.items || []).filter((i) => !i.isOut).map((i) => {
@@ -537,17 +565,17 @@ function compute() {
     tttMonteCarlo(rows);
   } else {
     rows.sort((a, b) => b.strength - a.strength);
-    plMonteCarlo(rows, profile, scale, c); // sætter evPlace/sigma/pWin/pTop15
+    plMonteCarlo(rows, profile); // sætter evPlace/sigma/pWin/pTop15
   }
   rows.forEach((r, idx) => {
     if (!ttt) r.predRank = idx + 1;
     r.fitP = ttt ? 0 : (r.fitObj ? (r.fitObj[profile] || 0) : 0);
     r.twp = teamWinProb(r.team, profile);
-    r.evDet = valueOfRank(r.predRank, scale, c) + c.teamBonus * r.twp;
+    r.evDet = valueOfRank(r.predRank, profile) + TEAM_KR * r.twp;
     // DNF-hazard (empirisk pr. profil); straf = blended DNF/DNS (officielt −50k/−100k).
-    // Holdbonus (60k·P) gælder kun normale etaper — TTT'ens holdkanal ER payouten.
+    // Holdbonus (60/30/20k ≈ 110k·P) gælder kun normale etaper — TTT'ens holdkanal ER payouten.
     r.pDnf = dnfFor(profile);
-    const gross = ttt ? r.evPlace : r.evPlace + c.teamBonus * r.twp;
+    const gross = ttt ? r.evPlace : r.evPlace + TEAM_KR * r.twp;
     r.ev = (1 - r.pDnf) * gross + r.pDnf * (-DNF_PEN);
     r.lev = r.ev > 0 ? r.ev * (1 - r.own) : -Infinity;
     r.perMio = r.price > 0 ? r.ev / (r.price / 1e6) : 0;
@@ -574,7 +602,7 @@ function compute() {
       ? `HVORFOR (TTT, officielle regler): ${r.team || 'ukendt hold'} = hold ${r.teamRank} (tempo-motor) · holdplacering 1-5 betaler 200k/150k/100k/50k/25k til ALLE på holdet · P(holdet vinder) ${(r.pWin * 100).toFixed(0)}% · GC efter etapen: AFSLUTTEREN (bedste punch) krydser først, kun ~4 overlevere pr. hold tæller i toppen — forventet GC-plads ${r.predRank}${r.predRank <= 10 ? ` → +${kr(GC_DAILY[r.predRank - 1] + (r.predRank === 1 ? YELLOW : 0))} sammenlagt-vækst` : ''} → MC-expΔ ${kr(r.ev)} ± ${kr(r.sigma)} · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
       : r.hasForm
       ? `HVORFOR: form ${r.form.toFixed(2)} · profil-fit(${profile}) ${r.fitP.toFixed(2)} → model-plads ${r.predRank} → MC-expΔ ${kr(r.ev)} ± ${kr(r.sigma)} · P(sejr) ${(r.pWin * 100).toFixed(1)}% · DNF-risiko ${(r.pDnf * 100).toFixed(1)}%`
-        + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(c.teamBonus * r.twp)} · P(hold vinder) ${(r.twp * 100).toFixed(0)}%)` : '')
+        + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(TEAM_KR * r.twp)} · P(hold vinder) ${(r.twp * 100).toFixed(0)}%)` : '')
         + (r.gcDay >= 1000 ? ` · GC-indkomst ~${kr(r.gcDay)}/dag (IKKE i expΔ — tie-breaker)` : '')
         + ` · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
       : 'Ingen 2026-form på denne rytter (ingen data) → strength 0.';
@@ -609,7 +637,7 @@ function compute() {
     if (cand && cand.ev + cand.sigma > captain.ev) varAlt = cand;
   }
   $('capline').innerHTML = captain
-    ? `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr ± ${kr(captain.sigma)} · ejer ${(captain.own * 100).toFixed(0)}%${ttt ? ` · P(holdet vinder TTT) ${(captain.pWin * 100).toFixed(0)}% · kaptajnbonus = vækst×1 → gul-tageren er dobbelt værd` : ` · heraf forventet holdbonus ${kr(c.teamBonus * captain.twp)} kr ved P(hold vinder)=${(captain.twp * 100).toFixed(0)}%`})`
+    ? `Anbefalet kaptajn: <b>${captain.name}</b> (expΔ ${kr(captain.ev)} kr ± ${kr(captain.sigma)} · ejer ${(captain.own * 100).toFixed(0)}%${ttt ? ` · P(holdet vinder TTT) ${(captain.pWin * 100).toFixed(0)}% · kaptajnbonus = vækst×1 → gul-tageren er dobbelt værd` : ` · heraf forventet holdbonus ${kr(TEAM_KR * captain.twp)} kr ved P(hold vinder)=${(captain.twp * 100).toFixed(0)}%`})`
       + (lowConf ? ' <span class="neg" style="font-weight:700">⚠ LAV TILLID</span>' : '')
       + (varAlt ? `<br><span class="muted">Varians-alternativ: <b>${varAlt.name}</b> (expΔ ${kr(varAlt.ev)} ± ${kr(varAlt.sigma)} · ejer ${(varAlt.own * 100).toFixed(0)}%) — mere upside/kontrærhed, hvis feltet ejer kaptajnen tungt.</span>` : '')
     : 'Ingen kvalificeret kaptajn (alle udelukket?)';
@@ -702,18 +730,19 @@ function computeOutlook() {
     html += '<p class="muted">Break-even for et skifte: Σ(expΔ køb − expΔ sælg) over horisonten skal overstige 1 % købsgebyr (+ 0,5 %/etape rente på frigjort kontant). Trin 3/4 regner det præcist pr. skifte — vinderen her er din transfer-kandidat FØR blokken.</p>';
   }
   if (haveField) _evCache = null;
-  html += '<p class="muted">Samme rytter i toppen 2–3 dage i træk = køb ham FØR blokken (kør hold-rådgiveren). ⚠ = lav-tillids-profil. NB: udsyn + trin 3/4 bruger den deterministiske værdikurve (niveauet er højere end kandidat-tabellens MC-forventning, men <em>rangordenen er den samme</em> — sammenligninger på tværs er konsistente).</p>';
+  html += '<p class="muted">Samme rytter i toppen 2–3 dage i træk = køb ham FØR blokken (kør hold-rådgiveren). ⚠ = lav-tillids-profil. NB: udsyn + trin 3/4 bruger den officielle etapetabel deterministisk (niveauet er højere end kandidat-tabellens MC-forventning, men <em>rangordenen er den samme</em> — sammenligninger på tværs er konsistente).</p>';
   out.innerHTML = html;
 }
 
 // ---- transfer evaluator (mirrors src/lib/transferEvaluator.ts exactly) ----
 const RS = { transferFee: 0.01, interestRate: 0.005 };
 const DECAY = 0.85, LOWCONF = 0.6;
-function rankForValue(target, scale, c) {
-  const prem = target - c.baseline[scale];
-  if (prem <= 0) return Infinity;
-  if (prem >= c.premiumRank1[scale]) return 1;
-  return 1 + Math.log(c.premiumRank1[scale] / prem) / c.decayK;
+// Invers af den officielle tabel: dårligste plads hvis værdi stadig når målet.
+// target ≤ felt-værdien → Infinity ("kan ikke tabe"); over vinder-værdien → 1.
+function rankForValue(target, profile) {
+  if (target <= (FIELD_VALUE[profile] ?? 0)) return Infinity;
+  for (let r = 15; r >= 1; r--) if (valueOfRank(r, profile) >= target) return r;
+  return 1;
 }
 function describeRank(rank) {
   if (!isFinite(rank)) return '✅ kan ikke tabe (Y slår break-even selv fra feltet)';
@@ -803,7 +832,7 @@ let _evCache = null;
 function evOnProfile(rider, profile) {
   const ck = _evCache && rider.name + '|' + profile;
   if (_evCache && _evCache.has(ck)) return _evCache.get(ck);
-  const c = SNAP.valueCoeffs, beta = SNAP.evBeta;
+  const beta = SNAP.evBeta;
   let ev;
   if (profile === 'ttt') {
     // TTT (officielle regler): holdplacering betaler alle på holdet; GC-vækst
@@ -815,15 +844,14 @@ function evOnProfile(rider, profile) {
     const s = profile === 'break' ? breakStrength : (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
     const mine = s(rider);
     const rank = 1 + window._field.filter((r) => r !== rider && s(r) > mine).length;
-    ev = valueOfRank(rank, scaleOf(profile), c) + c.teamBonus * teamWinProb(rider.team, profile);
+    ev = valueOfRank(rank, profile) + TEAM_KR * teamWinProb(rider.team, profile);
   }
   if (_evCache) _evCache.set(ck, ev);
   return ev;
 }
 /** Core swap math — mirrors src/lib/transferEvaluator.ts (parity-verified). */
 function transferHorizons(X, Y, profiles) {
-  const c = SNAP.valueCoeffs;
-  const legs = profiles.map((p) => ({ profile: p, evX: evOnProfile(X, p), evY: evOnProfile(Y, p), scale: scaleOf(p) }));
+  const legs = profiles.map((p) => ({ profile: p, evX: evOnProfile(X, p), evY: evOnProfile(Y, p) }));
   const fee = Math.round(Y.price * RS.transferFee);
   const freedCash = X.price - Y.price;
   let grossDisc = 0, keepDisc = 0, sumDisc = 0, levGross = 0;
@@ -840,7 +868,7 @@ function transferHorizons(X, Y, profiles) {
     const leverageAdjusted = levGross - fee + interestAdj;
     const confidence = Math.pow(DECAY, i);
     const requiredAvgDeltaY = (fee - interestAdj + keepDisc) / sumDisc;
-    const requiredRank = rankForValue(requiredAvgDeltaY, legs[0].scale, c);
+    const requiredRank = rankForValue(requiredAvgDeltaY, legs[0].profile);
     horizons.push({ H, netGain, leverageAdjusted, confidence, flagged: confidence < LOWCONF, requiredRank, requiredAvgDeltaY });
   });
   return { legs, fee, freedCash, horizons };
@@ -970,8 +998,8 @@ $('advgo').onclick = advise;
 // holdbonus kun vinderholdet (60k, empirisk bekræftet); GC/dag som konstant.
 const OPP_N = 200, TSAMPLES = 1500;
 function tournamentSim(myNames, myCapName) {
-  const rows = window._field, profile = $('profile').value, c = SNAP.valueCoeffs;
-  const scale = scaleOf(profile), ttt = profile === 'ttt';
+  const rows = window._field, profile = $('profile').value;
+  const ttt = profile === 'ttt';
   rows.forEach((r, i) => { r._ti = i; });
   const n = rows.length;
   const my = myNames.map((nm) => rows.find((r) => r.name === nm)).filter(Boolean);
@@ -1027,7 +1055,7 @@ function tournamentSim(myNames, myCapName) {
   } else {
     const g = gammaFor(profile);
     const w = rows.map((r) => Math.pow(Math.max(0, r.strength), g));
-    const vField = valueOfRank(MC.fieldRank, scale, c);
+    const vField = FIELD_VALUE[profile] ?? 0;
     const TOP = Math.min(MC.top, n); const placed = new Array(n);
     drawSample = () => {
       top15.fill(0); placed.fill(false);
@@ -1038,11 +1066,11 @@ function tournamentSim(myNames, myCapName) {
         for (let k = 0; k < n; k++) { if (placed[k]) continue; x -= w[k]; if (x <= 0) { ch = k; break; } }
         if (ch < 0) for (let k = 0; k < n; k++) if (!placed[k]) { ch = k; break; }
         placed[ch] = true; tot -= w[ch];
-        delta[ch] = valueOfRank(pos, scale, c);
+        delta[ch] = valueOfRank(pos, profile);
         if (pos === 1) winnerTeam = rows[ch].team;
         if (pos <= 15) top15[ch] = 1;
       }
-      for (let k = 0; k < n; k++) { if (!placed[k]) delta[k] = vField; if (rows[k].team === winnerTeam) delta[k] += c.teamBonus; }
+      for (let k = 0; k < n; k++) { if (!placed[k]) delta[k] = vField; if (rows[k].team === winnerTeam) delta[k] += PAY_TEAM[0]; }
     };
   }
 
