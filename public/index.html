@@ -100,6 +100,13 @@
         <option value="ttt">ttt</option>
       </select>
     </label>
+    <label id="finalewrap" title="FUNDAMENTAL-INPUT (manuel, fra ruteanalyse — ikke i PCS-data): teknisk bykerne-finale belønner tog/positionering (Alpecin-typen); opad-drag blander punch-evne ind; boulevard = ren tophastighed. Ukalibreret modifier — brug din læsning af etapekortet.">Finale (sprint)
+      <select id="finale">
+        <option value="boulevard">boulevard (ren spurt)</option>
+        <option value="teknisk">teknisk (sving/bykerne)</option>
+        <option value="opad">opad-drag (falsk flad)</option>
+      </select>
+    </label>
     <label>Sortér
       <select id="sort"><option value="lev">leverage</option><option value="ev">expectedDelta</option><option value="sigma">varians (σ)</option><option value="perMio">expΔ pr. mio. (enablers)</option><option value="gcDay">GC-indkomst/dag</option></select>
     </label>
@@ -276,6 +283,10 @@ const PTS_FINISH = {
   itt:         [20, 17, 15, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
 };
 const PTS_KR = 3000;
+// KOM-point UNDERVEJS på bjergdage (går overvejende til etapens top — de kører
+// forrest over toppene). Kalibreret på E6-facit-residualer: Pogačar ~+170k,
+// Vingegaard ~+45k u-forklaret af tabel+GC+trøjer+hold. n=1 → revideres løbende.
+const KOM_MTN = [150000, 45000, 24000];
 // Felt-værdi (plads >15) = forventet sen ankomst-straf. Kalibreret på
 // realiserede TdF-facit (median uden for top-15): E5 sprint 0 · E2 steep −33k
 // · E4 break −36k · E3 bjerg −60k (p10 = −90k = reglernes loft, bekræftet).
@@ -286,7 +297,8 @@ const PAY_TEAM = [60000, 30000, 20000];
 const TEAM_KR = 110000;
 function valueOfRank(rank, profile) {
   const r = Math.round(rank);
-  if (r >= 1 && r <= 15) return PAY_STAGE[r - 1] + PTS_KR * ((PTS_FINISH[profile] || PTS_FINISH.break)[r - 1] || 0);
+  if (r >= 1 && r <= 15) return PAY_STAGE[r - 1] + PTS_KR * ((PTS_FINISH[profile] || PTS_FINISH.break)[r - 1] || 0)
+    + (profile === 'mountain' && r <= 3 ? KOM_MTN[r - 1] : 0);
   return FIELD_VALUE[profile] ?? 0;
 }
 const kr = (n) => Math.round(n).toLocaleString('da-DK');
@@ -457,7 +469,23 @@ function gcProbs() {
   rows.forEach((r, i) => _gcCache.set(r, sum[i] / SAMPLES));
   return _gcCache;
 }
-const gcDayOf = (r) => gcProbs().get(r) || 0;
+// ÆGTE GC-stilling (snippet v6 → buildWeb → SNAP.actualGc): når den findes, er
+// GC-kanalen deterministisk (dagens faktiske top-10 betaler tabellen) i stedet
+// for modellens PL-sandsynligheder. Ryttere uden for top-10 → 0.
+let _gcActual;
+function gcActualMap() {
+  if (_gcActual !== undefined) return _gcActual;
+  if (!SNAP.actualGc || !SNAP.actualGc.length) { _gcActual = null; return null; }
+  _gcActual = new Map();
+  for (const g of SNAP.actualGc) {
+    if (!g.rank || g.rank > 10) continue;
+    const keys = nameKey(g.name).split(' ');
+    const row = window._field.find((r) => { const rk = nameKey(r.name).split(' '); return rk.every((t) => keys.includes(t)) || keys.every((t) => rk.includes(t)); });
+    if (row) _gcActual.set(row, GC_DAILY[g.rank - 1] + (g.rank === 1 ? YELLOW : 0));
+  }
+  return _gcActual;
+}
+const gcDayOf = (r) => { const a = gcActualMap(); return a ? (a.get(r) || 0) : (gcProbs().get(r) || 0); };
 
 // --- BREAK-score: GC-demotion + blandet specialist-vægt ----------------------
 // REALISERET E4-facit (efter-3 → efter-4, holdet-priser — IKKE PCS-tabellen,
@@ -551,10 +579,30 @@ function compute() {
     return { name, personId: i.personId, team: teams[i.teamId]?.name || '', own: i.popularity ?? 0, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
   });
   // field + caches SKAL sættes før sort/EV-loop (teamWinProb + TTT-hold læser _field)
-  window._field = rows; _twpCache = null; _evCache = null; _tttCache = null; _gcCache = null; _gcLeadCache = null;
+  window._field = rows; _twpCache = null; _evCache = null; _tttCache = null; _gcCache = null; _gcLeadCache = null; _gcActual = undefined;
   // BREAK: GC-demotion + specialist-score (se breakStrength). Skal ske EFTER
   // window._field er sat (breakGcLeaders læser hele feltet).
   if (profile === 'break') rows.forEach((r) => { r.strength = breakStrength(r); });
+  // FINALE-TYPE (fundamental-input, kun sprint): teknisk bykerne → tog/
+  // positionering vægtes op (sum af 2 stærkeste holdkammeraters sprint-styrke
+  // × 0,2 — E5-backtest viste at en GENEREL togvægt skader, så den aktiveres
+  // KUN når ruteanalysen siger teknisk finale); opad-drag → 30 % punch-evne
+  // blandes ind. Boulevard = ren tophastighed (uændret).
+  const finale = $('finale') ? $('finale').value : 'boulevard';
+  if (profile === 'sprint' && finale !== 'boulevard') {
+    if (finale === 'teknisk') {
+      const byTeam = new Map();
+      rows.forEach((r) => { if (!byTeam.has(r.team)) byTeam.set(r.team, []); byTeam.get(r.team).push(r.strength); });
+      byTeam.forEach((v) => v.sort((a, b) => b - a));
+      rows.forEach((r) => {
+        const others = [...byTeam.get(r.team)];
+        others.splice(others.indexOf(r.strength), 1); // fjern rytterens egen (pre-modifier) styrke
+        r.strength += 0.2 * ((others[0] || 0) + (others[1] || 0));
+      });
+    } else if (finale === 'opad') {
+      rows.forEach((r) => { if (r.fitObj) r.strength = r.form + beta * (0.7 * (r.fitObj.sprint || 0) + 0.3 * (r.fitObj.punch || 0)); });
+    }
+  }
   const ttt = profile === 'ttt';
   if (ttt) {
     // TTT: predRank = forventet GC-plads efter etapen (kryds-rækkefølge:
@@ -669,6 +717,7 @@ function compute() {
 $('go').onclick = compute;
 $('pricecap').onchange = () => { if ($('snap').value.trim()) compute(); };
 $('sort').onchange = () => { if ($('snap').value.trim()) compute(); };
+$('finale').onchange = () => { if ($('snap').value.trim()) compute(); };
 
 /** Outlook over the next up-to-3 route stages: profile + top-3 model picks per
  *  stage, so you can plan transfers ahead (buy the climber before the block). */

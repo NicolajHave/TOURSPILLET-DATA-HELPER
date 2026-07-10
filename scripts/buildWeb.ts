@@ -155,6 +155,22 @@ try {
   console.log(`route: ${route!.length} TdF 2026-etaper klassificeret (auto-horisont aktiv); ${merged} m. per-etape-info (vert/ps).`);
 } catch { console.log('route: fixtures/pcs/tour-de-france-2026-stages.json mangler — horisont-profiler forbliver manuelle.'); }
 
+// ÆGTE GC-stilling fra nyeste TdF-etapefil m. gc-felt (pcs-results v6+): gør
+// fladens GC-indkomst/dag deterministisk (stilling × officiel tabel) i stedet
+// for model-sandsynligheder. Ældre scrapes uden gc-felt → null (model-fallback).
+let actualGc: Array<{ rank: number; name: string }> | null = null;
+try {
+  const stageFiles = readdirSync(PCS)
+    .map((x) => x.match(/^tour-de-france-2026-stage-(\d+)\.json$/))
+    .filter(Boolean)
+    .sort((a, b) => Number(a![1]) - Number(b![1]));
+  for (let i = stageFiles.length - 1; i >= 0; i--) {
+    const j = JSON.parse(readFileSync(f(`fixtures/pcs/${stageFiles[i]![0]}`), 'utf8'));
+    if (Array.isArray(j.gc) && j.gc.length) { actualGc = j.gc; console.log(`actualGc: samlet stilling efter E${stageFiles[i]![1]} (${j.gc.length} ryttere) → deterministisk GC-kanal.`); break; }
+  }
+  if (!actualGc) console.log('actualGc: ingen etapefil med gc-felt endnu (re-scrape m. v6-snippet) — GC-kanal = model.');
+} catch { /* ok */ }
+
 // Nyeste holdet-snapshot (after-stage-N) bundtes med, så fladen auto-indlæser
 // det ved load — manuel paste er så kun nødvendig for at beslutte FØR
 // upload/deploy (samme JSON, to veje ind).
@@ -183,6 +199,7 @@ const out = {
   dnfRateByProfile: DNF_RATE_BY_PROFILE,
   valueCoeffs: coeffs,
   route,
+  actualGc,
   riders,
 };
 mkdirSync(f('public/data'), { recursive: true });
