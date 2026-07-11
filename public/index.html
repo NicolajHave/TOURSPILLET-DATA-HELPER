@@ -116,6 +116,12 @@
     <button id="go">Beregn</button>
     <span id="status" class="muted"></span>
   </div>
+  <div class="controls" style="margin-top:6px" title="TRØJE-INDKOMST (officielle regler: 25k/25k/15k pr. dag i trøjen — gul er allerede i GC-kanalen via den ægte stilling). Manuel fundamental-input: sæt bærerne efter seneste etape; indkomsten lægges i +GC-kolonnen og kaptajn-regnestykket. Ryd feltet hvis trøjen skifter.">
+    <label>💚 Point <input id="jGreen" list="riderlist" placeholder="bærer" style="width:140px"></label>
+    <label>🔴 Bjerg <input id="jPolka" list="riderlist" placeholder="bærer" style="width:140px"></label>
+    <label>⚪ Ungdom <input id="jWhite" list="riderlist" placeholder="bærer" style="width:140px"></label>
+    <span class="muted" id="jerseynote"></span>
+  </div>
   <div id="breakwarn"></div>
 </div>
 
@@ -485,7 +491,19 @@ function gcActualMap() {
   }
   return _gcActual;
 }
-const gcDayOf = (r) => { const a = gcActualMap(); return a ? (a.get(r) || 0) : (gcProbs().get(r) || 0); };
+// Trøje-indkomst (officielt: point 25k · bjerg 25k · ungdom 15k pr. dag; gul
+// er i GC-kanalen). Manuel fundamental-input (trin 1), persisteret lokalt.
+const JKEY = 'jerseyHolders';
+const getJerseys = () => JSON.parse(localStorage.getItem(JKEY) || '{}');
+const JERSEY_KR = { green: 25000, polka: 25000, white: 15000 };
+function jerseyKr(name) {
+  const j = getJerseys(); let s = 0;
+  if (j.green === name) s += JERSEY_KR.green;
+  if (j.polka === name) s += JERSEY_KR.polka;
+  if (j.white === name) s += JERSEY_KR.white;
+  return s;
+}
+const gcDayOf = (r) => (jerseyKr(r.name)) + ((() => { const a = gcActualMap(); return a ? (a.get(r) || 0) : (gcProbs().get(r) || 0); })());
 
 // --- BREAK-score: GC-demotion + blandet specialist-vægt ----------------------
 // REALISERET E4-facit (efter-3 → efter-4, holdet-priser — IKKE PCS-tabellen,
@@ -718,6 +736,17 @@ $('go').onclick = compute;
 $('pricecap').onchange = () => { if ($('snap').value.trim()) compute(); };
 $('sort').onchange = () => { if ($('snap').value.trim()) compute(); };
 $('finale').onchange = () => { if ($('snap').value.trim()) compute(); };
+// trøje-inputs: indlæs gemte bærere; gem + regn om ved ændring
+for (const [id, key] of [['jGreen', 'green'], ['jPolka', 'polka'], ['jWhite', 'white']]) {
+  const el = $(id); if (!el) continue;
+  el.value = getJerseys()[key] || '';
+  el.onchange = () => {
+    const j = getJerseys(); const v = el.value.trim();
+    if (v) j[key] = v; else delete j[key];
+    localStorage.setItem(JKEY, JSON.stringify(j));
+    if ($('snap').value.trim()) compute();
+  };
+}
 
 /** Outlook over the next up-to-3 route stages: profile + top-3 model picks per
  *  stage, so you can plan transfers ahead (buy the climber before the block). */
