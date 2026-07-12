@@ -529,11 +529,20 @@ function breakGcLeaders() {
   return _gcLeadCache;
 }
 // GC-leder → −1 (Math.max(0,·) i MC/softmax nulstiller ham → altid bunke).
+// FORM×RENHED (E9-bugfix): rå form lod Merlier toppe break-boardet efter to
+// SPRINT-sejre (form 6,0 — og hans klatre-blend er forurenet af fallback-
+// klassificerede kuperede etaper, så et fit-gate kan ikke skille ham fra ægte
+// break-typer). Form-leddet vægtes derfor med profil-RENHED: blend/(blend+
+// sprintfit). Merlier ~0,24 (form tæller kvart), Jegat ~0,84 (næsten fuld).
+// E4-backtest: ρ 0,07→0,14; koster Vacek-hittet (sprinter-typer KAN gå i
+// udbrud på lav-vert-dage — kendt trade-off, break er stadig ⚠ lotteri).
 function breakStrength(r) {
   if (!r.hasForm) return 0;
   if (breakGcLeaders().has(r)) return -1;
   const beta = SNAP.evBeta, f = r.fitObj || {};
-  return r.form + beta * (0.6 * (f.mountain || 0) + 0.4 * (f.break || 0));
+  const blend = 0.6 * (f.mountain || 0) + 0.4 * (f.break || 0);
+  const purity = blend / (blend + (f.sprint || 0) + 1e-9);
+  return r.form * purity + beta * blend;
 }
 
 // TTT efter OFFICIELLE regler (docs/RULES.md): ingen individuel etapetabel —
@@ -643,7 +652,13 @@ function compute() {
     r.pDnf = dnfFor(profile);
     const gross = ttt ? r.evPlace : r.evPlace + TEAM_KR * r.twp;
     r.ev = (1 - r.pDnf) * gross + r.pDnf * (-DNF_PEN);
-    r.lev = r.ev > 0 ? r.ev * (1 - r.own) : -Infinity;
+    // Leverage for ALLE (også negativ expΔ): ev·(1−ejer) = din forventede
+    // bevægelse RELATIVT til feltet. Negativ expΔ × høj ejerandel ≈ 0 (feltet
+    // taber det samme som dig); negativ × lav ejerandel = ægte relativt tab.
+    // (Før: kun ev>0 fik leverage → tom kolonne på bjerg/break-dage, hvor
+    // næsten hele feltet realistisk taber værdi — officiel motor gjorde den
+    // gamle guard til en artefakt.)
+    r.lev = r.ev * (1 - r.own);
     r.perMio = r.price > 0 ? r.ev / (r.price / 1e6) : 0;
     r.gcDay = gcDayOf(r);
   });
