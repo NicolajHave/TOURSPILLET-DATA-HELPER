@@ -370,6 +370,7 @@ fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
       if (idx < 0) return; // "manuel" valgt
       const prof = (o) => (s.route[idx + o] ? s.route[idx + o].profile : '');
       $('profile').value = prof(0);
+      updFinaleVis(); // programmatisk profil-skift affyrer ikke 'change'
       $('h1').value = prof(0); $('h2').value = prof(1); $('h3').value = prof(2);
       ls.value = `TdF 2026 E${sp.value}`; // loggen følger valgt etape automatisk
       if ($('snap').value.trim()) compute(); else computeOutlook();
@@ -751,6 +752,15 @@ $('go').onclick = compute;
 $('pricecap').onchange = () => { if ($('snap').value.trim()) compute(); };
 $('sort').onchange = () => { if ($('snap').value.trim()) compute(); };
 $('finale').onchange = () => { if ($('snap').value.trim()) compute(); };
+// Finale-feltet er KUN relevant på sprint-etaper — skjul det ellers (og nulstil
+// til boulevard, så en glemt "teknisk" ikke hænger ved til næste sprintdag).
+function updFinaleVis() {
+  const isSprint = $('profile').value === 'sprint';
+  $('finalewrap').style.display = isSprint ? '' : 'none';
+  if (!isSprint) $('finale').value = 'boulevard';
+}
+$('profile').addEventListener('change', updFinaleVis);
+updFinaleVis();
 // trøje-inputs: indlæs gemte bærere; gem + regn om ved ændring
 for (const [id, key] of [['jGreen', 'green'], ['jPolka', 'polka'], ['jWhite', 'white']]) {
   const el = $(id); if (!el) continue;

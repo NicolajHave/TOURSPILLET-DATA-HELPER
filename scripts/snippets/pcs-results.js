@@ -1,16 +1,17 @@
-// scripts/snippets/pcs-results.js (v6)
+// scripts/snippets/pcs-results.js (v7)
 // Kør i browser-konsollen på en PCS etape-resultatside.
 // Håndterer både /race/{slug}/{år}/stage-N og race.php?id1=...-URL-formaterne.
 //
-// v6 (GC-fangst): udover etaperesultatet fanges nu OGSÅ den samlede stilling
-// (top-10) fra 'Prev'-tabellen → felt "gc" i output. buildWeb lægger den i
-// form-snapshottet, så værktøjets GC-indkomst/dag bliver DETERMINISTISK
-// (ægte stilling × officiel tabel) i stedet for model-sandsynligheder.
+// v7 (GC-fangst der VIRKER): v6's 'Prev'-detektor fandt aldrig GC-tabellen på
+// E7/E8 (PCS's GC-header indeholder åbenbart ikke 'Prev' som antaget). Nu:
+// findes ingen Prev-tabel på siden, HENTES .../stage-N-gc-siden direkte (sker
+// i din browser, samme origin — PCS's datacenter-blokering rammer ikke), og
+// første store rytter-tabel dér ER den samlede stilling. Konsollen viser
+// GC-kilden — tjek at GC-toppen ser rigtig ud før upload!
 // v5-heuristik bevaret: etaperesultat = FØRSTE store tabel (≥20 rytter-links)
-// UDEN 'Prev'-kolonne; GC = første store tabel MED 'Prev'. Konsollen viser
-// valgt tabel + top-3 + GC-toppen — TJEK ALTID dén linje før upload!
-// v4: position-fallback for rang på TTT-sider. v3: distance/vert/ProfileScore.
-(() => {
+// uden 'Prev'. v4: position-fallback for rang på TTT-sider.
+// v3: distance/vert/ProfileScore.
+(async () => {
   const src = location.pathname + location.search;
   const m = src.match(/race(?:\.php)?\/([^/?&]+)\/(\d{4})\/(?:stage-(\d+)|(prologue))/)
          || src.match(/id1=([^&]+)&id2=(\d{4})&id3=stage-(\d+)/);
@@ -37,16 +38,30 @@
   const tableNote = `tabel #${pick.i} [${pick.head.slice(0, 50) || 'uden header'}] valgt blandt ${big.length} store` +
     (big.some((x) => x !== pick && !isStanding(x)) ? ' ⚠ FLERE ikke-GC-kandidater — verificér top-3!' : '');
 
-  // GC-FANGST (v6): første store tabel MED 'Prev' = den samlede stilling.
-  let gc = null;
+  // GC-FANGST (v7): (a) 'Prev'-tabel på samme side hvis den findes; (b) ellers
+  // hentes den dedikerede GC-side (.../stage-N-gc) og parses — første store
+  // rytter-tabel DÉR er den samlede stilling. textContent (ikke innerText):
+  // DOMParser-dokumenter har intet layout, så innerText er tom dér.
+  const parseGcRows = (tbl) => [...tbl.querySelectorAll('tbody tr')].map((tr) => {
+    const a = tr.querySelector('a[href*="rider"]');
+    const lead = ((tr.children[0] || {}).textContent || '').trim();
+    return a && /^\d+$/.test(lead) ? { rank: +lead, name: (a.textContent || '').trim() } : null;
+  }).filter(Boolean).filter((g) => g.rank <= 10);
+  let gc = null, gcSource = 'IKKE fundet (GC-kanal falder tilbage til model)';
   const gcTable = big.find((x) => isStanding(x));
   if (gcTable) {
-    gc = [...gcTable.t.querySelectorAll('tbody tr')].map((tr) => {
-      const a = tr.querySelector('a[href*="rider"]');
-      const lead = (tr.children[0]?.innerText || '').trim();
-      return a && /^\d+$/.test(lead) ? { rank: +lead, name: a.innerText.trim() } : null;
-    }).filter(Boolean).filter((g) => g.rank <= 10);
-    if (!gc.length) gc = null;
+    const g = parseGcRows(gcTable.t);
+    if (g.length) { gc = g; gcSource = 'samme side (Prev-tabel)'; }
+  }
+  if (!gc && race.slug && race.year && stageNo != null && stageNo > 0) {
+    try {
+      const resp = await fetch(`/race/${race.slug}/${race.year}/stage-${stageNo}-gc`);
+      if (resp.ok) {
+        const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
+        const cand = [...doc.querySelectorAll('table')].find((t) => t.querySelectorAll('a[href*="rider"]').length >= 20);
+        if (cand) { const g = parseGcRows(cand); if (g.length) { gc = g; gcSource = `hentet fra stage-${stageNo}-gc-siden`; } }
+      }
+    } catch (e) { /* gc forbliver null — kilden viser det */ }
   }
 
   const DNF_TOKENS = /^(DNF|DNS|OTL|DSQ|NR|DF|HD|AB)\b/i;
@@ -106,7 +121,7 @@
     .map((r) => `${r.rank}. ${r.riderName}`).join(' · ');
   console.log(`PCS: ${results.length} resultater (${race.slug ?? '?'} ${race.year ?? '?'}, etape ${stageNo ?? '?'}), rang-kilde: ${rankSource}. `
     + `${tableNote}. TOP-3: ${top3}. `
-    + `GC: ${gc ? gc.slice(0, 3).map((g) => `${g.rank}. ${g.name}`).join(' · ') : 'IKKE fundet (GC-kanal falder tilbage til model)'}. `
+    + `GC [${gcSource}]: ${gc ? gc.slice(0, 3).map((g) => `${g.rank}. ${g.name}`).join(' · ') : '—'}. `
     + `ProfileScore=${profileScore ?? '?'} final=${profileScoreFinal ?? '?'} vert=${verticalM ?? '?'}m. `
     + `Er top-3 IKKE etapens podium (fx samlet stilling i stedet)? Send konsol-linjen til Claude.`);
 })();
