@@ -12,6 +12,10 @@
 // uden 'Prev'. v4: position-fallback for rang på TTT-sider.
 // v3: distance/vert/ProfileScore.
 (async () => {
+  // DevTools' copy() findes KUN i det synkrone konsol-scope — efter et await
+  // er navnet væk (v7-bug: "copy is not defined"). Fang referencen NU; selve
+  // funktionsobjektet virker stadig efter await. Clipboard-API som fallback.
+  const copyFn = typeof copy === 'function' ? copy : null;
   const src = location.pathname + location.search;
   const m = src.match(/race(?:\.php)?\/([^/?&]+)\/(\d{4})\/(?:stage-(\d+)|(prologue))/)
          || src.match(/id1=([^&]+)&id2=(\d{4})&id3=stage-(\d+)/);
@@ -116,10 +120,16 @@
     sourceUrl: location.href,
     capturedAt: new Date().toISOString(),
   };
-  copy(JSON.stringify(out, null, 2));
+  const json = JSON.stringify(out, null, 2);
+  let copied = 'kopieret til udklipsholder ✓';
+  if (copyFn) copyFn(json);
+  else {
+    try { await navigator.clipboard.writeText(json); }
+    catch (e) { console.log(json); copied = '⚠ AUTOKOPI FEJLEDE — markér og kopiér JSON\'en printet ovenfor'; }
+  }
   const top3 = results.filter((r) => r.rank != null).sort((a, b) => a.rank - b.rank).slice(0, 3)
     .map((r) => `${r.rank}. ${r.riderName}`).join(' · ');
-  console.log(`PCS: ${results.length} resultater (${race.slug ?? '?'} ${race.year ?? '?'}, etape ${stageNo ?? '?'}), rang-kilde: ${rankSource}. `
+  console.log(`PCS: ${results.length} resultater (${race.slug ?? '?'} ${race.year ?? '?'}, etape ${stageNo ?? '?'}) — ${copied}. Rang-kilde: ${rankSource}. `
     + `${tableNote}. TOP-3: ${top3}. `
     + `GC [${gcSource}]: ${gc ? gc.slice(0, 3).map((g) => `${g.rank}. ${g.name}`).join(' · ') : '—'}. `
     + `ProfileScore=${profileScore ?? '?'} final=${profileScoreFinal ?? '?'} vert=${verticalM ?? '?'}m. `
