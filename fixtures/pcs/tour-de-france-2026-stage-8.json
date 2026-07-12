@@ -1244,7 +1244,48 @@
       "team": "Alpecin - Premier Tech"
     }
   ],
-  "gc": null,
-  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-8/result/result",
-  "capturedAt": "2026-07-11T16:39:36.241Z"
+  "gc": [
+    {
+      "rank": 1,
+      "name": "Merlier Tim"
+    },
+    {
+      "rank": 2,
+      "name": "Girmay Biniam"
+    },
+    {
+      "rank": 3,
+      "name": "Kooij Olav"
+    },
+    {
+      "rank": 4,
+      "name": "Philipsen Jasper"
+    },
+    {
+      "rank": 5,
+      "name": "Bittner Pavel"
+    },
+    {
+      "rank": 6,
+      "name": "Pluimers Rick"
+    },
+    {
+      "rank": 7,
+      "name": "Ackermann Pascal"
+    },
+    {
+      "rank": 8,
+      "name": "Kanter Max"
+    },
+    {
+      "rank": 9,
+      "name": "Russo Clément"
+    },
+    {
+      "rank": 10,
+      "name": "Fretin Milan"
+    }
+  ],
+  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-8",
+  "capturedAt": "2026-07-12T06:22:44.000Z"
 }
