@@ -1,16 +1,15 @@
-// scripts/snippets/pcs-results.js (v7)
+// scripts/snippets/pcs-results.js (v7.2)
 // Kør i browser-konsollen på en PCS etape-resultatside.
 // Håndterer både /race/{slug}/{år}/stage-N og race.php?id1=...-URL-formaterne.
 //
-// v7 (GC-fangst der VIRKER): v6's 'Prev'-detektor fandt aldrig GC-tabellen på
-// E7/E8 (PCS's GC-header indeholder åbenbart ikke 'Prev' som antaget). Nu:
-// findes ingen Prev-tabel på siden, HENTES .../stage-N-gc-siden direkte (sker
-// i din browser, samme origin — PCS's datacenter-blokering rammer ikke), og
-// første store rytter-tabel dér ER den samlede stilling. Konsollen viser
-// GC-kilden — tjek at GC-toppen ser rigtig ud før upload!
-// v5-heuristik bevaret: etaperesultat = FØRSTE store tabel (≥20 rytter-links)
-// uden 'Prev'. v4: position-fallback for rang på TTT-sider.
-// v3: distance/vert/ProfileScore.
+// v7.2 (GC-fangst rettet): v7's 'Prev'-heuristik fangede den FORKERTE tabel
+// (E8 grøn-trøje-stilling: Merlier/Girmay/Kooij; E9 udbryder-orden = selve
+// etaperesultatet) → forkert GC-indkomst i fladen (Johannessen 90k, Pogačar 0).
+// Nu hentes GC KUN fra den kanoniske .../stage-N-gc-side, og en fangst afvises
+// hvis dens top-3 = etaperesultatets top-3. buildWeb har desuden en
+// plausibilitets-gate (afviser urealistisk GC-leder). copy() fanges før await.
+// v5: etaperesultat = FØRSTE store tabel (≥20 rytter-links) uden 'Prev'.
+// v4: position-fallback for rang på TTT-sider. v3: distance/vert/ProfileScore.
 (async () => {
   // DevTools' copy() findes KUN i det synkrone konsol-scope — efter et await
   // er navnet væk (v7-bug: "copy is not defined"). Fang referencen NU; selve
@@ -41,32 +40,6 @@
   const table = pick.t;
   const tableNote = `tabel #${pick.i} [${pick.head.slice(0, 50) || 'uden header'}] valgt blandt ${big.length} store` +
     (big.some((x) => x !== pick && !isStanding(x)) ? ' ⚠ FLERE ikke-GC-kandidater — verificér top-3!' : '');
-
-  // GC-FANGST (v7): (a) 'Prev'-tabel på samme side hvis den findes; (b) ellers
-  // hentes den dedikerede GC-side (.../stage-N-gc) og parses — første store
-  // rytter-tabel DÉR er den samlede stilling. textContent (ikke innerText):
-  // DOMParser-dokumenter har intet layout, så innerText er tom dér.
-  const parseGcRows = (tbl) => [...tbl.querySelectorAll('tbody tr')].map((tr) => {
-    const a = tr.querySelector('a[href*="rider"]');
-    const lead = ((tr.children[0] || {}).textContent || '').trim();
-    return a && /^\d+$/.test(lead) ? { rank: +lead, name: (a.textContent || '').trim() } : null;
-  }).filter(Boolean).filter((g) => g.rank <= 10);
-  let gc = null, gcSource = 'IKKE fundet (GC-kanal falder tilbage til model)';
-  const gcTable = big.find((x) => isStanding(x));
-  if (gcTable) {
-    const g = parseGcRows(gcTable.t);
-    if (g.length) { gc = g; gcSource = 'samme side (Prev-tabel)'; }
-  }
-  if (!gc && race.slug && race.year && stageNo != null && stageNo > 0) {
-    try {
-      const resp = await fetch(`/race/${race.slug}/${race.year}/stage-${stageNo}-gc`);
-      if (resp.ok) {
-        const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
-        const cand = [...doc.querySelectorAll('table')].find((t) => t.querySelectorAll('a[href*="rider"]').length >= 20);
-        if (cand) { const g = parseGcRows(cand); if (g.length) { gc = g; gcSource = `hentet fra stage-${stageNo}-gc-siden`; } }
-      }
-    } catch (e) { /* gc forbliver null — kilden viser det */ }
-  }
 
   const DNF_TOKENS = /^(DNF|DNS|OTL|DSQ|NR|DF|HD|AB)\b/i;
   let pos = 0;
@@ -102,6 +75,37 @@
     rankSource = 'position (TTT-fallback)';
   }
   for (const r of results) delete r.pos;
+
+  // GC-FANGST (v7.2): v7 fangede den FORKERTE tabel (E8 grøn-trøje-stilling,
+  // E9 udbryder-orden = etaperesultatet) → forkert GC-indkomst i fladen. Nu:
+  // hent KUN fra den kanoniske GC-side (.../stage-N-gc) — dropper den flakse
+  // 'Prev'-heuristik på etapesiden — OG afvis en fangst, hvis dens top-3 er
+  // identisk med etaperesultatets top-3 (så er det ikke GC, men resultatet).
+  // Endelig sanity-check laver buildWeb (afviser urealistisk GC-leder).
+  // textContent (ikke innerText): DOMParser-dokumenter har intet layout.
+  const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z ]/g, '').split(/\s+/).filter(Boolean).sort().join(' ');
+  const resultTop3 = results.filter((r) => r.rank != null).sort((a, b) => a.rank - b.rank).slice(0, 3).map((r) => norm(r.riderName));
+  let gc = null, gcSource = 'IKKE hentet';
+  if (race.slug && race.year && stageNo != null && stageNo > 0) {
+    try {
+      const resp = await fetch(`/race/${race.slug}/${race.year}/stage-${stageNo}-gc`);
+      if (resp.ok) {
+        const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
+        const cand = [...doc.querySelectorAll('table')].find((t) => t.querySelectorAll('a[href*="rider"]').length >= 20);
+        if (cand) {
+          const g = [...cand.querySelectorAll('tbody tr')].map((tr) => {
+            const a = tr.querySelector('a[href*="rider"]');
+            const lead = ((tr.children[0] || {}).textContent || '').trim();
+            return a && /^\d+$/.test(lead) ? { rank: +lead, name: (a.textContent || '').trim() } : null;
+          }).filter(Boolean).filter((x) => x.rank <= 10);
+          const gcTop3 = g.slice(0, 3).map((x) => norm(x.name));
+          const mirrorsResult = resultTop3.length === 3 && gcTop3.length === 3 && gcTop3.every((x, i) => x === resultTop3[i]);
+          if (g.length && !mirrorsResult) { gc = g; gcSource = `stage-${stageNo}-gc-siden`; }
+          else if (mirrorsResult) gcSource = `AFVIST (stage-${stageNo}-gc-tabel = etaperesultatet, ikke GC)`;
+        }
+      } else gcSource = `GC-side svarede ${resp.status}`;
+    } catch (e) { gcSource = 'GC-hentning fejlede (' + (e && e.message || e) + ')'; }
+  }
 
   // --- stage difficulty (best-effort; PCS markup varies) -------------------
   const pageText = document.body.innerText.replace(/ /g, ' ');
