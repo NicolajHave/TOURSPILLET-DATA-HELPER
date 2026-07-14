@@ -1244,48 +1244,7 @@
       "team": "Alpecin - Premier Tech"
     }
   ],
-  "gc": [
-    {
-      "rank": 1,
-      "name": "van der Poel Mathieu"
-    },
-    {
-      "rank": 2,
-      "name": "Johannessen Tobias Halland"
-    },
-    {
-      "rank": 3,
-      "name": "Pidcock Tom"
-    },
-    {
-      "rank": 4,
-      "name": "Baudin Alex"
-    },
-    {
-      "rank": 5,
-      "name": "Ganna Filippo"
-    },
-    {
-      "rank": 6,
-      "name": "Pedersen Mads"
-    },
-    {
-      "rank": 7,
-      "name": "Matthews Michael"
-    },
-    {
-      "rank": 8,
-      "name": "Jegat Jordan"
-    },
-    {
-      "rank": 9,
-      "name": "Breuillard Nicolas"
-    },
-    {
-      "rank": 10,
-      "name": "Quinn Sean"
-    }
-  ],
-  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-9/result/",
-  "capturedAt": "2026-07-14T06:30:37.284Z"
+  "gc": null,
+  "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-9",
+  "capturedAt": "2026-07-14T06:51:13.771Z"
 }
