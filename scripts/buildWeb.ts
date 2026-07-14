@@ -160,16 +160,43 @@ try {
 // for model-sandsynligheder. Ældre scrapes uden gc-felt → null (model-fallback).
 let actualGc: Array<{ rank: number; name: string }> | null = null;
 try {
+  // PLAUSIBILITETS-GATE: snippet'ens GC-fangst kan gribe den forkerte tabel
+  // (E8 fangede grøn-trøje-stilling, E9 udbryder-orden) → forkert GC-indkomst
+  // (fx Johannessen 90k, Pogačar 0). Kræv derfor at den fangede GC-LEDER er en
+  // troværdig sammenlagt-kandidat efter modellens egen klatre+form-styrke, og
+  // at flere af top-5 genfindes i modellens GC-top. Ellers → null (model).
+  const gcStrengthKeys = riders
+    .map((r) => ({ key: r.key, s: r.form + EV_BETA * (0.7 * (r.fit['mountain'] || 0) + 0.3 * (r.fit['itt'] || 0)) }))
+    .sort((a, b) => b.s - a.s)
+    .map((x) => x.key);
+  const modelTop = (n: number) => new Set(gcStrengthKeys.slice(0, n));
+  const riderKeySet = new Set(riders.map((r) => r.key));
+  const matchKey = (name: string) => {
+    const k = nameKey(name); if (riderKeySet.has(k)) return k;
+    const toks = k.split(' ');
+    const hit = riders.find((r) => { const rk = r.key.split(' '); return rk.every((t) => toks.includes(t)) || toks.every((t) => rk.includes(t)); });
+    return hit ? hit.key : null;
+  };
   const stageFiles = readdirSync(PCS)
     .map((x) => x.match(/^tour-de-france-2026-stage-(\d+)\.json$/))
     .filter(Boolean)
     .sort((a, b) => Number(a![1]) - Number(b![1]));
   for (let i = stageFiles.length - 1; i >= 0; i--) {
     const j = JSON.parse(readFileSync(f(`fixtures/pcs/${stageFiles[i]![0]}`), 'utf8'));
-    if (Array.isArray(j.gc) && j.gc.length) { actualGc = j.gc; console.log(`actualGc: samlet stilling efter E${stageFiles[i]![1]} (${j.gc.length} ryttere) → deterministisk GC-kanal.`); break; }
+    if (!Array.isArray(j.gc) || !j.gc.length) continue;
+    const stageNo = stageFiles[i]![1];
+    const top6 = modelTop(6), top15 = modelTop(15);
+    const leaderKey = matchKey(j.gc[0].name);
+    const overlap = j.gc.slice(0, 5).map((g: any) => matchKey(g.name)).filter((k: string | null) => k && top15.has(k)).length;
+    if (leaderKey && top6.has(leaderKey) && overlap >= 2) {
+      actualGc = j.gc;
+      console.log(`actualGc: samlet stilling efter E${stageNo} (${j.gc.length} ryttere, leder ${j.gc[0].name}, ${overlap}/5 i model-GC-top) → deterministisk GC-kanal.`);
+      break;
+    }
+    console.log(`actualGc: E${stageNo}-gc AFVIST af plausibilitets-gate (leder "${j.gc[0].name}" er ikke troværdig GC-leder; ${overlap}/5 overlap) — forkert tabel fanget af snippet. Falder tilbage til model.`);
   }
-  if (!actualGc) console.log('actualGc: ingen etapefil med gc-felt endnu (re-scrape m. v6-snippet) — GC-kanal = model.');
-} catch { /* ok */ }
+  if (!actualGc) console.log('actualGc: ingen troværdig GC-stilling — GC-kanal = model (form + klatre).');
+} catch (e) { console.log('actualGc: fejl ved indlæsning — GC-kanal = model.', e); }
 
 // Nyeste holdet-snapshot (after-stage-N) bundtes med, så fladen auto-indlæser
 // det ved load — manuel paste er så kun nødvendig for at beslutte FØR
