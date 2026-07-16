@@ -171,11 +171,12 @@
 
 <div class="card">
   <h2><span class="step">4</span>Hold-rådgiver <span class="muted" style="text-transform:none">(bedste skifte fra DIT hold — shortlist, ikke orakel)</span></h2>
-  <p class="muted">Vælg dine 8 ryttere fra dropdowns (huskes lokalt) + evt. bank. Værktøjet
-  prøver ALLE lovlige enkelt-skifter (max 2 pr. hold, køb ≤ salgspris + bank, ⚑-flaggede kan
-  ikke købes) over de kommende etaper fra trin 3 og viser <b>de bedste — hvor mange kr hvert
-  skifte tjener dig</b>. Grøn dom-linje = det bedste skifte; er intet skifte over 0, siger den
-  "behold holdet". Loggen i trin 5 genbruger holdet herfra. Break/ITT er lav-tillid — du beslutter.</p>
+  <p class="muted">Vælg dine 8 (huskes lokalt) + evt. bank. Værktøjet prøver alle lovlige
+  enkelt-skifter og viser, <b>hvad hvert skifte tjener dig i kr efter gebyr over de næste op
+  til 3 etaper</b> (horisonten fra trin 1's etapevalg). Vigtigt: <b>"i dag"-kolonnen</b> viser,
+  om skiftet betaler allerede på dagens etape — er den negativ, ligger gevinsten i de kommende
+  etaper, og du kan roligt <b>vente til i aften</b> med at slå til (samme gebyr, og du beholder
+  sælgerens point i dag). "Behold holdet" er også et ægte svar. Break/ITT er lav-tillid — du beslutter.</p>
   <div class="controls" id="teamwrap">
     <select class="tpick" id="t1"><option value="">— rytter 1 —</option></select>
     <select class="tpick" id="t2"><option value="">— rytter 2 —</option></select>
@@ -1055,7 +1056,10 @@ function advise() {
       const ok = t.horizons.filter((h) => !h.flagged);
       const best = (ok.length ? ok : t.horizons).reduce((a, b) => (b.netGain > a.netGain ? b : a));
       const dBonus = expEtapebonus(squad.map((m) => (m === X ? Y : m))) - baseBonus;
-      proposals.push({ X, Y, best, dBonus });
+      // "i dag" = køb minus sælg ALENE på dagens etape (horisontens 1. ben).
+      // Negativ = skiftet er til de KOMMENDE etaper → timing-rådet "vent".
+      const today = t.legs.length ? t.legs[0].evY - t.legs[0].evX : 0;
+      proposals.push({ X, Y, best, dBonus, today });
     }
   }
   _evCache = null;
@@ -1067,20 +1071,27 @@ function advise() {
     html += '<p class="capline" style="border-left-color:var(--green);background:#e9f5ec">✋ <b>BEHOLD HOLDET</b> — intet skifte slår 1 %-gebyret over horisonten. Det er en reel anbefaling (spar gebyret), ikke en fejl.</p>';
   } else {
     const b = top[0];
-    html += `<p class="capline" style="border-left-color:var(--green);background:#e9f5ec;font-size:1.05rem">✅ <b>BEDSTE SKIFTE</b>: sælg ${b.X.name}, køb <b>${b.Y.name}</b> → du tjener ca. <b>+${kr(b.best.netGain)} kr</b> over ${b.best.H} etape${b.best.H > 1 ? 'r' : ''}. Sikkerhed: ${describeRank(b.best.requiredRank)}.</p>`;
+    const horLabel = profiles.slice(0, b.best.H).join(' → ');
+    html += `<p class="capline" style="border-left-color:var(--green);background:#e9f5ec;font-size:1.05rem">✅ <b>BEDSTE SKIFTE</b>: sælg ${b.X.name}, køb <b>${b.Y.name}</b> → du tjener ca. <b>+${kr(b.best.netGain)} kr</b> over ${b.best.H} etape${b.best.H > 1 ? 'r' : ''} <span class="muted">(${horLabel})</span>. Sikkerhed: ${describeRank(b.best.requiredRank)}.</p>`;
+    if (b.today < -5000 && b.best.H > 1) {
+      html += `<p class="capline" style="border-left-color:#e6a700;background:#fdf6e3">💡 <b>TIMING</b>: skiftet handler om de KOMMENDE etaper — på dagens etape (${profiles[0]}) forventes ${b.Y.name} at gøre det ca. <b>${kr(-b.today)} kr dårligere</b> end ${b.X.name}. Overvej at lave skiftet <b>i aften efter etapen</b>: så beholder du ${b.X.name}s point i dag, og gebyret er det samme.</p>`;
+    } else if (b.today > 5000) {
+      html += `<p class="muted">Skiftet betaler allerede fra dagens etape (+${kr(b.today)} kr i dag) — ingen grund til at vente.</p>`;
+    }
   }
   if (top.length) {
-    html += '<table><thead><tr><th>#</th><th style="text-align:left">Skift (sælg → køb)</th><th title="købsrytterens ejerandel — lav % = mere kontrær/differentierende">køb ejer%</th><th>Du tjener (kr)</th><th style="text-align:left">Sikkerhed</th><th title="samme gevinst vægtet for kontrærhed (lav ejer% tæller ekstra)">m. leverage</th></tr></thead><tbody>';
+    html += `<table><thead><tr><th>#</th><th style="text-align:left">Skift (sælg → køb)</th><th title="købsrytterens ejerandel — lav % = mere kontrær/differentierende">køb ejer%</th><th>Du tjener (kr)</th><th title="køb minus sælg ALENE på dagens etape (${profiles[0]}). Negativt = skiftet er til de kommende etaper — overvej at vente til i aften.">i dag (kr)</th><th style="text-align:left">Sikkerhed</th><th title="samme gevinst vægtet for kontrærhed (lav ejer% tæller ekstra)">m. leverage</th></tr></thead><tbody>`;
     top.forEach((p, i) => {
       const bonusHint = Math.abs(p.dBonus) >= 3000 ? ` <span class="${p.dBonus >= 0 ? 'pos' : 'neg'}" title="ændring i forventet etapebonus i banken (dagens profil, superlineær top-15) — tie-breaker, ikke i 'du tjener'">${p.dBonus >= 0 ? '↑' : '↓'}bonus ${kr(p.dBonus)}</span>` : '';
       html += `<tr><td>${i + 1}</td>`
         + `<td style="text-align:left">${p.X.name}${p.X.ex ? ' ⚑' : ''} → <b>${p.Y.name}</b>${bonusHint}</td>`
         + `<td>${(p.Y.own * 100).toFixed(0)}%</td>`
         + `<td class="${p.best.netGain >= 0 ? 'pos' : 'neg'}"><b>${p.best.netGain >= 0 ? '+' : ''}${kr(p.best.netGain)}</b></td>`
+        + `<td class="${p.today >= 0 ? 'pos muted' : 'neg muted'}">${p.today >= 0 ? '+' : ''}${kr(p.today)}</td>`
         + `<td style="text-align:left">${describeRank(p.best.requiredRank)}</td>`
         + `<td class="${p.best.leverageAdjusted >= 0 ? 'pos muted' : 'neg muted'}">${p.best.leverageAdjusted >= 0 ? '+' : ''}${kr(p.best.leverageAdjusted)}</td></tr>`;
     });
-    html += '</tbody></table><p class="muted"><b>Du tjener</b> = kr over horisonten efter gebyr (sorteret bedst øverst). <b>Sikkerhed</b> = hvor godt køb-rytteren mindst skal køre. <b>m. leverage</b> vægter for kontrærhed. <b>↑bonus</b> = ekstra etapebonus i banken hvis skiftet koncentrerer dit hold på dagens etapetype (bonus for 8 i top-15 = 400k, superlineær) — tie-breaker, ikke i "du tjener".</p>';
+    html += '</tbody></table><p class="muted"><b>Du tjener</b> = kr over hele horisonten efter gebyr. <b>i dag</b> = skiftets effekt alene på dagens etape — negativt betyder "gevinsten kommer senere; du kan vente til i aften". <b>Sikkerhed</b> = hvor godt køb-rytteren mindst skal køre for at skiftet betaler sig. <b>m. leverage</b> vægter for kontrærhed (lav ejer% = du rykker fra feltet, når det rammer). <b>↑bonus</b> = ekstra etapebonus i banken ved koncentration på dagens etapetype — tie-breaker.</p>';
   }
   $('advout').innerHTML = html;
   $('advstatus').textContent = `${proposals.length} lovlige skifter evalueret · horisont ${profiles.join(' → ')} · bank ${kr(bank)} · E[etapebonus i dag] ${kr(baseBonus)}`;
@@ -1396,27 +1407,53 @@ $('evalstage').onclick = evalStage;
 function evalValue() {
   const logs = getLogs();
   if (!logs.length) { $('valuestatus').textContent = 'ingen loggede beslutninger endnu'; return; }
-  let raw; try { raw = JSON.parse($('valuesnap').value); } catch { $('valuestatus').textContent = 'ugyldig JSON'; return; }
-  const items = raw.items || (Array.isArray(raw) ? raw : []);
-  if (!items.length) { $('valuestatus').textContent = 'ingen items[] i snapshottet'; return; }
-  const persons = raw._embedded?.persons || {};
-  // efter-pris pr. navnenøgle (personId → navn via _embedded, ellers _field-opslag)
-  const afterByKey = new Map();
-  for (const it of items) {
-    const p = persons[it.personId];
-    let nm = p ? `${p.firstName || ''} ${p.lastName || ''}`.trim() : null;
-    if (!nm && window._field) { const f = window._field.find((r) => r.personId === it.personId); nm = f && f.name; }
-    if (nm && it.price != null) afterByKey.set(nameKey(nm), it.price);
+  // Etape-nummer fra valget (eller nyeste log) — nøglen til prishistorikken.
+  const selStage = $('logstage').value || (logs[logs.length - 1].stage || '');
+  const N = /E(\d+)/.test(selStage) ? +selStage.match(/E(\d+)/)[1] : null;
+  const PH = SNAP.priceHistory || {};
+  // EFTER-priser: indsat snapshot hvis der er ét — ellers indbygget historik
+  // for etape N (så virker facit også UDEN paste, morgenen efter deploy).
+  let afterByKey = null, afterSrc = '';
+  const pasted = $('valuesnap').value.trim();
+  if (pasted) {
+    let raw; try { raw = JSON.parse(pasted); } catch { $('valuestatus').textContent = 'ugyldig JSON'; return; }
+    const items = raw.items || (Array.isArray(raw) ? raw : []);
+    if (!items.length) { $('valuestatus').textContent = 'ingen items[] i snapshottet'; return; }
+    const persons = raw._embedded?.persons || {};
+    afterByKey = new Map();
+    for (const it of items) {
+      const p = persons[it.personId];
+      let nm = p ? `${p.firstName || ''} ${p.lastName || ''}`.trim() : null;
+      if (!nm && window._field) { const f = window._field.find((r) => r.personId === it.personId); nm = f && f.name; }
+      if (nm && it.price != null) afterByKey.set(nameKey(nm), it.price);
+    }
+    afterSrc = 'indsat snapshot';
+  } else if (N != null && PH[N]) {
+    afterByKey = new Map(Object.entries(PH[N]));
+    afterSrc = `indbygget after-stage-${N}`;
+  } else {
+    $('valuestatus').textContent = `indsæt efter-snapshottet for ${selStage || 'etapen'} (eller upload det til GitHub og vent på deploy — så ligger det indbygget)`; return;
   }
   if (afterByKey.size < 30) { $('valuestatus').textContent = `kun ${afterByKey.size} priser tydet — mangler _embedded.persons i snapshottet?`; return; }
+  // FØR-priser: indbygget historik (nærmeste snapshot FØR etape N) — gør
+  // facittet SKUDSIKKERT: det er ligegyldigt hvornår loggen blev gemt.
+  let beforeMap = null, beforeSrc = '', spanNote = '';
+  if (N != null) {
+    for (let M = N - 1; M >= 0; M--) {
+      if (PH[M]) {
+        beforeMap = PH[M]; beforeSrc = `indbygget after-stage-${M}`;
+        if (M < N - 1) spanNote = ` · NB: Δ dækker E${M + 1}–E${N} SAMLET (after-stage-${N - 1} mangler i repoet)`;
+        break;
+      }
+    }
+  }
 
-  // målret samme log-post som etape-evalueringen. VIGTIGT: findes der flere
-  // poster for etapen, vælges den NYESTE hvis gemte priser AFVIGER fra
-  // efter-snapshottet — en post gemt EFTER etapen har identiske priser og
-  // giver Δ=0 for alt (E11-bugген). Fanger vi kun identiske poster, advares.
-  const sel = $('logstage').value;
+  // Målret log-posten for etapen. Med indbygget FØR-historik er log-tidspunktet
+  // ligegyldigt (skudsikkert). KUN i fallback (ingen historik) gælder: findes
+  // flere poster, vælg den nyeste hvis gemte priser AFVIGER fra efter-priserne
+  // — en post gemt EFTER etapen har identiske priser og giver Δ=0 for alt.
   const candIdx = [];
-  if (sel) { for (let i = logs.length - 1; i >= 0; i--) if (logs[i].stage === sel) candIdx.push(i); }
+  if (selStage) { for (let i = logs.length - 1; i >= 0; i--) if (logs[i].stage === selStage) candIdx.push(i); }
   if (!candIdx.length) candIdx.push(logs.length - 1);
   const identicalShare = (i) => {
     const cs = (logs[i].candidates || []).filter((c2) => c2.price != null);
@@ -1425,12 +1462,17 @@ function evalValue() {
     return tot ? same / tot : 1;
   };
   let idx = candIdx[0];
-  for (const i of candIdx) if (identicalShare(i) < 0.9) { idx = i; break; }
-  const staleLog = identicalShare(idx) >= 0.9;
+  if (!beforeMap) for (const i of candIdx) if (identicalShare(i) < 0.9) { idx = i; break; }
+  const staleLog = !beforeMap && identicalShare(idx) >= 0.9;
   const L = logs[idx];
   const cands = L.candidates || [];
-  // før-pris: loggens gemte pris, ellers aktuelt indlæst snapshot (gamle logs)
-  const beforeOf = (nm) => { const c2 = cands.find((x) => nameKey(x.name) === nameKey(nm)); if (c2 && c2.price != null) return c2.price; const f = window._field && window._field.find((r) => nameKey(r.name) === nameKey(nm)); return f ? f.price : null; };
+  if (!beforeSrc) beforeSrc = 'loggens gemte priser';
+  // før-pris: indbygget historik → loggens gemte pris → aktuelt indlæst snapshot
+  const beforeOf = (nm) => {
+    if (beforeMap) { const v = beforeMap[nameKey(nm)]; if (v != null) return v; }
+    const c2 = cands.find((x) => nameKey(x.name) === nameKey(nm)); if (c2 && c2.price != null) return c2.price;
+    const f = window._field && window._field.find((r) => nameKey(r.name) === nameKey(nm)); return f ? f.price : null;
+  };
   const deltaOf = (nm) => { const a = afterByKey.get(nameKey(nm)); const b = beforeOf(nm); return (a != null && b != null) ? a - b : null; };
 
   // FELT-baseline: ejerskabs-vægtet gns. realiseret Δ (hvad gennemsnits-manageren fik)
@@ -1453,13 +1495,16 @@ function evalValue() {
 
   const summary = `REALISERET: mit hold ${kr(teamTotal)} kr (m. kaptajn×2) · pr. rytter ${kr(teamPer)} vs felt(ejer-vægtet) ${kr(fieldWeighted)} → ${beatField >= 0 ? 'SLOG feltet +' : 'under feltet '}${kr(beatField)}/rytter`
     + ` · min kaptajn ${capN} ${kr(capDelta || 0)}` + (L.modelCaptain ? ` · model-kaptajn ${L.modelCaptain} ${kr(modelCapDelta || 0)}` : '');
-  if (!staleLog) { // Δ=0-facit fra en efter-etape-gemt log må ikke forurene historikken
+  // Gem kun på log-posten når den faktisk HØRER til den evaluerede etape, og
+  // aldrig et Δ=0-facit (efter-etape-gemt log) — det forurener historikken.
+  const logMatches = !selStage || L.stage === selStage;
+  if (!staleLog && logMatches) {
     L.realized = { teamTotal: Math.round(teamTotal), teamPerRider: Math.round(teamPer), fieldWeighted: Math.round(fieldWeighted), fieldMean: Math.round(fieldMean), beatFieldPerRider: Math.round(beatField), myCaptainDelta: capDelta == null ? null : Math.round(capDelta), modelCaptainDelta: modelCapDelta == null ? null : Math.round(modelCapDelta), evaluatedAt: new Date().toISOString().slice(0, 10) };
     // sammenlæg med evt. eksisterende outcome-tekst
     L.outcome = (L.outcome ? L.outcome + ' | ' : '') + summary;
     setLogs(logs); renderLogs();
   }
-  $('valuestatus').textContent = `facit mod "${L.stage || 'seneste'}" · ${afterByKey.size} priser${staleLog ? ' · ⚠ Δ=0-advarsel' : ''}`;
+  $('valuestatus').textContent = `facit for "${selStage || L.stage || 'seneste'}" · før: ${beforeSrc} · efter: ${afterSrc}${spanNote}${staleLog ? ' · ⚠ Δ=0-advarsel' : ''}${logMatches ? '' : ' · vist men IKKE gemt (ingen log-post for etapen)'}`;
   $('valueout').innerHTML = (staleLog
       ? '<p class="warn">⚠ <b>Facit er ikke meningsfyldt (alt ≈ 0):</b> log-postens gemte priser er identiske med efter-snapshottets — beslutningen er gemt EFTER etapen (eller mod samme snapshot). Værktøjet kan ikke genskabe morgenpriserne. Rutine: klik <b>Gem beslutning</b> om MORGENEN før etapen, og kør facit om aftenen mod det nye snapshot. (Det ægte facit kan stadig regnes fra GitHub-fixtures: after-N−1 → after-N.)</p>'
       : '')
@@ -1467,7 +1512,7 @@ function evalValue() {
     + '<table><thead><tr><th style="text-align:left">Mit hold</th><th>realiseret Δ (kr)</th></tr></thead><tbody>'
     + teamRows.map((r) => `<tr class="${r.isCap ? 'cap' : ''}"><td style="text-align:left">${r.nm}${r.isCap ? ' 👑' : ''}</td><td class="${r.d >= 0 ? 'pos' : 'neg'}">${kr(r.d)}${r.isCap ? ` <span class="muted">(×2 = ${kr(r.d * 2)})</span>` : ''}</td></tr>`).join('')
     + '</tbody></table>'
-    + '<p class="muted">Δ = ny pris − pris ved beslutning (loggens gemte pris; for ældre logs uden pris bruges det aktuelt indlæste snapshot). "Slog feltet" = dit holds gns. rytter-vækst minus den ejerskabs-vægtede felt-gevinst (hvad chalk-manageren fik). Positivt over tid = din kontrærhed betaler sig. Gemt på log-posten.</p>';
+    + `<p class="muted">Δ = pris efter etapen − pris før etapen (før-kilde: ${beforeSrc}${spanNote}). Med indbygget prishistorik er det <b>ligegyldigt hvornår</b> du gemmer loggen eller kører facit — morgen og aften giver samme svar. "Slog feltet" = dit holds gns. rytter-vækst minus den ejerskabs-vægtede felt-gevinst (hvad chalk-manageren fik). Positivt over tid = din kontrærhed betaler sig. Gemt på log-posten.</p>`;
 }
 $('evalvalue').onclick = evalValue;
 renderLogs();
