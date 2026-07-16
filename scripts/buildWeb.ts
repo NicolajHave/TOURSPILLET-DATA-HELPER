@@ -215,6 +215,26 @@ try {
   }
 } catch { /* ingen holdet-fixtures endnu */ }
 
+// PRISHISTORIK pr. etape (skudsikkert facit): ALLE after-stage-N-snapshots →
+// { N: { nameKey: pris } }. Fladen regner realiseret Δ for etape N som
+// prices[N] − prices[N−1] — helt uafhængigt af hvornår beslutningen blev
+// logget (morgen/aften-sikkert; E11-buggen hvor log gemt efter etapen gav
+// Δ=0 kan ikke opstå ad denne vej).
+const priceHistory: Record<string, Record<string, number>> = {};
+try {
+  for (const file of readdirSync(f('fixtures/holdet'))) {
+    const m = file.match(/^tour-de-france-2026-after-stage-(\d+)\.json$/);
+    if (!m) continue;
+    const j = JSON.parse(readFileSync(f(`fixtures/holdet/${file}`), 'utf8'));
+    const persons = j._embedded?.persons || {};
+    const mm: Record<string, number> = {};
+    for (const it of j.items ?? []) { const p = persons[it.personId]; if (!p) continue; mm[nameKey(`${p.firstName || ''} ${p.lastName || ''}`)] = it.price; }
+    priceHistory[m[1]] = mm;
+  }
+  const ks = Object.keys(priceHistory).sort((a, b) => +a - +b);
+  console.log(`priceHistory: ${ks.length} etape-snapshots indbygget (E${ks.join(', E')}) → facit sikkert morgen OG aften.`);
+} catch { /* ok */ }
+
 const out = {
   generatedAt: asOf.toISOString().slice(0, 10),
   holdetSnapshotFile,
@@ -227,6 +247,7 @@ const out = {
   valueCoeffs: coeffs,
   route,
   actualGc,
+  priceHistory,
   riders,
 };
 mkdirSync(f('public/data'), { recursive: true });
