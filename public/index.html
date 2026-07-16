@@ -1410,10 +1410,23 @@ function evalValue() {
   }
   if (afterByKey.size < 30) { $('valuestatus').textContent = `kun ${afterByKey.size} priser tydet — mangler _embedded.persons i snapshottet?`; return; }
 
-  // målret samme log-post som etape-evalueringen
+  // målret samme log-post som etape-evalueringen. VIGTIGT: findes der flere
+  // poster for etapen, vælges den NYESTE hvis gemte priser AFVIGER fra
+  // efter-snapshottet — en post gemt EFTER etapen har identiske priser og
+  // giver Δ=0 for alt (E11-bugген). Fanger vi kun identiske poster, advares.
   const sel = $('logstage').value;
-  let idx = logs.length - 1;
-  if (sel) for (let i = logs.length - 1; i >= 0; i--) if (logs[i].stage === sel) { idx = i; break; }
+  const candIdx = [];
+  if (sel) { for (let i = logs.length - 1; i >= 0; i--) if (logs[i].stage === sel) candIdx.push(i); }
+  if (!candIdx.length) candIdx.push(logs.length - 1);
+  const identicalShare = (i) => {
+    const cs = (logs[i].candidates || []).filter((c2) => c2.price != null);
+    let same = 0, tot = 0;
+    for (const c2 of cs) { const a = afterByKey.get(nameKey(c2.name)); if (a == null) continue; tot++; if (a === c2.price) same++; }
+    return tot ? same / tot : 1;
+  };
+  let idx = candIdx[0];
+  for (const i of candIdx) if (identicalShare(i) < 0.9) { idx = i; break; }
+  const staleLog = identicalShare(idx) >= 0.9;
   const L = logs[idx];
   const cands = L.candidates || [];
   // før-pris: loggens gemte pris, ellers aktuelt indlæst snapshot (gamle logs)
@@ -1440,12 +1453,17 @@ function evalValue() {
 
   const summary = `REALISERET: mit hold ${kr(teamTotal)} kr (m. kaptajn×2) · pr. rytter ${kr(teamPer)} vs felt(ejer-vægtet) ${kr(fieldWeighted)} → ${beatField >= 0 ? 'SLOG feltet +' : 'under feltet '}${kr(beatField)}/rytter`
     + ` · min kaptajn ${capN} ${kr(capDelta || 0)}` + (L.modelCaptain ? ` · model-kaptajn ${L.modelCaptain} ${kr(modelCapDelta || 0)}` : '');
-  L.realized = { teamTotal: Math.round(teamTotal), teamPerRider: Math.round(teamPer), fieldWeighted: Math.round(fieldWeighted), fieldMean: Math.round(fieldMean), beatFieldPerRider: Math.round(beatField), myCaptainDelta: capDelta == null ? null : Math.round(capDelta), modelCaptainDelta: modelCapDelta == null ? null : Math.round(modelCapDelta), evaluatedAt: new Date().toISOString().slice(0, 10) };
-  // sammenlæg med evt. eksisterende outcome-tekst
-  L.outcome = (L.outcome ? L.outcome + ' | ' : '') + summary;
-  setLogs(logs); renderLogs();
-  $('valuestatus').textContent = `facit mod "${L.stage || 'seneste'}" · ${afterByKey.size} priser`;
-  $('valueout').innerHTML = `<p><b>Facit (realiseret holdet-værdi):</b> ${summary}</p>`
+  if (!staleLog) { // Δ=0-facit fra en efter-etape-gemt log må ikke forurene historikken
+    L.realized = { teamTotal: Math.round(teamTotal), teamPerRider: Math.round(teamPer), fieldWeighted: Math.round(fieldWeighted), fieldMean: Math.round(fieldMean), beatFieldPerRider: Math.round(beatField), myCaptainDelta: capDelta == null ? null : Math.round(capDelta), modelCaptainDelta: modelCapDelta == null ? null : Math.round(modelCapDelta), evaluatedAt: new Date().toISOString().slice(0, 10) };
+    // sammenlæg med evt. eksisterende outcome-tekst
+    L.outcome = (L.outcome ? L.outcome + ' | ' : '') + summary;
+    setLogs(logs); renderLogs();
+  }
+  $('valuestatus').textContent = `facit mod "${L.stage || 'seneste'}" · ${afterByKey.size} priser${staleLog ? ' · ⚠ Δ=0-advarsel' : ''}`;
+  $('valueout').innerHTML = (staleLog
+      ? '<p class="warn">⚠ <b>Facit er ikke meningsfyldt (alt ≈ 0):</b> log-postens gemte priser er identiske med efter-snapshottets — beslutningen er gemt EFTER etapen (eller mod samme snapshot). Værktøjet kan ikke genskabe morgenpriserne. Rutine: klik <b>Gem beslutning</b> om MORGENEN før etapen, og kør facit om aftenen mod det nye snapshot. (Det ægte facit kan stadig regnes fra GitHub-fixtures: after-N−1 → after-N.)</p>'
+      : '')
+    + `<p><b>Facit (realiseret holdet-værdi):</b> ${summary}</p>`
     + '<table><thead><tr><th style="text-align:left">Mit hold</th><th>realiseret Δ (kr)</th></tr></thead><tbody>'
     + teamRows.map((r) => `<tr class="${r.isCap ? 'cap' : ''}"><td style="text-align:left">${r.nm}${r.isCap ? ' 👑' : ''}</td><td class="${r.d >= 0 ? 'pos' : 'neg'}">${kr(r.d)}${r.isCap ? ` <span class="muted">(×2 = ${kr(r.d * 2)})</span>` : ''}</td></tr>`).join('')
     + '</tbody></table>'
