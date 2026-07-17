@@ -46,6 +46,18 @@
   button.ghost { background: #fff; font-weight: 600; }
   .muted { color: var(--muted); font-size: .82rem; }
 
+  /* kompakt "sådan læser du det"-boks: kort intro + punktliste der peger på kolonnerne */
+  details.howto { font-size: .82rem; color: var(--muted); margin: 6px 2px 4px; }
+  details.howto > summary { cursor: pointer; font-weight: 600; color: var(--ink); list-style: none; padding: 2px 0; }
+  details.howto > summary::-webkit-details-marker { display: none; }
+  details.howto > summary::before { content: '▸ '; color: var(--muted); }
+  details.howto[open] > summary::before { content: '▾ '; }
+  details.howto ul { margin: 6px 0 4px; padding-left: 0; list-style: none; }
+  details.howto li { padding: 2px 0 2px 14px; text-indent: -14px; line-height: 1.45; }
+  details.howto li b, details.howto li code { color: var(--ink); }
+  details.howto code { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font-size: .95em; }
+  .keyline { font-size: .82rem; color: var(--ink); margin: 4px 2px 10px; line-height: 1.5; }
+
   .warn { background: #fdeceb; border-left: 4px solid var(--red); padding: 8px 12px; border-radius: 6px; font-size: .85rem; margin-top: 12px; }
 
   table { border-collapse: collapse; width: 100%; font-size: .84rem; margin-top: 10px; }
@@ -75,13 +87,18 @@
 </div></div>
 
 <main>
-<p class="lede">
-  Paper-trade-flade til leverage LIVE under Touren. Indsæt dagens holdet-snapshot,
-  vælg morgendagens etapeprofil → rangering efter leverage (expectedDelta × (1−ejerandel),
-  EV-gulv) + anbefalet kaptajn. Brug ⚑ til at udelukke ryttere på dagens nyheder
-  (styrt, sygdom, udgået efter snapshot). Log beslutningen — og udfaldet bagefter.
-  expectedDelta er et model-estimat; brug det til <em>rangering</em>, ikke som facit.
-</p>
+<p class="keyline"><b>Mål: bliv nr. 1 — ikke ved at samle flest point, men ved at eje de rigtige ryttere som få andre har.</b> Værktøjet rangerer efter <b>leverage</b>: en rytter der scorer stort OG er lavt ejet rykker dig forbi feltet.</p>
+<details class="howto">
+  <summary>Sådan bruger du fladen (5 trin)</summary>
+  <ul>
+    <li><b>1.</b> Indsæt dagens holdet-snapshot → vælg morgendagens etape (profilen sættes selv).</li>
+    <li><b>2.</b> Læs kandidatlisten — øverst = bedste leverage. Vælg kaptajn (den grønne linje foreslår).</li>
+    <li><b>3–4.</b> Test et skifte, eller lad hold-rådgiveren finde det bedste fra dit hold.</li>
+    <li><b>5.</b> Gem beslutningen om morgenen → tjek facit om aftenen.</li>
+    <li>⚑ = udeluk en rytter på dagens nyheder (styrt/sygdom/udgået).</li>
+    <li><b>expΔ</b> er et model-<em>estimat</em> til rangering — ikke en garanti.</li>
+  </ul>
+</details>
 
 <div class="card">
   <h2><span class="step">1</span>Snapshot & etape</h2>
@@ -127,18 +144,20 @@
 
 <div class="card">
   <h2><span class="step">2</span>Kandidater</h2>
-  <p class="muted">Top 50 efter valgt sortering. <b>Prisloft ≤ 4,5 mio</b> viser kun bunden af
-  markedet — kombinér med sortering <b>expΔ pr. mio.</b> for at se, hvad du har at rykke med
-  på de billige pladser (kaptajn/leverage regner stadig på hele feltet). <b>model-pl.</b> = modellens forudsagte
-  placering (lav = stærk) drevet af form × profil-fit; <b>expΔ</b> = Monte-Carlo-forventning
-  (3000 sims over placeringsfordelingen) + forventet holdbonus; <b>±σ</b> = spredning —
-  varians-våbnet: ved (næsten) lige expΔ, tag høj σ + lav ejer%; <b>Δ/mio</b> = expΔ pr.
-  million pris — enabler-finderen til de billige pladser; <b>GC/dag</b> = forventet
-  sammenlagt-vækst pr. dag efter de OFFICIELLE tabeller (GC 1-10 → 100k..10k, +25k gul;
-  docs/RULES.md) — den største kanal over 21 dage (GC1 = 125k/dag ≈ 2,6M over touren).
-  Beløbene er eksakte; P(GC-plads) er model — derfor IKKE lagt i expΔ: brug den som
-  tie-breaker og grund til at HOLDE GC-stjerner over flade dage. <b>Hold musen over en
-  rytter</b> for hele "hvorfor".</p>
+  <p class="keyline">Top 50 sorteret efter dit valg (standard: <b>leverage</b> — bedst øverst). 👑 = anbefalet kaptajn. <b>Hold musen over en rytter</b> for hele forklaringen.</p>
+  <details class="howto">
+    <summary>Hvad betyder kolonnerne?</summary>
+    <ul>
+      <li><b>Ejer%</b> — hvor mange i feltet der har ham. <b>Lav % = din mulighed for at rykke fra dem.</b></li>
+      <li><b>model-pl.</b> — modellens gæt på hans placering i dag (lavt tal = stærk).</li>
+      <li><b>expΔ (kr)</b> — forventet værdistigning i dag. Model-estimat, ikke facit.</li>
+      <li><b>±σ</b> — hvor meget udfaldet svinger. <b>Høj σ + lav ejer% = varians-satsning</b> (bruges når to ryttere har ens expΔ).</li>
+      <li><b>Δ/mio</b> — expΔ pr. million i pris. Finder de bedste <b>billige</b> ryttere.</li>
+      <li><b>GC/dag</b> — sammenlagt-indkomst pr. dag (gul trøje ≈ 125k/dag). <b>Grund til at BEHOLDE GC-stjerner på flade dage</b> — tælles ikke med i expΔ.</li>
+      <li><b>leverage</b> — expΔ vægtet for lav ejerandel. <b>Dette er #1-målet: hovedsorteringen.</b></li>
+    </ul>
+  </details>
+  <p class="muted"><b>Tip:</b> sæt <b>Prisloft ≤ 4,5 mio</b> + sortér på <b>Δ/mio</b> for at finde billige ryttere at fylde holdet op med.</p>
   <table id="tbl"><thead><tr>
     <th>#</th><th>Rytter</th><th>Hold</th><th>Ejer%</th><th>Pris</th><th title="modellens forudsagte placering">model-pl.</th><th>expΔ (kr)</th><th title="spredning på placeringsværdien (Monte-Carlo)">±σ</th><th title="expΔ pr. million pris — jo højere, jo bedre budget-værdi">Δ/mio</th><th title="forventet sammenlagt-vækst pr. dag (officielle tabeller: GC 1-10 → 100k..10k, +25k gul) — IKKE lagt i expΔ; brug som tie-breaker">GC/dag</th><th>leverage</th><th>⚑</th>
   </tr></thead><tbody></tbody></table>
@@ -149,11 +168,16 @@
 
 <div class="card">
   <h2><span class="step">3</span>Transfer-evaluator <span class="muted" style="text-transform:none">(sælg X / køb Y over 1–3 etaper)</span></h2>
-  <p class="muted">Vælg "sælg X / køb Y" og de kommende etapers profiler. Du får ét tal:
-  <b>hvor mange kr du tjener (eller taber) over horisonten</b> — efter 1 % købsgebyr og med
-  0,5 %/etape rente på frigjort kontant. "Sikkerhed" fortæller, hvor godt Y mindst skal køre,
-  før skiftet er positivt: 🟢 let, 🟡 middel, 🔴 svært — eller "kan ikke tabe", hvis X alligevel
-  var på vej til at tabe værdi. Tallene bliver mere usikre for hver etape frem.</p>
+  <p class="keyline">Vælg <b>sælg X → køb Y</b>. Du får ét tal: <b>hvor mange kr skiftet tjener (+) eller taber (−)</b> over de næste etaper, efter gebyr.</p>
+  <details class="howto">
+    <summary>Sådan læser du svaret</summary>
+    <ul>
+      <li><b>Grøn linje (+ kr)</b> = god handel · <b>Rød (− kr)</b> = behold X.</li>
+      <li>Tallet er <b>efter</b> 1 % købsgebyr og med 0,5 %/etape rente på frigjorte penge.</li>
+      <li><b>Sikkerhed</b> = hvor godt Y mindst skal køre for at det betaler sig: 🟢 let · 🟡 middel · 🔴 svært · «kan ikke tabe» (X var alligevel på vej ned).</li>
+      <li>Jo længere frem, jo mere usikkert — vægt de første etaper tungest.</li>
+    </ul>
+  </details>
   <div class="controls">
     <label>Sælg <input id="sellX" list="riderlist" placeholder="rytter på mit hold" style="width:180px" /></label>
     <label>Køb <input id="buyY" list="riderlist" placeholder="kandidat" style="width:180px" /></label>
@@ -171,12 +195,17 @@
 
 <div class="card">
   <h2><span class="step">4</span>Hold-rådgiver <span class="muted" style="text-transform:none">(bedste skifte fra DIT hold — shortlist, ikke orakel)</span></h2>
-  <p class="muted">Vælg dine 8 (huskes lokalt) + evt. bank. Værktøjet prøver alle lovlige
-  enkelt-skifter og viser, <b>hvad hvert skifte tjener dig i kr efter gebyr over de næste op
-  til 3 etaper</b> (horisonten fra trin 1's etapevalg). Vigtigt: <b>"i dag"-kolonnen</b> viser,
-  om skiftet betaler allerede på dagens etape — er den negativ, ligger gevinsten i de kommende
-  etaper, og du kan roligt <b>vente til i aften</b> med at slå til (samme gebyr, og du beholder
-  sælgerens point i dag). "Behold holdet" er også et ægte svar. Break/ITT er lav-tillid — du beslutter.</p>
+  <p class="keyline">Vælg dine 8 (huskes) + evt. bank. Værktøjet finder det bedste skifte fra <b>dit</b> hold og siger, <b>hvor mange kr det tjener</b>. «Behold holdet» er også et gyldigt svar.</p>
+  <details class="howto">
+    <summary>Sådan læser du tabellen</summary>
+    <ul>
+      <li><b>Du tjener (kr)</b> = samlet gevinst efter gebyr over hele horisonten (op til 3 etaper, sat i trin 1).</li>
+      <li><b>i dag (kr)</b> = effekten på <b>dagens</b> etape alene. Er den negativ, kommer gevinsten senere → <b>vent til i aften med skiftet</b> (samme gebyr, og du beholder sælgerens point i dag).</li>
+      <li><b>Sikkerhed</b> = hvor godt køb-rytteren mindst skal køre (🟢/🟡/🔴).</li>
+      <li><b>m. leverage</b> = samme gevinst, vægtet for lav ejerandel (kontrærhed).</li>
+      <li>Break/ITT er lav-tillid — modellen gætter mere der.</li>
+    </ul>
+  </details>
   <div class="controls" id="teamwrap">
     <select class="tpick" id="t1"><option value="">— rytter 1 —</option></select>
     <select class="tpick" id="t2"><option value="">— rytter 2 —</option></select>
