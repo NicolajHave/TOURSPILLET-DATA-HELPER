@@ -1,19 +1,22 @@
-// scripts/snippets/pcs-rider.js (v2)
+// scripts/snippets/pcs-rider.js (v3)
 // Kør på en PCS RYTTER-RESULTATSIDE filtreret til sæsonen, fx:
 //   …/rider/tadej-pogacar  →  fanen Results  →  vælg 2026
 //   (URL kan være rider.php?id=…&p=results&xseason=2026 — slug er IKKE i URL'en)
 //
-// v2 (efter DOM-diagnose): tabellen er class="basic" (ikke rdrResults). Kolonner:
-//   # | Date | Result | Race | Class | KMs | PCS points | UCI points | Vert. mtr
-// Vi mapper kolonner via OVERSKRIFTER (robust mod rækkefølge), parser race/år/etape
-// PER RÆKKE fra race-linket, og tager KMs + Vert.mtr med så fallback-klassifikation
-// kan bruge klatre-densitet (vert/km), ikke kun distance ("sprint-only"-fælden).
-// Klassements-rækker (Mountains/Points/GC classification) markeres rowType:
-// 'classification' → de er STANDINGER, ikke etaperesultater (udelades fra form/fit).
+// v3 (SPECIALTIES + fysik): fanger nu OGSÅ rytterens PCS-profil — Specialties-
+// point (Onedayraces/GC/TT/Sprint/Climber/Hills), vægt, højde, fødselsår.
+// Ligger Info-boksen ikke i den aktuelle visning (Results-fanen), hentes
+// rytterens forside (/rider/{slug}) automatisk og parses (samme origin).
+// buildWeb bruger point-fordelingen som RYTTERTYPE-PRIOR (fx Tejada: Climber
+// 1274 vs Sprint 12 → renheds-dæmpningen får et langt renere signal end
+// vores rank-baserede fits). Re-scrape midt i Touren er sikkert: buildWeb
+// ignorerer tour-de-france-2026-rækker fra rytterfiler (kommer fra
+// etape-filerne — ingen dobbelttælling).
+// v2-features bevaret: kolonne-mapping via overskrifter, race/år/etape pr.
+// række, KMs+Vert til fallback-klassifikation, classification-markering.
 //
-// SMOKE-TEST: kør på ÉN rytter (Pogačar), send output til Claude FØR alle 191.
-// Gem som: fixtures/riders/rider-{slug}.json
-(() => {
+// Gem som: fixtures/riders/rider-{slug}.json (overskriv gerne den gamle)
+(async () => {
   const slugify = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const pm = location.pathname.match(/rider\/([^/?#]+)/);
   const riderName = (document.querySelector('h1')?.innerText || '').replace(/\s+/g, ' ').trim();
@@ -68,7 +71,35 @@
     };
   }).filter(Boolean).filter((r) => r.raceSlug);
 
-  const out = { rider: { slug: riderSlug, name: riderName }, results, sourceUrl: location.href, capturedAt: new Date().toISOString() };
+  // SPECIALTIES + fysik (v3): parse fra denne side hvis Info-boksen findes —
+  // ellers hentes rytterens forside. Tekst-baseret parsing (tal FØR label:
+  // "1274 Climber"), afgrænset til segmentet efter "Specialties" så "GC"
+  // ikke rammer tilfældig tekst andetsteds.
+  const parseProfile = (text) => {
+    const t = (text || '').replace(/\s+/g, ' ');
+    const ix = t.search(/Specialt/i);
+    const seg = ix >= 0 ? t.slice(ix, ix + 400) : '';
+    const num = (label) => { const m = seg.match(new RegExp('(\\d+)\\s*' + label, 'i')); return m ? +m[1] : null; };
+    const sp = { oneday: num('One.?day.?races'), gc: num('GC'), tt: num('TT'), sprint: num('Sprint'), climber: num('Climber'), hills: num('Hills') };
+    const w = t.match(/Weight:?\s*([\d.]+)\s*kg/i); const h = t.match(/Height:?\s*([\d.]+)\s*m/i);
+    const b = t.match(/Date of birth:?\s*\d{1,2}\w*\s+\w+\s+(\d{4})/i);
+    return {
+      specialties: Object.values(sp).some((v) => v != null) ? sp : null,
+      weightKg: w ? +w[1] : null, heightM: h ? +h[1] : null, birthYear: b ? +b[1] : null,
+    };
+  };
+  let profile = parseProfile(document.body.innerText);
+  if (!profile.specialties && riderSlug) {
+    try {
+      const resp = await fetch(`/rider/${riderSlug}`);
+      if (resp.ok) {
+        const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
+        profile = parseProfile(doc.body ? doc.body.textContent : '');
+      }
+    } catch (e) { /* profil forbliver tom — konsollen viser det */ }
+  }
+
+  const out = { rider: { slug: riderSlug, name: riderName, ...profile }, results, sourceUrl: location.href, capturedAt: new Date().toISOString() };
   // Batch-effektivt: trigger en fil-download med korrekt navn (ingen Notesblok ×191).
   const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -77,7 +108,10 @@
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   const byType = results.reduce((a, r) => (a[r.rowType] = (a[r.rowType] || 0) + 1, a), {});
-  console.log(`PCS rytter: ${riderName} (${riderSlug}) — ${results.length} rækker. Typer: ${JSON.stringify(byType)}. Downloadet som rider-${riderSlug}.json → flyt til fixtures/riders/ og upload.`);
+  const spTxt = profile.specialties
+    ? `Specialties: klatrer ${profile.specialties.climber ?? '?'} · sprint ${profile.specialties.sprint ?? '?'} · hills ${profile.specialties.hills ?? '?'} · GC ${profile.specialties.gc ?? '?'} · TT ${profile.specialties.tt ?? '?'} (${profile.weightKg ?? '?'} kg, f. ${profile.birthYear ?? '?'}) ✓`
+    : '⚠ Specialties IKKE fundet — tjek at du er på en rytterside';
+  console.log(`PCS rytter: ${riderName} (${riderSlug}) — ${results.length} rækker. Typer: ${JSON.stringify(byType)}. ${spTxt}. Downloadet som rider-${riderSlug}.json → fixtures/riders/ (overskriv gerne) og upload.`);
   console.log('SMOKE-TEST: send de første ~12 rækker + typer til Claude FØR du kører hele startlisten.');
   console.table(results.slice(0, 12).map((r) => ({ date: r.date, rank: r.rank, st: r.status, type: r.rowType, race: r.raceSlug, stg: r.stageNo, km: r.distanceKm, vert: r.verticalM })));
 })();

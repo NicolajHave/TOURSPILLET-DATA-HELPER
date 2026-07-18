@@ -59,13 +59,25 @@ const rawNameByKey = new Map<string, string>();
 // classification rows (standings, would double-count the stage finishes).
 const riderFiles = readdirSync(f('fixtures/riders')).filter((x) => /^rider-.*\.json$/.test(x));
 const cov = { exact: 0, fallback: 0, dropped: 0 };
+// PCS-SPECIALTIES pr. rytter (pcs-rider v3): ryttertype-prior til renheds-
+// dæmpningen (klatrer- vs sprint-point er et langt renere signal end vores
+// rank-baserede fits). Kun til stede for re-scrapede ryttere.
+const specByKey = new Map<string, Record<string, number | null>>();
 for (const file of riderFiles) {
   const j = JSON.parse(readFileSync(f(`fixtures/riders/${file}`), 'utf8'));
   const key = nameKey(j.rider.name);
   rawNameByKey.set(key, j.rider.name);
   if (!history.has(key)) history.set(key, []);
+  if (j.rider.specialties) {
+    const s = j.rider.specialties;
+    specByKey.set(key, { spr: s.sprint ?? null, clm: s.climber ?? null, hll: s.hills ?? null, gc: s.gc ?? null, tt: s.tt ?? null, odr: s.oneday ?? null, kg: j.rider.weightKg ?? null, born: j.rider.birthYear ?? null });
+  }
   for (const r of j.results ?? []) {
     if (r.rowType === 'classification' || !r.date || r.rank == null) { if (r.rowType === 'classification') cov.dropped++; continue; }
+    // DEDUPE-GUARD: re-scrapede rytterfiler (midt i Touren) indeholder nu
+    // tour-de-france-2026-rækker — dem folder vi ALTID ind fra etape-filerne,
+    // så de springes over her (ellers dobbelttælles formen).
+    if (r.raceSlug === 'tour-de-france' && r.year === 2026) continue;
     const slug = SLUG_ALIAS[r.raceSlug] ?? r.raceSlug;
     const exact = r.stageNo != null ? profileIndex.get(`${slug}-${r.year}-${r.stageNo}`) : undefined;
     const profile = exact ?? classifyStage({ distanceKm: r.distanceKm ?? 0, verticalM: r.verticalM ?? 0, discipline: r.discipline ?? 'road' });
@@ -112,8 +124,10 @@ const riders = [...history.entries()].map(([key, results]) => {
   // (TdF25 E2/E4/E7). Ingen historik-rækker klassificeres punch_steep; fittet
   // afledes: 0.6·punch + 0.4·max(mountain, break).
   fit['punch_steep'] = +(0.6 * fit['punch'] + 0.4 * Math.max(fit['mountain'], fit['break'])).toFixed(3);
-  return { key, name: rawNameByKey.get(key)!, form: form(results, asOf), fit, n: results.length };
+  const spec = specByKey.get(key);
+  return { key, name: rawNameByKey.get(key)!, form: form(results, asOf), fit, n: results.length, ...(spec ? { spec } : {}) };
 });
+if (specByKey.size) console.log(`specialties: ${specByKey.size} ryttere med PCS-ryttertype-prior (pcs-rider v3).`);
 
 const coeffs = coeffsFromArtifact(JSON.parse(readFileSync(f('artifacts/value-formula.json'), 'utf8')));
 

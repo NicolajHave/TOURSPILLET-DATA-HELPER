@@ -568,7 +568,13 @@ function mtnStrength(r) {
   if (!r.hasForm) return 0;
   const beta = SNAP.evBeta, f = r.fitObj || {};
   const mtn = f.mountain || 0;
-  const purity = mtn / (mtn + (f.sprint || 0) + 1e-9);
+  // PCS-SPECIALTIES som prior når de findes (pcs-rider v3): karriere-point
+  // klatrer vs sprint er et renere ryttertype-signal end vores fits (som kan
+  // være forurenet af fallback-klassificerede etaper). Ellers fit-baseret.
+  const sp = r.spec;
+  const purity = (sp && (sp.clm || sp.spr))
+    ? (sp.clm || 0) / ((sp.clm || 0) + (sp.spr || 0) + 1e-9)
+    : mtn / (mtn + (f.sprint || 0) + 1e-9);
   return r.form * purity + beta * mtn;
 }
 // Én kilde til profil-styrke (bruges af kandidat-board, teamWinProb OG
@@ -592,7 +598,12 @@ function breakStrength(r) {
   if (breakGcLeaders().has(r)) return -1;
   const beta = SNAP.evBeta, f = r.fitObj || {};
   const blend = 0.6 * (f.mountain || 0) + 0.4 * (f.break || 0);
-  const purity = blend / (blend + (f.sprint || 0) + 1e-9);
+  // PCS-specialties-prior når den findes (klatrer+hills vs sprint) — se mtnStrength.
+  const sp = r.spec;
+  const specBlend = sp ? 0.6 * (sp.clm || 0) + 0.4 * (sp.hll || 0) : 0;
+  const purity = (sp && (specBlend || sp.spr))
+    ? specBlend / (specBlend + (sp.spr || 0) + 1e-9)
+    : blend / (blend + (f.sprint || 0) + 1e-9);
   return r.form * purity + beta * blend;
 }
 
@@ -654,7 +665,7 @@ function compute() {
     const p = persons[i.personId] || {}; const name = `${p.firstName || ''} ${p.lastName || ''}`.trim();
     const m = matchForm(name);
     const strength = m ? (m.form + beta * (m.fit[profile] || 0)) : 0;
-    return { name, personId: i.personId, team: teams[i.teamId]?.name || '', own: i.popularity ?? 0, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
+    return { name, personId: i.personId, team: teams[i.teamId]?.name || '', own: i.popularity ?? 0, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null, spec: m ? (m.spec || null) : null };
   });
   // field + caches SKAL sættes før sort/EV-loop (teamWinProb + TTT-hold læser _field)
   window._field = rows; _twpCache = null; _evCache = null; _tttCache = null; _gcCache = null; _gcLeadCache = null; _gcActual = undefined; _profMc = null;
@@ -736,6 +747,7 @@ function compute() {
       : r.hasForm
       ? `HVORFOR: form ${r.form.toFixed(2)} · profil-fit(${profile}) ${r.fitP.toFixed(2)} → model-plads ${r.predRank} → MC-expΔ ${kr(r.ev)} ± ${kr(r.sigma)} · P(sejr) ${(r.pWin * 100).toFixed(1)}% · DNF-risiko ${(r.pDnf * 100).toFixed(1)}%`
         + (r.twp > 0.02 ? ` (heraf holdbonus ${kr(TEAM_KR * r.twp)} · P(hold vinder) ${(r.twp * 100).toFixed(0)}%)` : '')
+        + (r.spec ? ` · PCS-type: klatrer ${r.spec.clm ?? '?'} / sprint ${r.spec.spr ?? '?'} / hills ${r.spec.hll ?? '?'}` : '')
         + (r.gcDay >= 1000 ? ` · GC-indkomst ~${kr(r.gcDay)}/dag (IKKE i expΔ — tie-breaker)` : '')
         + ` · ejer ${(r.own * 100).toFixed(0)}% → leverage ${lev}`
       : 'Ingen 2026-form på denne rytter (ingen data) → strength 0.';
