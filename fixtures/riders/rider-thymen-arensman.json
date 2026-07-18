@@ -1,9 +1,189 @@
 {
   "rider": {
     "slug": "thymen-arensman",
-    "name": "Thymen Arensman"
+    "name": "Thymen Arensman",
+    "specialties": {
+      "oneday": 67,
+      "gc": 2435,
+      "tt": 1657,
+      "sprint": 28,
+      "climber": 2289,
+      "hills": 612
+    },
+    "weightKg": 68,
+    "heightM": 1.9,
+    "birthYear": null
   },
   "results": [
+    {
+      "date": "2026-07-17",
+      "rank": 54,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 13,
+      "raceName": "Tour de France | Stage 13",
+      "distanceKm": 205.8,
+      "verticalM": 2309
+    },
+    {
+      "date": "2026-07-16",
+      "rank": 134,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 12,
+      "raceName": "Tour de France | Stage 12",
+      "distanceKm": 179.1,
+      "verticalM": 1412
+    },
+    {
+      "date": "2026-07-15",
+      "rank": 72,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 11,
+      "raceName": "Tour de France | Stage 11",
+      "distanceKm": 161.3,
+      "verticalM": 1107
+    },
+    {
+      "date": "2026-07-14",
+      "rank": 32,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 10,
+      "raceName": "Tour de France | Stage 10",
+      "distanceKm": 165.6,
+      "verticalM": 3791
+    },
+    {
+      "date": "2026-07-12",
+      "rank": 113,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 9,
+      "raceName": "Tour de France | Stage 9",
+      "distanceKm": 154.6,
+      "verticalM": 2792
+    },
+    {
+      "date": "2026-07-11",
+      "rank": 95,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 8,
+      "raceName": "Tour de France | Stage 8",
+      "distanceKm": 180.4,
+      "verticalM": 1353
+    },
+    {
+      "date": "2026-07-10",
+      "rank": 125,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 7,
+      "raceName": "Tour de France | Stage 7",
+      "distanceKm": 175.1,
+      "verticalM": 701
+    },
+    {
+      "date": "2026-07-09",
+      "rank": 29,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 6,
+      "raceName": "Tour de France | Stage 6",
+      "distanceKm": 186.2,
+      "verticalM": 4149
+    },
+    {
+      "date": "2026-07-08",
+      "rank": 28,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 5,
+      "raceName": "Tour de France | Stage 5",
+      "distanceKm": 158.3,
+      "verticalM": 1395
+    },
+    {
+      "date": "2026-07-07",
+      "rank": 88,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 4,
+      "raceName": "Tour de France | Stage 4",
+      "distanceKm": 181.9,
+      "verticalM": 2784
+    },
+    {
+      "date": "2026-07-06",
+      "rank": 19,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 3,
+      "raceName": "Tour de France | Stage 3",
+      "distanceKm": 195.9,
+      "verticalM": 3940
+    },
+    {
+      "date": "2026-07-05",
+      "rank": 21,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "road",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 2,
+      "raceName": "Tour de France | Stage 2",
+      "distanceKm": 168.5,
+      "verticalM": 2049
+    },
+    {
+      "date": "2026-07-04",
+      "rank": 2,
+      "status": "OK",
+      "rowType": "stage",
+      "discipline": "ttt",
+      "raceSlug": "tour-de-france",
+      "year": 2026,
+      "stageNo": 1,
+      "raceName": "Tour de France | Stage 1 (TTT)",
+      "distanceKm": 19.6,
+      "verticalM": 167
+    },
     {
       "date": "2026-05-31",
       "rank": 17,
@@ -617,5 +797,5 @@
     }
   ],
   "sourceUrl": "https://www.procyclingstats.com/rider.php?id=209286&p=results&s=&xseason=2026&pxseason=equal&sort=date&race=&km1=&zkm1=&pkm1=equal&offset=0&topx=&ztopx=&ptopx=smallerorequal&znation=&type=&continent=&level=&rnk=&zrnk=&prnk=equal&exclude_tt=0&racedate=&zracedate=&pracedate=equal&category=&profile_score=&zprofile_score=&pprofile_score=largerorequal&exclude_gcs=0&vert_meters=&zvert_meters=&pvert_meters=largerorequal&pro_win=0&filter=Filter",
-  "capturedAt": "2026-07-01T20:37:12.703Z"
+  "capturedAt": "2026-07-18T07:31:17.707Z"
 }
