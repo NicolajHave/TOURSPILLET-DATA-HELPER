@@ -194,9 +194,9 @@
 
 <div class="card">
   <h2><span class="step">4</span>Hold-rådgiver <span class="muted" style="text-transform:none">(bedste skifte fra DIT hold — shortlist, ikke orakel)</span></h2>
-  <p class="keyline">Vælg dine 8 (huskes) + evt. bank. Værktøjet finder det bedste skifte fra <b>dit</b> hold og siger, <b>hvor mange kr det tjener</b>. «Behold holdet» er også et gyldigt svar.</p>
+  <p class="keyline">Vælg dine 8 (huskes) + evt. bank. To knapper, to svar: <b>Find bedste skifter</b> = hvilket skifte tjener flest kr («behold holdet» er også et gyldigt svar) · <b>🏆 Turnerings-check</b> = hvordan står dit hold mod feltet i dag + hvilken kaptajn giver størst chance for en TOP-dag.</p>
   <details class="howto">
-    <summary>Sådan læser du tabellen</summary>
+    <summary>Sådan læser du skifte-tabellen (Find bedste skifter)</summary>
     <ul>
       <li><b>Du tjener (kr)</b> = samlet gevinst efter gebyr over hele horisonten (op til 3 etaper, sat i trin 1).</li>
       <li><b>i dag (kr)</b> = effekten på <b>dagens</b> etape alene. Er den negativ, kommer gevinsten senere → <b>vent til i aften med skiftet</b> (samme gebyr, og du beholder sælgerens point i dag).</li>
@@ -1340,11 +1340,16 @@ function renderTournament(res, capName) {
     html += `<tr class="capRow${x.isChosen ? ' cap' : ''}" data-name="${x.name.replace(/"/g, '&quot;')}" style="cursor:pointer" title="klik for at gøre ${x.name} til din kaptajn"><td style="text-align:left">${x.name}${x.isChosen ? ' 👑' : ''}</td><td>${(x.pct * 100).toFixed(0)}%</td><td>${(x.top10 * 100).toFixed(1)}%</td><td>${(x.bot25 * 100).toFixed(1)}%</td><td>${kr(x.ev)}</td></tr>`;
   });
   html += '</tbody></table>';
-  html += '<p class="muted">Turnerings-logik: P(top 10%) er dit våben over 21 dage — E[percentil] alene vinder ikke en turnering på 30.000. '
-    + 'Høj P(top10) + høj P(bund25) = varians-spil (stacking/kontrær kaptajn); lav bund25 + middel top10 = sikkert spil. '
-    + 'Klik en række for at gøre den rytter til din kaptajn (synkroniserer med "Min kaptajn" i trin 5 — ingen gensimulering nødvendig). '
-    + 'Begrænsninger: modstandere er ejerskabs-vægtede træk (ikke rigtige holdkombinationer m. budget/max-2), DNF ikke i sim, holdbonus kun vinderhold, GC/dag som konstant. '
-    + '<b>Vigtigst:</b> feltet = DAGENS ejerskab — konkurrenterne når også at skifte før senere etaper (chalk-drift), så percentilen er skarpest for den FØRSTKOMMENDE etape og optimistisk længere ude.</p>';
+  html += '<p class="keyline">Klik en række for at vælge kaptajn. <b>P(top 10%) er dit våben</b> — den der bliver nr. 1 af 30.000 har mange TOP-dage, ikke bare gode gennemsnit.</p>'
+    + '<details class="howto"><summary>Sådan læser du turnerings-checket</summary><ul>'
+    + '<li><b>E[percentil]</b> — hvor højt dit hold forventes at ende blandt dagens modstandere (73 % = bedre end 73 % af feltet).</li>'
+    + '<li><b>P(top 10%)</b> — chancen for en TOP-dag med dét kaptajnvalg. Jagt denne.</li>'
+    + '<li><b>P(bund 25%)</b> — risikoen for en bund-dag.</li>'
+    + '<li><b>E[total]</b> — holdets forventede vækst i kr.</li>'
+    + '<li><b>Vælg spillestil:</b> høj top10 + høj bund25 = varians-satsning · lav bund25 + middel top10 = sikkert valg.</li>'
+    + '<li>⚠ Skarpest for DAGENS etape — modstanderne er trukket efter dagens ejerskab og når selv at skifte senere.</li>'
+    + '<li>⚠ Forenklinger: modstandere er ejerskabs-vægtede træk (ikke ægte hold m. budget), DNF er ikke med.</li>'
+    + '</ul></details>';
   $('tourout').innerHTML = html;
   $('tourout').querySelectorAll('tr.capRow').forEach((tr) => {
     tr.onclick = () => renderTournament(res, tr.dataset.name);
