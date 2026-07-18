@@ -1394,22 +1394,46 @@ function evalStage() {
     if (x.rank != null) actual.set(k, x.rank);
     else if (x.status === 'DNF' || x.status === 'DNS' || x.status === 'OTL' || x.status === 'DSQ') outNames.add(k);
   }
+  // FUZZY-opslag (E13-bugfix): PCS bruger kortformer ("PIDCOCK Tom") hvor
+  // holdet skriver fuldt navn ("Thomas Pidcock") — eksakt nøgle fejler, og
+  // kaptajnen meldes fejlagtigt "DNF/udenfor". Trappe: eksakt → token-subset
+  // → delte tokens + initial-match på resten (thomas/tom deler 't'). Kræver
+  // entydigt match — ellers null.
+  const actKeys = [...actual.keys()], outKeys = [...outNames];
+  const fuzzyKey = (k, list) => {
+    if (list.includes(k)) return k;
+    const t = k.split(' ');
+    const hits = list.filter((a) => {
+      const at = a.split(' ');
+      if (at.every((x) => t.includes(x)) || t.every((x) => at.includes(x))) return true;
+      const shared = at.filter((x) => t.includes(x));
+      if (!shared.length) return false;
+      const restA = at.filter((x) => !t.includes(x)), restT = t.filter((x) => !at.includes(x));
+      return restA.length === restT.length && restA.every((x, i) => restT[i] && x[0] === restT[i][0]);
+    });
+    return hits.length === 1 ? hits[0] : null;
+  };
+  const rankOf = (nm) => { const k = nameKey(nm); const m = fuzzyKey(k, actKeys); return m ? actual.get(m) : null; };
+  const isOut = (nm) => { const k = nameKey(nm); return !!fuzzyKey(k, outKeys); };
   // målret nyeste post der matcher valgt etape, ellers nyeste post
   const sel = $('logstage').value;
   let idx = logs.length - 1;
   if (sel) for (let i = logs.length - 1; i >= 0; i--) if (logs[i].stage === sel) { idx = i; break; }
   const L = logs[idx];
   const cands = L.candidates || [];
-  const withActual = cands.map((c2, i) => ({ ...c2, modelRank: i + 1, actualRank: actual.get(nameKey(c2.name)) ?? null, wentOut: outNames.has(nameKey(c2.name)) }));
+  const withActual = cands.map((c2, i) => ({ ...c2, modelRank: i + 1, actualRank: rankOf(c2.name), wentOut: isOut(c2.name) }));
   const fin = withActual.filter((c2) => c2.actualRank != null);
   if (fin.length < 5) { $('evalstatus').textContent = `kun ${fin.length} navne-match mod loggen — forkert etape/JSON?`; return; }
   const rho = spearman(fin.map((c2) => c2.modelRank), fin.map((c2) => c2.actualRank));
   const t10 = withActual.slice(0, 10).filter((c2) => (c2.actualRank ?? 999) <= 10).length;
   const rankTxt = (n) => (n == null ? 'DNF/udenfor' : 'plads ' + n);
-  const capA = L.modelCaptain ? (actual.get(nameKey(L.modelCaptain)) ?? null) : null;
-  const myCapA = L.myCaptain ? (actual.get(nameKey(L.myCaptain)) ?? null) : null;
+  const capA = L.modelCaptain ? rankOf(L.modelCaptain) : null;
+  const myCapA = L.myCaptain ? rankOf(L.myCaptain) : null;
   const winner = res.find((x) => x.rank === 1);
-  const winRank = winner ? withActual.findIndex((c2) => nameKey(c2.name) === nameKey(winner.riderName || '')) + 1 : 0;
+  // vinderens plads på model-boardet: fuzzy den anden vej (PCS-navn → kandidatnavne)
+  const candKeys = withActual.map((c2) => nameKey(c2.name));
+  const winKey = winner ? fuzzyKey(nameKey(winner.riderName || ''), candKeys) : null;
+  const winRank = winKey ? candKeys.indexOf(winKey) + 1 : 0;
   const dnfTop15 = withActual.slice(0, 15).filter((c2) => c2.wentOut).map((c2) => c2.name);
   const summary = `ρ=${rho == null ? '–' : rho.toFixed(2)} · model-kaptajn ${rankTxt(capA)}`
     + (L.myCaptain ? ` · min kaptajn ${rankTxt(myCapA)}` : '')
