@@ -1,4 +1,7 @@
-// scripts/snippets/pcs-rider.js (v3)
+// scripts/snippets/pcs-rider.js (v3.1)
+// v3.1: JSON lander nu OGSÅ i udklipsholderen (copy fanget før await — samme
+// fix som pcs-results v7.1); fødselsår-parseren gjort robust (Arensman gav
+// "f. ?" — nu tages første årstal inden for 40 tegn efter "Date of birth").
 // Kør på en PCS RYTTER-RESULTATSIDE filtreret til sæsonen, fx:
 //   …/rider/tadej-pogacar  →  fanen Results  →  vælg 2026
 //   (URL kan være rider.php?id=…&p=results&xseason=2026 — slug er IKKE i URL'en)
@@ -17,6 +20,9 @@
 //
 // Gem som: fixtures/riders/rider-{slug}.json (overskriv gerne den gamle)
 (async () => {
+  // v3.1: DevTools' copy() findes kun synkront — fang referencen FØR await
+  // (samme fix som pcs-results v7.1), så JSON'en også lander i udklipsholderen.
+  const copyFn = typeof copy === 'function' ? copy : null;
   const slugify = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const pm = location.pathname.match(/rider\/([^/?#]+)/);
   const riderName = (document.querySelector('h1')?.innerText || '').replace(/\s+/g, ' ').trim();
@@ -82,10 +88,13 @@
     const num = (label) => { const m = seg.match(new RegExp('(\\d+)\\s*' + label, 'i')); return m ? +m[1] : null; };
     const sp = { oneday: num('One.?day.?races'), gc: num('GC'), tt: num('TT'), sprint: num('Sprint'), climber: num('Climber'), hills: num('Hills') };
     const w = t.match(/Weight:?\s*([\d.]+)\s*kg/i); const h = t.match(/Height:?\s*([\d.]+)\s*m/i);
-    const b = t.match(/Date of birth:?\s*\d{1,2}\w*\s+\w+\s+(\d{4})/i);
+    // v3.1: fødselsår robust — tag første 4-cifrede tal inden for 40 tegn
+    // efter "Date of birth" (formatet varierer: "4th December 1999 (26)" m.fl.)
+    const bIx = t.search(/Date of birth/i);
+    const b = bIx >= 0 ? t.slice(bIx, bIx + 40).match(/(19|20)\d{2}/) : null;
     return {
       specialties: Object.values(sp).some((v) => v != null) ? sp : null,
-      weightKg: w ? +w[1] : null, heightM: h ? +h[1] : null, birthYear: b ? +b[1] : null,
+      weightKg: w ? +w[1] : null, heightM: h ? +h[1] : null, birthYear: b ? +b[0] : null,
     };
   };
   let profile = parseProfile(document.body.innerText);
@@ -100,18 +109,22 @@
   }
 
   const out = { rider: { slug: riderSlug, name: riderName, ...profile }, results, sourceUrl: location.href, capturedAt: new Date().toISOString() };
-  // Batch-effektivt: trigger en fil-download med korrekt navn (ingen Notesblok ×191).
-  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const json = JSON.stringify(out, null, 2);
+  // Batch-effektivt: fil-download med korrekt navn (rider-{slug}.json — navnet
+  // SKAL passe i fixtures/riders/) ... OG i udklipsholderen (v3.1) til hurtig
+  // verifikation/paste. Begge dele på én kørsel.
+  const blob = new Blob([json], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `rider-${riderSlug}.json`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  let copied = 'fil + udklipsholder ✓';
+  if (copyFn) copyFn(json);
+  else { try { await navigator.clipboard.writeText(json); } catch (e) { copied = 'fil downloadet (udklipsholder fejlede — brug filen)'; } }
   const byType = results.reduce((a, r) => (a[r.rowType] = (a[r.rowType] || 0) + 1, a), {});
   const spTxt = profile.specialties
     ? `Specialties: klatrer ${profile.specialties.climber ?? '?'} · sprint ${profile.specialties.sprint ?? '?'} · hills ${profile.specialties.hills ?? '?'} · GC ${profile.specialties.gc ?? '?'} · TT ${profile.specialties.tt ?? '?'} (${profile.weightKg ?? '?'} kg, f. ${profile.birthYear ?? '?'}) ✓`
     : '⚠ Specialties IKKE fundet — tjek at du er på en rytterside';
-  console.log(`PCS rytter: ${riderName} (${riderSlug}) — ${results.length} rækker. Typer: ${JSON.stringify(byType)}. ${spTxt}. Downloadet som rider-${riderSlug}.json → fixtures/riders/ (overskriv gerne) og upload.`);
-  console.log('SMOKE-TEST: send de første ~12 rækker + typer til Claude FØR du kører hele startlisten.');
-  console.table(results.slice(0, 12).map((r) => ({ date: r.date, rank: r.rank, st: r.status, type: r.rowType, race: r.raceSlug, stg: r.stageNo, km: r.distanceKm, vert: r.verticalM })));
+  console.log(`PCS rytter: ${riderName} (${riderSlug}) — ${results.length} rækker (${copied}). Typer: ${JSON.stringify(byType)}. ${spTxt}. rider-${riderSlug}.json → fixtures/riders/ (overskriv gerne) og upload.`);
 })();
