@@ -149,7 +149,6 @@
     <summary>Hvad betyder kolonnerne?</summary>
     <ul>
       <li><b>Ejer%</b> — hvor mange i feltet der har ham. <b>Lav % = din mulighed for at rykke fra dem.</b></li>
-      <li><b>model-pl.</b> — modellens gæt på hans placering i dag (lavt tal = stærk).</li>
       <li><b>expΔ (kr)</b> — forventet værdistigning i dag. Model-estimat, ikke facit.</li>
       <li><b>±σ</b> — hvor meget udfaldet svinger. <b>Høj σ + lav ejer% = varians-satsning</b> (bruges når to ryttere har ens expΔ).</li>
       <li><b>Δ/mio</b> — expΔ pr. million i pris. Finder de bedste <b>billige</b> ryttere.</li>
@@ -159,7 +158,7 @@
   </details>
   <p class="muted"><b>Tip:</b> sæt <b>Prisloft ≤ 4,5 mio</b> + sortér på <b>Δ/mio</b> for at finde billige ryttere at fylde holdet op med.</p>
   <table id="tbl"><thead><tr>
-    <th>#</th><th>Rytter</th><th>Hold</th><th>Ejer%</th><th>Pris</th><th title="modellens forudsagte placering">model-pl.</th><th>expΔ (kr)</th><th title="spredning på placeringsværdien (Monte-Carlo)">±σ</th><th title="expΔ pr. million pris — jo højere, jo bedre budget-værdi">Δ/mio</th><th title="forventet sammenlagt-vækst pr. dag (officielle tabeller: GC 1-10 → 100k..10k, +25k gul) — IKKE lagt i expΔ; brug som tie-breaker">GC/dag</th><th>leverage</th><th>⚑</th>
+    <th>#</th><th>Rytter</th><th>Hold</th><th>Ejer%</th><th>Pris</th><th>expΔ (kr)</th><th title="spredning på placeringsværdien (Monte-Carlo)">±σ</th><th title="expΔ pr. million pris — jo højere, jo bedre budget-værdi">Δ/mio</th><th title="forventet sammenlagt-vækst pr. dag (officielle tabeller + trøje-input) — IKKE lagt i expΔ; brug som tie-breaker">GC/dag</th><th>leverage</th><th>⚑</th>
   </tr></thead><tbody></tbody></table>
   <p class="capline" id="capline"></p>
   <p class="muted" id="exline"></p>
@@ -203,6 +202,8 @@
       <li><b>i dag (kr)</b> = effekten på <b>dagens</b> etape alene. Er den negativ, kommer gevinsten senere → <b>vent til i aften med skiftet</b> (samme gebyr, og du beholder sælgerens point i dag).</li>
       <li><b>Sikkerhed</b> = hvor godt køb-rytteren mindst skal køre (🟢/🟡/🔴).</li>
       <li><b>m. leverage</b> = samme gevinst, vægtet for lav ejerandel (kontrærhed).</li>
+      <li>⚠ <b>Frigjort kontant tæller med som rente</b> (0,5 %/etape) — et "sælg dyr, køb billig"-skifte kan derfor se stærkt ud alene på renten. Reglerne siger det er ægte penge, men vurdér selv, om den dyre rytters upside er værd at beholde.</li>
+      <li>⚠ Modellen ser IKKE spurt-/bjergpoint taget UNDERVEJS, bjergtrøje-jagt eller angrebspræmien (50k) — sælg ikke en KOM-jæger (Carapaz-typen) på modellens ord alene.</li>
       <li>Break/ITT er lav-tillid — modellen gætter mere der.</li>
     </ul>
   </details>
@@ -559,6 +560,25 @@ function breakGcLeaders() {
   _gcLeadCache = new Set([...window._field].sort((a, b) => mtn(b) - mtn(a)).slice(0, BREAK_GC_LEADERS));
   return _gcLeadCache;
 }
+// BJERG-renhed (Pedersen-fixet): sprinter-domineret profil får form-leddet
+// dæmpet med mtn/(mtn+sprintfit) — grøntrøje-form må ikke floate en sprinter
+// til top-15 på en 4000 hm-dag. Backtest: E6 ρ 0,60→0,69 · E10 7/10→8/10,
+// ρ 0,62→0,73 (ingen forværring af toppen).
+function mtnStrength(r) {
+  if (!r.hasForm) return 0;
+  const beta = SNAP.evBeta, f = r.fitObj || {};
+  const mtn = f.mountain || 0;
+  const purity = mtn / (mtn + (f.sprint || 0) + 1e-9);
+  return r.form * purity + beta * mtn;
+}
+// Én kilde til profil-styrke (bruges af kandidat-board, teamWinProb OG
+// rådgiver/udsyn via mcEvByProfile — så alle flader er konsistente).
+function strengthOn(r, profile) {
+  if (!r.hasForm) return 0;
+  if (profile === 'break') return breakStrength(r);
+  if (profile === 'mountain') return mtnStrength(r);
+  return r.form + SNAP.evBeta * ((r.fitObj && r.fitObj[profile]) || 0);
+}
 // GC-leder → −1 (Math.max(0,·) i MC/softmax nulstiller ham → altid bunke).
 // FORM×RENHED (E9-bugfix): rå form lod Merlier toppe break-boardet efter to
 // SPRINT-sejre (form 6,0 — og hans klatre-blend er forurenet af fallback-
@@ -637,10 +657,11 @@ function compute() {
     return { name, personId: i.personId, team: teams[i.teamId]?.name || '', own: i.popularity ?? 0, price: i.price, strength, hasForm: !!m, ex: excluded.has(name), form: m ? m.form : 0, fitObj: m ? m.fit : null };
   });
   // field + caches SKAL sættes før sort/EV-loop (teamWinProb + TTT-hold læser _field)
-  window._field = rows; _twpCache = null; _evCache = null; _tttCache = null; _gcCache = null; _gcLeadCache = null; _gcActual = undefined;
-  // BREAK: GC-demotion + specialist-score (se breakStrength). Skal ske EFTER
-  // window._field er sat (breakGcLeaders læser hele feltet).
-  if (profile === 'break') rows.forEach((r) => { r.strength = breakStrength(r); });
+  window._field = rows; _twpCache = null; _evCache = null; _tttCache = null; _gcCache = null; _gcLeadCache = null; _gcActual = undefined; _profMc = null;
+  // Profil-styrke fra den fælles kilde (break: GC-demotion+specialist;
+  // mountain: sprinter-renhed). Skal ske EFTER window._field er sat
+  // (breakGcLeaders læser hele feltet).
+  if (profile === 'break' || profile === 'mountain') rows.forEach((r) => { r.strength = strengthOn(r, profile); });
   // FINALE-TYPE (fundamental-input, kun sprint): teknisk bykerne → tog/
   // positionering vægtes op (sum af 2 stærkeste holdkammeraters sprint-styrke
   // × 0,2 — E5-backtest viste at en GENEREL togvægt skader, så den aktiveres
@@ -723,7 +744,6 @@ function compute() {
       + `<td>${r.team}</td>`
       + `<td><span class="ownbar" style="--w:${Math.min(100, r.own * 100).toFixed(0)}%">${(r.own * 100).toFixed(0)}%</span></td>`
       + `<td>${kr(r.price)}</td>`
-      + `<td title="${ttt ? 'forventet GC-plads efter etapen (kryds-rækkefølge: holdorden × lederen forrest)' : 'modellens forudsagte placering + profil-fit'}">${r.predRank}${ttt ? ` <span class="muted">(hold ${r.teamRank})</span>` : (r.hasForm ? ` <span class="muted">(fit ${r.fitP.toFixed(2)})</span>` : '')}</td>`
       + `<td class="${r.ev >= 0 ? 'pos' : 'neg'}">${kr(r.ev)}</td>`
       + `<td class="muted">${kr(r.sigma)}</td>`
       + `<td>${kr(r.perMio)}</td>`
@@ -948,8 +968,7 @@ function teamWinProb(team, profile) {
       for (const [t, v] of T.strength) { const p = Math.pow(Math.max(0, v), g); per.set(t, p); tot += p; }
       for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
     } else {
-      const beta = SNAP.evBeta;
-      const s = profile === 'break' ? breakStrength : (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
+      const s = (r) => strengthOn(r, profile);
       let tot = 0; const per = new Map();
       for (const r of window._field) { const v = Math.pow(Math.max(0, s(r)), g); tot += v; per.set(r.team, (per.get(r.team) || 0) + v); }
       for (const [t, v] of per) m.set(t, tot > 0 ? v / tot : 0);
@@ -958,14 +977,47 @@ function teamWinProb(team, profile) {
   }
   return _twpCache.get(profile).get(team) || 0;
 }
-/** EV for one rider on one profile: rank the whole active field by that profile's
- *  strength, value the predicted rank on the value curve, and add the expected
- *  team bonus. (memo-cache used by the squad advisor's 1000+ evaluations) */
+// MC-forventet placeringsværdi pr. rytter for EN profil (Carapaz-fixet):
+// den gamle deterministiske "rank = plads i styrkeorden → tabelopslag" faldt
+// af klippen ved plads 15 — en rytter som model-#24 blev værdisat som ren
+// gruppetto (−60k) selvom han har reel sandsynlighedsmasse i top-5/KOM.
+// Derfor: "skift Carapaz → Kirsch kan ikke tabe"-absurditeten. Nu samme
+// PL-MC som kandidat-tabellen (1500 samples, delt seed) → E[værdi] respekterer
+// konveksiteten. Cache pr. profil; nulstilles ved Beregn.
+let _profMc = null;
+function mcEvByProfile(profile) {
+  if (!_profMc) _profMc = new Map();
+  if (_profMc.has(profile)) return _profMc.get(profile);
+  const rows = window._field;
+  const g = gammaFor(profile);
+  const w = rows.map((r) => Math.pow(Math.max(0, strengthOn(r, profile)), g));
+  const n = rows.length, TOP = Math.min(15, n), vField = FIELD_VALUE[profile] ?? 0;
+  const S = 1500;
+  const sum = new Float64Array(n);
+  const rng = mulberry32(MC.seed + 7);
+  const placed = new Array(n);
+  for (let t = 0; t < S; t++) {
+    placed.fill(false);
+    let total = 0; for (let k = 0; k < n; k++) total += w[k];
+    for (let pos = 1; pos <= TOP; pos++) {
+      let x = rng() * total, ch = -1;
+      for (let k = 0; k < n; k++) { if (placed[k]) continue; x -= w[k]; if (x <= 0) { ch = k; break; } }
+      if (ch < 0) for (let k = 0; k < n; k++) if (!placed[k]) { ch = k; break; }
+      placed[ch] = true; total -= w[ch];
+      sum[ch] += valueOfRank(pos, profile);
+    }
+    for (let k = 0; k < n; k++) if (!placed[k]) sum[k] += vField;
+  }
+  const m = new Map(); rows.forEach((r, i) => m.set(r, sum[i] / S));
+  _profMc.set(profile, m);
+  return m;
+}
+/** EV for one rider on one profile: MC-forventet placeringsværdi + forventet
+ *  holdbonus. (memo-cache used by the squad advisor's 1000+ evaluations) */
 let _evCache = null;
 function evOnProfile(rider, profile) {
   const ck = _evCache && rider.name + '|' + profile;
   if (_evCache && _evCache.has(ck)) return _evCache.get(ck);
-  const beta = SNAP.evBeta;
   let ev;
   if (profile === 'ttt') {
     // TTT (officielle regler): holdplacering betaler alle på holdet; GC-vækst
@@ -974,10 +1026,7 @@ function evOnProfile(rider, profile) {
     const tr = T.rank.get(rider.team) || 99, rr = T.riderRank.get(rider) || 999;
     ev = (tr <= 5 ? PAY_TTT[tr - 1] : 0) + (rr <= 10 ? GC_DAILY[rr - 1] + (rr === 1 ? YELLOW : 0) : 0);
   } else {
-    const s = profile === 'break' ? breakStrength : (r) => r.form + beta * ((r.fitObj && r.fitObj[profile]) || 0);
-    const mine = s(rider);
-    const rank = 1 + window._field.filter((r) => r !== rider && s(r) > mine).length;
-    ev = valueOfRank(rank, profile) + TEAM_KR * teamWinProb(rider.team, profile);
+    ev = (mcEvByProfile(profile).get(rider) ?? (FIELD_VALUE[profile] ?? 0)) + TEAM_KR * teamWinProb(rider.team, profile);
   }
   if (_evCache) _evCache.set(ck, ev);
   return ev;

@@ -87,8 +87,11 @@
   const resultTop3 = results.filter((r) => r.rank != null).sort((a, b) => a.rank - b.rank).slice(0, 3).map((r) => norm(r.riderName));
   let gc = null, gcSource = 'IKKE hentet';
   if (race.slug && race.year && stageNo != null && stageNo > 0) {
+    // v7.3: prøv begge URL-mønstre for GC-siden (PCS varierer)
+    for (const gcUrl of [`/race/${race.slug}/${race.year}/stage-${stageNo}-gc`, `/race/${race.slug}/${race.year}/gc`]) {
+    if (gc) break;
     try {
-      const resp = await fetch(`/race/${race.slug}/${race.year}/stage-${stageNo}-gc`);
+      const resp = await fetch(gcUrl);
       if (resp.ok) {
         const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
         const cand = [...doc.querySelectorAll('table')].find((t) => t.querySelectorAll('a[href*="rider"]').length >= 20);
@@ -103,8 +106,9 @@
           if (g.length && !mirrorsResult) { gc = g; gcSource = `stage-${stageNo}-gc-siden`; }
           else if (mirrorsResult) gcSource = `AFVIST (stage-${stageNo}-gc-tabel = etaperesultatet, ikke GC)`;
         }
-      } else gcSource = `GC-side svarede ${resp.status}`;
+      } else gcSource = `GC-side svarede ${resp.status} (${gcUrl})`;
     } catch (e) { gcSource = 'GC-hentning fejlede (' + (e && e.message || e) + ')'; }
+    }
   }
 
   // --- stage difficulty (best-effort; PCS markup varies) -------------------
