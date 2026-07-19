@@ -1,4 +1,7 @@
-// scripts/snippets/pcs-results.js (v7.2)
+// scripts/snippets/pcs-results.js (v7.4)
+// v7.4: GC-mirror-checket FJERNET (skød ægte GC ned når stillingen legitimt
+// matcher etapens top — provenance fra -gc-URL'en er beviset, buildWeb-gaten
+// er vagten) + gcSource skrives med i JSON'en til diagnose fra filen alene.
 // Kør i browser-konsollen på en PCS etape-resultatside.
 // Håndterer både /race/{slug}/{år}/stage-N og race.php?id1=...-URL-formaterne.
 //
@@ -76,38 +79,32 @@
   }
   for (const r of results) delete r.pos;
 
-  // GC-FANGST (v7.2): v7 fangede den FORKERTE tabel (E8 grøn-trøje-stilling,
-  // E9 udbryder-orden = etaperesultatet) → forkert GC-indkomst i fladen. Nu:
-  // hent KUN fra den kanoniske GC-side (.../stage-N-gc) — dropper den flakse
-  // 'Prev'-heuristik på etapesiden — OG afvis en fangst, hvis dens top-3 er
-  // identisk med etaperesultatets top-3 (så er det ikke GC, men resultatet).
-  // Endelig sanity-check laver buildWeb (afviser urealistisk GC-leder).
+  // GC-FANGST (v7.4): hent KUN fra den kanoniske GC-side (.../stage-N-gc,
+  // fallback .../gc) — en side hentet fra dén URL ER stillingen pr. definition,
+  // så v7.2's "afvis hvis top-3 = etapens top-3"-check er FJERNET (det skød
+  // ægte GC ned, når stillingen legitimt matcher etapen — fx efter E14 hvor
+  // Pogačar/Del Toro topper begge). Forkert indhold fanges i stedet af
+  // buildWeb's plausibilitets-gate (afviser urealistisk GC-leder). gcSource
+  // skrives nu MED i JSON'en, så en fejl kan diagnosticeres fra filen alene.
   // textContent (ikke innerText): DOMParser-dokumenter har intet layout.
-  const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z ]/g, '').split(/\s+/).filter(Boolean).sort().join(' ');
-  const resultTop3 = results.filter((r) => r.rank != null).sort((a, b) => a.rank - b.rank).slice(0, 3).map((r) => norm(r.riderName));
-  let gc = null, gcSource = 'IKKE hentet';
+  let gc = null, gcSource = 'IKKE forsøgt (mangler race/etape i URL)';
   if (race.slug && race.year && stageNo != null && stageNo > 0) {
-    // v7.3: prøv begge URL-mønstre for GC-siden (PCS varierer)
     for (const gcUrl of [`/race/${race.slug}/${race.year}/stage-${stageNo}-gc`, `/race/${race.slug}/${race.year}/gc`]) {
-    if (gc) break;
-    try {
-      const resp = await fetch(gcUrl);
-      if (resp.ok) {
+      if (gc) break;
+      try {
+        const resp = await fetch(gcUrl);
+        if (!resp.ok) { gcSource = `GC-side svarede ${resp.status} (${gcUrl})`; continue; }
         const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
         const cand = [...doc.querySelectorAll('table')].find((t) => t.querySelectorAll('a[href*="rider"]').length >= 20);
-        if (cand) {
-          const g = [...cand.querySelectorAll('tbody tr')].map((tr) => {
-            const a = tr.querySelector('a[href*="rider"]');
-            const lead = ((tr.children[0] || {}).textContent || '').trim();
-            return a && /^\d+$/.test(lead) ? { rank: +lead, name: (a.textContent || '').trim() } : null;
-          }).filter(Boolean).filter((x) => x.rank <= 10);
-          const gcTop3 = g.slice(0, 3).map((x) => norm(x.name));
-          const mirrorsResult = resultTop3.length === 3 && gcTop3.length === 3 && gcTop3.every((x, i) => x === resultTop3[i]);
-          if (g.length && !mirrorsResult) { gc = g; gcSource = `stage-${stageNo}-gc-siden`; }
-          else if (mirrorsResult) gcSource = `AFVIST (stage-${stageNo}-gc-tabel = etaperesultatet, ikke GC)`;
-        }
-      } else gcSource = `GC-side svarede ${resp.status} (${gcUrl})`;
-    } catch (e) { gcSource = 'GC-hentning fejlede (' + (e && e.message || e) + ')'; }
+        if (!cand) { gcSource = `ingen stor rytter-tabel på ${gcUrl}`; continue; }
+        const g = [...cand.querySelectorAll('tbody tr')].map((tr) => {
+          const a = tr.querySelector('a[href*="rider"]');
+          const lead = ((tr.children[0] || {}).textContent || '').trim();
+          return a && /^\d+$/.test(lead) ? { rank: +lead, name: (a.textContent || '').trim() } : null;
+        }).filter(Boolean).filter((x) => x.rank <= 10);
+        if (g.length >= 8) { gc = g; gcSource = gcUrl; }
+        else gcSource = `kun ${g.length} GC-rækker parset på ${gcUrl}`;
+      } catch (e) { gcSource = 'GC-hentning fejlede (' + (e && e.message || e) + ')'; }
     }
   }
 
@@ -124,7 +121,8 @@
     race,
     stage: { stageNo, distanceKm: dist ? +dist : null, verticalM, profileScore, profileScoreFinal },
     results,
-    gc, // samlet stilling top-10 (null hvis GC-tabellen ikke fandtes på siden)
+    gc, // samlet stilling top-10 (null hvis hentning fejlede — se gcSource)
+    gcSource,
     sourceUrl: location.href,
     capturedAt: new Date().toISOString(),
   };
