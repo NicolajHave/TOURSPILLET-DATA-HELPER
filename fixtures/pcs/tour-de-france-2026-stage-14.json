@@ -1209,7 +1209,49 @@
       "team": "Alpecin - Premier Tech"
     }
   ],
-  "gc": null,
+  "gc": [
+    {
+      "rank": 1,
+      "name": "Pogačar Tadej"
+    },
+    {
+      "rank": 2,
+      "name": "del Toro Isaac"
+    },
+    {
+      "rank": 3,
+      "name": "Seixas Paul"
+    },
+    {
+      "rank": 4,
+      "name": "Vingegaard Jonas"
+    },
+    {
+      "rank": 5,
+      "name": "Evenepoel Remco"
+    },
+    {
+      "rank": 6,
+      "name": "Lipowitz Florian"
+    },
+    {
+      "rank": 7,
+      "name": "Ayuso Juan"
+    },
+    {
+      "rank": 8,
+      "name": "Carapaz Richard"
+    },
+    {
+      "rank": 9,
+      "name": "Johannessen Tobias Halland"
+    },
+    {
+      "rank": 10,
+      "name": "Skjelmose Mattias"
+    }
+  ],
   "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-14/result/result#goog_rewarded",
-  "capturedAt": "2026-07-19T07:47:53.809Z"
+  "capturedAt": "2026-07-19T07:56:39.001Z",
+  "gcSource": "/race/tour-de-france/2026/stage-14-gc"
 }
