@@ -1,7 +1,10 @@
-// scripts/snippets/pcs-results.js (v7.4)
-// v7.4: GC-mirror-checket FJERNET (skød ægte GC ned når stillingen legitimt
-// matcher etapens top — provenance fra -gc-URL'en er beviset, buildWeb-gaten
-// er vagten) + gcSource skrives med i JSON'en til diagnose fra filen alene.
+// scripts/snippets/pcs-results.js (v7.5)
+// v7.5 (E17-fix): -gc-siden kan have FLERE store tabeller (også etaperesultatet);
+// v7.4's "første store tabel" greb etaperesultatet på E17 (Philipsen-ledt).
+// Nu vælges den første tabel hvis top-3 AFVIGER fra etaperesultatet (= ægte GC),
+// og en fangst der spejler etaperesultatet markeres i gcSource. buildWeb-gaten
+// (troværdig GC-leder) er stadig den endelige vagt.
+// v7.4: gcSource skrives med i JSON'en til diagnose fra filen alene.
 // Kør i browser-konsollen på en PCS etape-resultatside.
 // Håndterer både /race/{slug}/{år}/stage-N og race.php?id1=...-URL-formaterne.
 //
@@ -79,14 +82,24 @@
   }
   for (const r of results) delete r.pos;
 
-  // GC-FANGST (v7.4): hent KUN fra den kanoniske GC-side (.../stage-N-gc,
-  // fallback .../gc) — en side hentet fra dén URL ER stillingen pr. definition,
-  // så v7.2's "afvis hvis top-3 = etapens top-3"-check er FJERNET (det skød
-  // ægte GC ned, når stillingen legitimt matcher etapen — fx efter E14 hvor
-  // Pogačar/Del Toro topper begge). Forkert indhold fanges i stedet af
-  // buildWeb's plausibilitets-gate (afviser urealistisk GC-leder). gcSource
-  // skrives nu MED i JSON'en, så en fejl kan diagnosticeres fra filen alene.
-  // textContent (ikke innerText): DOMParser-dokumenter har intet layout.
+  // GC-FANGST (v7.5): hent fra den kanoniske GC-side (.../stage-N-gc, fallback
+  // .../gc). PROBLEM v7.4 (fanget på E17): -gc-siden kan indeholde FLERE store
+  // tabeller (bl.a. selve etaperesultatet), og "første store tabel" greb
+  // etaperesultatet (Philipsen-ledt) i stedet for stillingen. v7.2's spejl-
+  // check ("afvis hvis = etapens top-3") kunne ikke bruges, da ægte GC
+  // LEGITIMT kan matche etapen (E14: Pogačar ledte begge). LØSNING: vælg blandt
+  // -gc-sidens store tabeller den FØRSTE, hvis top-3 AFVIGER fra etaperesultatet
+  // (= den ægte GC når begge er til stede); findes ingen afvigende, tag første
+  // + markér "spejler etaperesultat" i gcSource, så buildWeb-gaten (troværdig
+  // GC-leder) afgør. textContent: DOMParser-docs har intet layout.
+  const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z ]/g, '').split(/\s+/).filter(Boolean).sort().join(' ');
+  const resTop3 = results.filter((r) => r.rank != null).sort((a, b) => a.rank - b.rank).slice(0, 3).map((r) => norm(r.riderName));
+  const parseBig = (tbl) => [...tbl.querySelectorAll('tbody tr')].map((tr) => {
+    const a = tr.querySelector('a[href*="rider"]');
+    const lead = ((tr.children[0] || {}).textContent || '').trim();
+    return a && /^\d+$/.test(lead) ? { rank: +lead, name: (a.textContent || '').trim() } : null;
+  }).filter(Boolean).filter((x) => x.rank <= 10);
+  const mirrorsRes = (g) => { const t3 = g.slice(0, 3).map((x) => norm(x.name)); return resTop3.length === 3 && t3.length === 3 && t3.every((x, i) => x === resTop3[i]); };
   let gc = null, gcSource = 'IKKE forsøgt (mangler race/etape i URL)';
   if (race.slug && race.year && stageNo != null && stageNo > 0) {
     for (const gcUrl of [`/race/${race.slug}/${race.year}/stage-${stageNo}-gc`, `/race/${race.slug}/${race.year}/gc`]) {
@@ -95,14 +108,11 @@
         const resp = await fetch(gcUrl);
         if (!resp.ok) { gcSource = `GC-side svarede ${resp.status} (${gcUrl})`; continue; }
         const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
-        const cand = [...doc.querySelectorAll('table')].find((t) => t.querySelectorAll('a[href*="rider"]').length >= 20);
-        if (!cand) { gcSource = `ingen stor rytter-tabel på ${gcUrl}`; continue; }
-        const g = [...cand.querySelectorAll('tbody tr')].map((tr) => {
-          const a = tr.querySelector('a[href*="rider"]');
-          const lead = ((tr.children[0] || {}).textContent || '').trim();
-          return a && /^\d+$/.test(lead) ? { rank: +lead, name: (a.textContent || '').trim() } : null;
-        }).filter(Boolean).filter((x) => x.rank <= 10);
-        if (g.length >= 8) { gc = g; gcSource = gcUrl; }
+        const bigs = [...doc.querySelectorAll('table')].filter((t) => t.querySelectorAll('a[href*="rider"]').length >= 20).map(parseBig).filter((g) => g.length >= 8);
+        if (!bigs.length) { gcSource = `ingen stor rytter-tabel på ${gcUrl}`; continue; }
+        // foretræk den første tabel der IKKE spejler etaperesultatet (= ægte GC)
+        const g = bigs.find((x) => !mirrorsRes(x)) || bigs[0];
+        if (g.length >= 8) { gc = g; gcSource = gcUrl + (mirrorsRes(g) ? ' ⚠spejler-etaperesultat' : ''); }
         else gcSource = `kun ${g.length} GC-rækker parset på ${gcUrl}`;
       } catch (e) { gcSource = 'GC-hentning fejlede (' + (e && e.message || e) + ')'; }
     }
