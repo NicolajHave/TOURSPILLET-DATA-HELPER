@@ -1174,49 +1174,8 @@
       "team": "Lotto Intermarché"
     }
   ],
-  "gc": [
-    {
-      "rank": 1,
-      "name": "Evenepoel Remco"
-    },
-    {
-      "rank": 2,
-      "name": "Pogačar Tadej"
-    },
-    {
-      "rank": 3,
-      "name": "Skjelmose Mattias"
-    },
-    {
-      "rank": 4,
-      "name": "Seixas Paul"
-    },
-    {
-      "rank": 5,
-      "name": "del Toro Isaac"
-    },
-    {
-      "rank": 6,
-      "name": "Arensman Thymen"
-    },
-    {
-      "rank": 7,
-      "name": "Cattaneo Mattia"
-    },
-    {
-      "rank": 8,
-      "name": "Armirail Bruno"
-    },
-    {
-      "rank": 9,
-      "name": "Castrillo Pablo"
-    },
-    {
-      "rank": 10,
-      "name": "Tarling Joshua"
-    }
-  ],
-  "gcSource": "/race/tour-de-france/2026/stage-16-gc",
+  "gc": null,
+  "gcSource": "AFVIST: -gc-scrape fangede etaperesultatet (Evenepoel vandt E16), ikke stillingen (Pogačar gul). Re-scrape m. v7.5.",
   "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-16/result/result",
   "capturedAt": "2026-07-21T20:25:59.676Z"
 }

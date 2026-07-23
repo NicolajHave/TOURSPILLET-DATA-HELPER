@@ -1195,49 +1195,8 @@
       "team": "NSN Cycling Team"
     }
   ],
-  "gc": [
-    {
-      "rank": 1,
-      "name": "Evenepoel Remco"
-    },
-    {
-      "rank": 2,
-      "name": "Pogačar Tadej"
-    },
-    {
-      "rank": 3,
-      "name": "del Toro Isaac"
-    },
-    {
-      "rank": 4,
-      "name": "Seixas Paul"
-    },
-    {
-      "rank": 5,
-      "name": "Lipowitz Florian"
-    },
-    {
-      "rank": 6,
-      "name": "Skjelmose Mattias"
-    },
-    {
-      "rank": 7,
-      "name": "Martinez Lenny"
-    },
-    {
-      "rank": 8,
-      "name": "Ayuso Juan"
-    },
-    {
-      "rank": 9,
-      "name": "Yates Adam"
-    },
-    {
-      "rank": 10,
-      "name": "Simmons Quinn"
-    }
-  ],
-  "gcSource": "/race/tour-de-france/2026/stage-15-gc",
+  "gc": null,
+  "gcSource": "AFVIST: -gc-scrape fangede etaperesultatet (Evenepoel vandt E15), ikke stillingen (Pogačar gul). Re-scrape m. v7.5.",
   "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-15/result/result",
   "capturedAt": "2026-07-21T08:31:05.142Z"
 }
