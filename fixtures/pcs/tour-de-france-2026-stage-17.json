@@ -1160,8 +1160,49 @@
       "team": "Movistar Team"
     }
   ],
-  "gc": null,
-  "gcSource": "AFVIST manuelt: -gc-scrape fangede etaperesultatet (Philipsen-ledt), ikke stillingen. GC efter E17 (sprint) = efter E16 (Evenepoel). Re-scrape m. v7.5.",
+  "gc": [
+    {
+      "rank": 1,
+      "name": "Pogačar Tadej"
+    },
+    {
+      "rank": 2,
+      "name": "Evenepoel Remco"
+    },
+    {
+      "rank": 3,
+      "name": "del Toro Isaac"
+    },
+    {
+      "rank": 4,
+      "name": "Seixas Paul"
+    },
+    {
+      "rank": 5,
+      "name": "Ayuso Juan"
+    },
+    {
+      "rank": 6,
+      "name": "Martinez Lenny"
+    },
+    {
+      "rank": 7,
+      "name": "Skjelmose Mattias"
+    },
+    {
+      "rank": 8,
+      "name": "Pidcock Tom"
+    },
+    {
+      "rank": 9,
+      "name": "Jegat Jordan"
+    },
+    {
+      "rank": 10,
+      "name": "Voisard Yannis"
+    }
+  ],
+  "gcSource": "/race/tour-de-france/2026/stage-17-gc",
   "sourceUrl": "https://www.procyclingstats.com/race/tour-de-france/2026/stage-17",
-  "capturedAt": "2026-07-23T06:21:38.483Z"
+  "capturedAt": "2026-07-23T06:59:28.419Z"
 }
