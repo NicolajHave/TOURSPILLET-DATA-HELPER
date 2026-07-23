@@ -274,6 +274,32 @@ try {
   console.log(`priceHistory: ${ks.length} etape-snapshots indbygget (E${ks.join(', E')}) → facit sikkert morgen OG aften.`);
 } catch { /* ok */ }
 
+// ETAPERESULTATER pr. etape (kompakt) → fladen kan AUTO-evaluere hver logget
+// beslutning ved load (etape-evaluering: ρ + kaptajn-placeringer), ligesom
+// prishistorikken driver facit uden paste. { N: { fin: [[nameKey, rang]...],
+// out: [nameKey...] } }. Kun TdF 2026-etaper der er kørt.
+const stageResults: Record<string, { fin: Array<[string, number]>; out: string[] }> = {};
+try {
+  for (const file of readdirSync(PCS)) {
+    const m = file.match(/^tour-de-france-2026-stage-(\d+)\.json$/);
+    if (!m) continue;
+    const raw = readFileSync(f(`fixtures/pcs/${file}`), 'utf8');
+    if (!raw.trim()) continue;
+    let j; try { j = JSON.parse(raw); } catch { continue; }
+    if (!Array.isArray(j.results) || !j.results.length) continue;
+    const fin: Array<[string, number]> = [], out: string[] = [];
+    for (const r of j.results) {
+      const key = nameKey(r.riderName || (r.riderSlug || '').replace(/-/g, ' '));
+      if (!key) continue;
+      if (r.rank != null) fin.push([key, r.rank]);
+      else if (['DNF', 'DNS', 'OTL', 'DSQ'].includes(r.status)) out.push(key);
+    }
+    if (fin.length) stageResults[m[1]] = { fin, out };
+  }
+  const sk = Object.keys(stageResults).sort((a, b) => +a - +b);
+  console.log(`stageResults: ${sk.length} etaperesultater indbygget (E${sk.join(', E')}) → auto-evaluering ved load.`);
+} catch { /* ok */ }
+
 const out = {
   generatedAt: asOf.toISOString().slice(0, 10),
   holdetSnapshotFile,
@@ -287,6 +313,7 @@ const out = {
   route,
   actualGc,
   priceHistory,
+  stageResults,
   riders,
 };
 mkdirSync(f('public/data'), { recursive: true });

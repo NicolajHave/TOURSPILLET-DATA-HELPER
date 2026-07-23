@@ -232,6 +232,7 @@
 
 <div class="card">
   <h2><span class="step">5</span>Log beslutning + udfald <span class="muted" style="text-transform:none">(til leverage-måling)</span></h2>
+  <div id="autoevalbanner"></div>
   <p class="muted">Gemmer hele beslutnings-snapshottet — hver kandidats ejerandel PÅ
   BESLUTNINGSTIDSPUNKTET, modellens anbefaling, dine ⚑-udelukkelser og dit valgte
   hold/kaptajn — så kontrærhed kan måles bagefter. <b>Hold = dine 8 dropdowns fra trin 4</b>;
@@ -244,10 +245,10 @@
     <button id="exportlog" class="ghost">Eksportér JSON</button>
     <span id="logstatus" class="muted"></span>
   </div>
-  <p class="muted" style="margin-top:14px"><b>EFTER etapen:</b> indsæt etaperesultatet
-  (JSON fra pcs-results/pcs-stageinfo-snippet) — så scores den loggede beslutning
-  automatisk: kaptajn-placering, top-10-hit, rangkorrelation (model vs faktisk) og
-  udgåede. Det er den empiriske livline: fra ~E5 kan β/γ re-fittes på tourens egne etaper.</p>
+  <p class="keyline" style="margin-top:14px">✨ <b>Du behøver intet gøre her efter etapen</b> — så snart du har scrapet + uploadet (PCS + holdet) og Vercel har deployet, auto-evalueres alle dine loggede beslutninger ved næste load (banneret ovenfor). Felterne nedenfor er kun til at køre en <b>enkelt</b> etape manuelt (fx før alt er deployet).</p>
+  <details class="howto"><summary>Manuel etape-evaluering (valgfrit)</summary><ul>
+    <li>Indsæt etaperesultatet (JSON fra pcs-results-snippet) → «Evaluér etape» scorer den loggede beslutning: kaptajn-placering, top-10-hit, rang-korrelation (ρ) og udgåede.</li>
+  </ul></details>
   <div class="controls">
     <textarea id="stageresult" placeholder='{"stage": …, "results": [{"rank":1,"status":"OK","riderName":"POGAČAR Tadej",…}, …]}' style="min-height:64px;flex:1"></textarea>
   </div>
@@ -372,6 +373,7 @@ fetch('./data/form-snapshot.json').then((r) => r.json()).then((s) => {
   SNAP = s; SNAP.byKey = {}; for (const r of s.riders) SNAP.byKey[r.key] = r;
   SNAP._R = s.riders.map((r) => { const t = tokensOf(r.name); return { r, set: new Set(r.key.split(' ')), li: t.length ? t[t.length - 1] + '|' + t[0][0] : '' }; });
   $('meta').textContent = `form: ${s.riders.length} ryttere · ${s.races.join(' + ')} · as-of ${s.generatedAt}`;
+  try { autoEvaluateLogs(); } catch (e) { console.warn('auto-eval fejl', e); } // etaperesultat + facit indbygget → evaluér loggede beslutninger ved load
   // Auto-indlæs nyeste uploadede holdet-snapshot (bundtet af buildWeb ved
   // deploy). Manuel paste overskriver bare feltet — samme JSON, to veje ind.
   if (s.holdetSnapshotFile) {
@@ -1446,73 +1448,75 @@ function spearman(a, b) {
   let d2 = 0; for (let i = 0; i < n; i++) d2 += (ra[i] - rb[i]) ** 2;
   return 1 - (6 * d2) / (n * (n * n - 1));
 }
+// FUZZY-opslag (E13-bugfix, delt af manuel + auto): PCS bruger kortformer
+// ("PIDCOCK Tom") hvor holdet skriver fuldt navn ("Thomas Pidcock"). Trappe:
+// eksakt → token-subset → delte tokens + initial-match på resten. Entydigt ellers null.
+function fuzzyKey(k, list) {
+  if (list.includes(k)) return k;
+  const t = k.split(' ');
+  const hits = list.filter((a) => {
+    const at = a.split(' ');
+    if (at.every((x) => t.includes(x)) || t.every((x) => at.includes(x))) return true;
+    const shared = at.filter((x) => t.includes(x));
+    if (!shared.length) return false;
+    const restA = at.filter((x) => !t.includes(x)), restT = t.filter((x) => !at.includes(x));
+    return restA.length === restT.length && restA.every((x, i) => restT[i] && x[0] === restT[i][0]);
+  });
+  return hits.length === 1 ? hits[0] : null;
+}
+// KERNE: given log L + faktiske placeringer (Map nameKey→rang) + udgåede
+// (Set nameKey) → beregn ρ/kaptajn-placeringer, gem på L, returnér til render.
+// Bruges af BÅDE den manuelle evalStage (paste) OG auto-evalueringen (indbygget).
+function stageEvalCore(L, actual, outNames) {
+  const actKeys = [...actual.keys()], outKeys = [...outNames];
+  const rankOf = (nm) => { const m = fuzzyKey(nameKey(nm), actKeys); return m ? actual.get(m) : null; };
+  const isOut = (nm) => !!fuzzyKey(nameKey(nm), outKeys);
+  const cands = L.candidates || [];
+  const withActual = cands.map((c2, i) => ({ ...c2, modelRank: i + 1, actualRank: rankOf(c2.name), wentOut: isOut(c2.name) }));
+  const fin = withActual.filter((c2) => c2.actualRank != null);
+  if (fin.length < 5) return null;
+  const rho = spearman(fin.map((c2) => c2.modelRank), fin.map((c2) => c2.actualRank));
+  const t10 = withActual.slice(0, 10).filter((c2) => (c2.actualRank ?? 999) <= 10).length;
+  const rankTxt = (n) => (n == null ? 'DNF/udenfor' : 'plads ' + n);
+  const capA = L.modelCaptain ? rankOf(L.modelCaptain) : null;
+  const myCapA = L.myCaptain ? rankOf(L.myCaptain) : null;
+  let winnerKey = null; for (const [k, r] of actual) if (r === 1) { winnerKey = k; break; }
+  const candKeys = withActual.map((c2) => nameKey(c2.name));
+  const wk = winnerKey ? fuzzyKey(winnerKey, candKeys) : null;
+  const winRank = wk ? candKeys.indexOf(wk) + 1 : 0;
+  const dnfTop15 = withActual.slice(0, 15).filter((c2) => c2.wentOut).map((c2) => c2.name);
+  const summary = `ρ=${rho == null ? '–' : rho.toFixed(2)} · model-kaptajn ${rankTxt(capA)}`
+    + (L.myCaptain ? ` · min kaptajn ${rankTxt(myCapA)}` : '')
+    + ` · top10-hit ${t10}/10` + (winRank ? ` · vinder var model-#${winRank}` : '')
+    + (dnfTop15.length ? ` · UDGÅET: ${dnfTop15.join(', ')}` : '');
+  L.evaluation = { rho: rho == null ? null : +rho.toFixed(3), matched: fin.length, top10Hit: t10, modelCaptainRank: capA, myCaptainRank: myCapA, winnerModelRank: winRank || null, dnfTop15, evaluatedAt: new Date().toISOString().slice(0, 10) };
+  return { summary, withActual, fin };
+}
 function evalStage() {
   const logs = getLogs();
   if (!logs.length) { $('evalstatus').textContent = 'ingen loggede beslutninger endnu'; return; }
   let raw; try { raw = JSON.parse($('stageresult').value); } catch { $('evalstatus').textContent = 'ugyldig JSON'; return; }
   const res = Array.isArray(raw) ? raw : (raw.results || []);
   if (!res.length) { $('evalstatus').textContent = 'ingen results[] i det indsatte'; return; }
-  // faktiske placeringer pr. navnenøgle (PCS skriver "POGAČAR Tadej" — nameKey
-  // sorterer tokens og striber accenter, så det matcher holdet-navnet)
   const actual = new Map(); const outNames = new Set();
   for (const x of res) {
     const k = nameKey(x.riderName || (x.riderSlug || '').replace(/-/g, ' '));
     if (x.rank != null) actual.set(k, x.rank);
-    else if (x.status === 'DNF' || x.status === 'DNS' || x.status === 'OTL' || x.status === 'DSQ') outNames.add(k);
+    else if (['DNF', 'DNS', 'OTL', 'DSQ'].includes(x.status)) outNames.add(k);
   }
-  // FUZZY-opslag (E13-bugfix): PCS bruger kortformer ("PIDCOCK Tom") hvor
-  // holdet skriver fuldt navn ("Thomas Pidcock") — eksakt nøgle fejler, og
-  // kaptajnen meldes fejlagtigt "DNF/udenfor". Trappe: eksakt → token-subset
-  // → delte tokens + initial-match på resten (thomas/tom deler 't'). Kræver
-  // entydigt match — ellers null.
-  const actKeys = [...actual.keys()], outKeys = [...outNames];
-  const fuzzyKey = (k, list) => {
-    if (list.includes(k)) return k;
-    const t = k.split(' ');
-    const hits = list.filter((a) => {
-      const at = a.split(' ');
-      if (at.every((x) => t.includes(x)) || t.every((x) => at.includes(x))) return true;
-      const shared = at.filter((x) => t.includes(x));
-      if (!shared.length) return false;
-      const restA = at.filter((x) => !t.includes(x)), restT = t.filter((x) => !at.includes(x));
-      return restA.length === restT.length && restA.every((x, i) => restT[i] && x[0] === restT[i][0]);
-    });
-    return hits.length === 1 ? hits[0] : null;
-  };
-  const rankOf = (nm) => { const k = nameKey(nm); const m = fuzzyKey(k, actKeys); return m ? actual.get(m) : null; };
-  const isOut = (nm) => { const k = nameKey(nm); return !!fuzzyKey(k, outKeys); };
-  // målret nyeste post der matcher valgt etape, ellers nyeste post
   const sel = $('logstage').value;
   let idx = logs.length - 1;
   if (sel) for (let i = logs.length - 1; i >= 0; i--) if (logs[i].stage === sel) { idx = i; break; }
   const L = logs[idx];
-  const cands = L.candidates || [];
-  const withActual = cands.map((c2, i) => ({ ...c2, modelRank: i + 1, actualRank: rankOf(c2.name), wentOut: isOut(c2.name) }));
-  const fin = withActual.filter((c2) => c2.actualRank != null);
-  if (fin.length < 5) { $('evalstatus').textContent = `kun ${fin.length} navne-match mod loggen — forkert etape/JSON?`; return; }
-  const rho = spearman(fin.map((c2) => c2.modelRank), fin.map((c2) => c2.actualRank));
-  const t10 = withActual.slice(0, 10).filter((c2) => (c2.actualRank ?? 999) <= 10).length;
-  const rankTxt = (n) => (n == null ? 'DNF/udenfor' : 'plads ' + n);
-  const capA = L.modelCaptain ? rankOf(L.modelCaptain) : null;
-  const myCapA = L.myCaptain ? rankOf(L.myCaptain) : null;
-  const winner = res.find((x) => x.rank === 1);
-  // vinderens plads på model-boardet: fuzzy den anden vej (PCS-navn → kandidatnavne)
-  const candKeys = withActual.map((c2) => nameKey(c2.name));
-  const winKey = winner ? fuzzyKey(nameKey(winner.riderName || ''), candKeys) : null;
-  const winRank = winKey ? candKeys.indexOf(winKey) + 1 : 0;
-  const dnfTop15 = withActual.slice(0, 15).filter((c2) => c2.wentOut).map((c2) => c2.name);
-  const summary = `ρ=${rho == null ? '–' : rho.toFixed(2)} · model-kaptajn ${rankTxt(capA)}`
-    + (L.myCaptain ? ` · min kaptajn ${rankTxt(myCapA)}` : '')
-    + ` · top10-hit ${t10}/10` + (winRank ? ` · vinder var model-#${winRank}` : '')
-    + (dnfTop15.length ? ` · UDGÅET: ${dnfTop15.join(', ')}` : '');
-  L.outcome = summary;
-  L.evaluation = { rho: rho == null ? null : +rho.toFixed(3), matched: fin.length, top10Hit: t10, modelCaptainRank: capA, myCaptainRank: myCapA, winnerModelRank: winRank || null, dnfTop15, evaluatedAt: new Date().toISOString().slice(0, 10) };
+  const r = stageEvalCore(L, actual, outNames);
+  if (!r) { $('evalstatus').textContent = 'for få navne-match mod loggen — forkert etape/JSON?'; return; }
+  L.outcome = r.summary;
   setLogs(logs); renderLogs();
-  $('evalstatus').textContent = `evalueret mod "${L.stage || 'seneste post'}" (${fin.length} match)`;
-  $('evalout').innerHTML = `<p><b>Etape-evaluering:</b> ${summary}</p>`
-    + '<table><thead><tr><th>model-pl.</th><th style="text-align:left">Rytter</th><th>faktisk</th></tr></thead><tbody>'
-    + withActual.slice(0, 15).map((c2) => `<tr><td>${c2.modelRank}</td><td style="text-align:left">${c2.name}${c2.wentOut ? ' ⛔' : ''}</td><td>${c2.actualRank ?? '–'}</td></tr>`).join('')
-    + '</tbody></table><p class="muted">ρ nær 1 = modellen ramte rangordenen; ρ nær 0 = støj (forventeligt på break-dage). Gemt på log-posten — eksportér jævnligt.</p>';
+  $('evalstatus').textContent = `evalueret mod "${L.stage || 'seneste post'}" (${r.fin.length} match)`;
+  $('evalout').innerHTML = `<p><b>Etape-evaluering:</b> ${r.summary}</p>`
+    + '<table><thead><tr><th style="text-align:left">Rytter</th><th>faktisk</th></tr></thead><tbody>'
+    + r.withActual.slice(0, 15).map((c2) => `<tr><td style="text-align:left">${c2.name}${c2.wentOut ? ' ⛔' : ''}</td><td>${c2.actualRank ?? '–'}</td></tr>`).join('')
+    + '</tbody></table><p class="muted">ρ nær 1 = modellen ramte rangordenen; ρ nær 0 = støj (forventeligt på break-dage). Gemt på log-posten.</p>';
 }
 $('evalstage').onclick = evalStage;
 
@@ -1523,6 +1527,66 @@ $('evalstage').onclick = evalStage;
 // realiseret Δ pr. rytter, dit holds samlede vækst (kaptajn tæller dobbelt),
 // og — det afgørende — om dit hold slog FELTET (ejerskabs-vægtet gns. = hvad
 // den gennemsnitlige manager fik). Det er leverage i rigtige kroner.
+// KERNE: given log L + efter-priser (Map nameKey→pris) + før-priser (obj
+// nameKey→pris) → realiseret Δ pr. rytter, holdtotal (kaptajn×2), felt-baseline.
+// Gemmer L.realized/outcome hvis store=true. Delt af manuel facit + auto.
+function facitCore(L, afterByKey, beforeMap, store) {
+  const cands = L.candidates || [];
+  const beforeOf = (nm) => {
+    if (beforeMap) { const v = beforeMap[nameKey(nm)]; if (v != null) return v; }
+    const c2 = cands.find((x) => nameKey(x.name) === nameKey(nm)); if (c2 && c2.price != null) return c2.price;
+    const f = window._field && window._field.find((r) => nameKey(r.name) === nameKey(nm)); return f ? f.price : null;
+  };
+  const deltaOf = (nm) => { const a = afterByKey.get(nameKey(nm)); const b = beforeOf(nm); return (a != null && b != null) ? a - b : null; };
+  let wSum = 0, wDen = 0, allSum = 0, allN = 0;
+  for (const c2 of cands) { const d = deltaOf(c2.name); if (d == null) continue; allSum += d; allN++; wSum += (c2.own || 0) * d; wDen += (c2.own || 0); }
+  const fieldWeighted = wDen > 0 ? wSum / wDen : 0;
+  const fieldMean = allN > 0 ? allSum / allN : 0;
+  const team = (L.myTeam || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const capN = L.myCaptain || '';
+  let teamTotal = 0; const teamRows = [];
+  for (const nm of team) { const d = deltaOf(nm) || 0; const isCap = nameKey(nm) === nameKey(capN); teamTotal += d + (isCap ? d : 0); teamRows.push({ nm, d, isCap }); }
+  teamRows.sort((a, b) => b.d - a.d);
+  const capDelta = deltaOf(capN);
+  const modelCapDelta = L.modelCaptain ? deltaOf(L.modelCaptain) : null;
+  const teamPer = team.length ? teamRows.reduce((s, r) => s + r.d, 0) / team.length : 0;
+  const beatField = teamPer - fieldWeighted;
+  const summary = `REALISERET: mit hold ${kr(teamTotal)} kr (m. kaptajn×2) · pr. rytter ${kr(teamPer)} vs felt(ejer-vægtet) ${kr(fieldWeighted)} → ${beatField >= 0 ? 'SLOG feltet +' : 'under feltet '}${kr(beatField)}/rytter`
+    + ` · min kaptajn ${capN} ${kr(capDelta || 0)}` + (L.modelCaptain ? ` · model-kaptajn ${L.modelCaptain} ${kr(modelCapDelta || 0)}` : '');
+  if (store) {
+    L.realized = { teamTotal: Math.round(teamTotal), teamPerRider: Math.round(teamPer), fieldWeighted: Math.round(fieldWeighted), fieldMean: Math.round(fieldMean), beatFieldPerRider: Math.round(beatField), myCaptainDelta: capDelta == null ? null : Math.round(capDelta), modelCaptainDelta: modelCapDelta == null ? null : Math.round(modelCapDelta), evaluatedAt: new Date().toISOString().slice(0, 10) };
+  }
+  return { summary, teamRows, fieldWeighted, teamPer, beatField };
+}
+// AUTO-EVALUERING ved load: så snart et scrape er deployet, ligger etape-
+// resultaterne (SNAP.stageResults) og prishistorikken (SNAP.priceHistory)
+// indbygget. For hver logget beslutning der endnu ikke er evalueret, køres
+// etape-evaluering + facit automatisk — du åbner bare fladen dagen efter.
+// Kører KUN på ikke-evaluerede poster (rører ikke manuelle udfalds-noter).
+function autoEvaluateLogs() {
+  if (!SNAP) return;
+  const logs = getLogs(); if (!logs.length) { const b = $('autoevalbanner'); if (b) b.innerHTML = ''; return; }
+  const SR = SNAP.stageResults || {}, PH = SNAP.priceHistory || {};
+  let nStage = 0, nFacit = 0; const dirty = new Set();
+  for (const L of logs) {
+    const m = /E(\d+)/.exec(L.stage || ''); if (!m) continue;
+    const N = +m[1];
+    if (!L.evaluation && SR[N] && SR[N].fin && SR[N].fin.length) {
+      const actual = new Map(SR[N].fin); const outNames = new Set(SR[N].out || []);
+      const r = stageEvalCore(L, actual, outNames);
+      if (r) { if (!L.outcome) L.outcome = r.summary; nStage++; dirty.add(L); }
+    }
+    if (!L.realized && PH[N]) {
+      let beforeMap = null; for (let M = N - 1; M >= 0; M--) if (PH[M]) { beforeMap = PH[M]; break; }
+      if (beforeMap) { facitCore(L, new Map(Object.entries(PH[N])), beforeMap, true); nFacit++; dirty.add(L); }
+    }
+  }
+  if (dirty.size) { setLogs(logs); renderLogs(); }
+  const b = $('autoevalbanner');
+  if (b) b.innerHTML = (nStage || nFacit)
+    ? `<p class="keyline" style="border-left:4px solid var(--green);padding-left:10px">✓ Auto-evalueret ved indlæsning: <b>${nStage}</b> etape-evalueringer + <b>${nFacit}</b> facit (fra indbygget resultat/prishistorik). Se «Faktisk udfald» i loggen nedenfor.</p>`
+    : '<p class="muted">Auto-evaluering: intet nyt at evaluere (alle loggede beslutninger er allerede evalueret, eller resultatet er ikke deployet endnu).</p>';
+}
 function evalValue() {
   const logs = getLogs();
   if (!logs.length) { $('valuestatus').textContent = 'ingen loggede beslutninger endnu'; return; }
@@ -1584,45 +1648,11 @@ function evalValue() {
   if (!beforeMap) for (const i of candIdx) if (identicalShare(i) < 0.9) { idx = i; break; }
   const staleLog = !beforeMap && identicalShare(idx) >= 0.9;
   const L = logs[idx];
-  const cands = L.candidates || [];
   if (!beforeSrc) beforeSrc = 'loggens gemte priser';
-  // før-pris: indbygget historik → loggens gemte pris → aktuelt indlæst snapshot
-  const beforeOf = (nm) => {
-    if (beforeMap) { const v = beforeMap[nameKey(nm)]; if (v != null) return v; }
-    const c2 = cands.find((x) => nameKey(x.name) === nameKey(nm)); if (c2 && c2.price != null) return c2.price;
-    const f = window._field && window._field.find((r) => nameKey(r.name) === nameKey(nm)); return f ? f.price : null;
-  };
-  const deltaOf = (nm) => { const a = afterByKey.get(nameKey(nm)); const b = beforeOf(nm); return (a != null && b != null) ? a - b : null; };
-
-  // FELT-baseline: ejerskabs-vægtet gns. realiseret Δ (hvad gennemsnits-manageren fik)
-  let wSum = 0, wDen = 0, allSum = 0, allN = 0;
-  for (const c2 of cands) { const d = deltaOf(c2.name); if (d == null) continue; allSum += d; allN++; wSum += (c2.own || 0) * d; wDen += (c2.own || 0); }
-  const fieldWeighted = wDen > 0 ? wSum / wDen : 0; // gns. ejet rytters gevinst
-  const fieldMean = allN > 0 ? allSum / allN : 0;
-
-  // dit hold + kaptajn (kaptajn tæller dobbelt: vækst×1 bonus)
-  const team = (L.myTeam || '').split(',').map((s) => s.trim()).filter(Boolean);
-  const capN = L.myCaptain || '';
-  let teamTotal = 0; const teamRows = [];
-  for (const nm of team) { const d = deltaOf(nm) || 0; const isCap = nameKey(nm) === nameKey(capN); teamTotal += d + (isCap ? d : 0); teamRows.push({ nm, d, isCap }); }
-  teamRows.sort((a, b) => b.d - a.d);
-  const capDelta = deltaOf(capN);
-  const modelCapDelta = L.modelCaptain ? deltaOf(L.modelCaptain) : null;
-  // per-rytter felt-snit (8 ryttere): dit holds snit vs ejerskabs-vægtet felt
-  const teamPer = team.length ? teamRows.reduce((s, r) => s + r.d, 0) / team.length : 0;
-  const beatField = teamPer - fieldWeighted;
-
-  const summary = `REALISERET: mit hold ${kr(teamTotal)} kr (m. kaptajn×2) · pr. rytter ${kr(teamPer)} vs felt(ejer-vægtet) ${kr(fieldWeighted)} → ${beatField >= 0 ? 'SLOG feltet +' : 'under feltet '}${kr(beatField)}/rytter`
-    + ` · min kaptajn ${capN} ${kr(capDelta || 0)}` + (L.modelCaptain ? ` · model-kaptajn ${L.modelCaptain} ${kr(modelCapDelta || 0)}` : '');
-  // Gem kun på log-posten når den faktisk HØRER til den evaluerede etape, og
-  // aldrig et Δ=0-facit (efter-etape-gemt log) — det forurener historikken.
   const logMatches = !selStage || L.stage === selStage;
-  if (!staleLog && logMatches) {
-    L.realized = { teamTotal: Math.round(teamTotal), teamPerRider: Math.round(teamPer), fieldWeighted: Math.round(fieldWeighted), fieldMean: Math.round(fieldMean), beatFieldPerRider: Math.round(beatField), myCaptainDelta: capDelta == null ? null : Math.round(capDelta), modelCaptainDelta: modelCapDelta == null ? null : Math.round(modelCapDelta), evaluatedAt: new Date().toISOString().slice(0, 10) };
-    // sammenlæg med evt. eksisterende outcome-tekst
-    L.outcome = (L.outcome ? L.outcome + ' | ' : '') + summary;
-    setLogs(logs); renderLogs();
-  }
+  const fc = facitCore(L, afterByKey, beforeMap, !staleLog && logMatches);
+  const { summary, teamRows } = fc;
+  if (!staleLog && logMatches) { setLogs(logs); renderLogs(); }
   $('valuestatus').textContent = `facit for "${selStage || L.stage || 'seneste'}" · før: ${beforeSrc} · efter: ${afterSrc}${spanNote}${staleLog ? ' · ⚠ Δ=0-advarsel' : ''}${logMatches ? '' : ' · vist men IKKE gemt (ingen log-post for etapen)'}`;
   $('valueout').innerHTML = (staleLog
       ? '<p class="warn">⚠ <b>Facit er ikke meningsfyldt (alt ≈ 0):</b> log-postens gemte priser er identiske med efter-snapshottets — beslutningen er gemt EFTER etapen (eller mod samme snapshot). Værktøjet kan ikke genskabe morgenpriserne. Rutine: klik <b>Gem beslutning</b> om MORGENEN før etapen, og kør facit om aftenen mod det nye snapshot. (Det ægte facit kan stadig regnes fra GitHub-fixtures: after-N−1 → after-N.)</p>'
