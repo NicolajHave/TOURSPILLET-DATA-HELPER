@@ -191,25 +191,40 @@ try {
     const hit = riders.find((r) => { const rk = r.key.split(' '); return rk.every((t) => toks.includes(t)) || toks.every((t) => rk.includes(t)); });
     return hit ? hit.key : null;
   };
+  // Scan ÆLDSTE→NYESTE og hold på den seneste GODKENDTE GC, så en
+  // LEDER-STABILITETS-check kan bruges: gul trøje skifter sjældent, og når en
+  // fanget "GC" har etapevinderen som ny leder, er det næsten altid etape-
+  // resultatet (E15/E16: Evenepoel vandt begge etaper → snippet greb resultatet,
+  // ikke stillingen, hvor Pogačar stadig fører). Uden dette slap etape-
+  // resultatet igennem på bjerg/ITT-dage (leder = troværdig GC-rytter + højt
+  // model-overlap). REGEL: afvis en fangst hvis dens leder = etapens vinder OG
+  // ≠ forrige godkendte GC-leder.
   const stageFiles = readdirSync(PCS)
     .map((x) => x.match(/^tour-de-france-2026-stage-(\d+)\.json$/))
     .filter(Boolean)
     .sort((a, b) => Number(a![1]) - Number(b![1]));
-  for (let i = stageFiles.length - 1; i >= 0; i--) {
-    const j = JSON.parse(readFileSync(f(`fixtures/pcs/${stageFiles[i]![0]}`), 'utf8'));
+  const top6 = modelTop(6), top15 = modelTop(15);
+  let acceptedLeaderKey: string | null = null, acceptedStage = 0;
+  for (const sf of stageFiles) {
+    const j = JSON.parse(readFileSync(f(`fixtures/pcs/${sf![0]}`), 'utf8'));
     if (!Array.isArray(j.gc) || !j.gc.length) continue;
-    const stageNo = stageFiles[i]![1];
-    const top6 = modelTop(6), top15 = modelTop(15);
+    const stageNo = Number(sf![1]);
     const leaderKey = matchKey(j.gc[0].name);
     const overlap = j.gc.slice(0, 5).map((g: any) => matchKey(g.name)).filter((k: string | null) => k && top15.has(k)).length;
-    if (leaderKey && top6.has(leaderKey) && overlap >= 2) {
-      actualGc = j.gc;
-      console.log(`actualGc: samlet stilling efter E${stageNo} (${j.gc.length} ryttere, leder ${j.gc[0].name}, ${overlap}/5 i model-GC-top) → deterministisk GC-kanal.`);
-      break;
+    const winnerKey = Array.isArray(j.results) && j.results[0] ? matchKey(j.results[0].riderName || '') : null;
+    const looksLikeStageResult = leaderKey != null && winnerKey != null && leaderKey === winnerKey && acceptedLeaderKey != null && leaderKey !== acceptedLeaderKey;
+    if (!leaderKey || !top6.has(leaderKey) || overlap < 2) {
+      console.log(`actualGc: E${stageNo}-gc AFVIST (leder "${j.gc[0].name}" ikke troværdig GC-leder; ${overlap}/5 overlap).`);
+      continue;
     }
-    console.log(`actualGc: E${stageNo}-gc AFVIST af plausibilitets-gate (leder "${j.gc[0].name}" er ikke troværdig GC-leder; ${overlap}/5 overlap) — forkert tabel fanget af snippet. Falder tilbage til model.`);
+    if (looksLikeStageResult) {
+      console.log(`actualGc: E${stageNo}-gc AFVIST (leder "${j.gc[0].name}" = etapens vinder OG ≠ forrige GC-leder → snippet fangede etaperesultatet, ikke stillingen).`);
+      continue;
+    }
+    actualGc = j.gc; acceptedLeaderKey = leaderKey; acceptedStage = stageNo;
   }
-  if (!actualGc) console.log('actualGc: ingen troværdig GC-stilling — GC-kanal = model (form + klatre).');
+  if (actualGc) console.log(`actualGc: samlet stilling efter E${acceptedStage} (${actualGc.length} ryttere, leder ${actualGc[0].name}) → deterministisk GC-kanal.`);
+  else console.log('actualGc: ingen troværdig GC-stilling — GC-kanal = model (form + klatre).');
 } catch (e) { console.log('actualGc: fejl ved indlæsning — GC-kanal = model.', e); }
 
 // Nyeste holdet-snapshot (after-stage-N) bundtes med, så fladen auto-indlæser
