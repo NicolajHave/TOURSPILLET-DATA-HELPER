@@ -236,11 +236,19 @@ try {
     .map((x) => x.match(/^tour-de-france-2026-after-stage-(\d+)\.json$/))
     .filter(Boolean)
     .sort((a, b) => Number(a![1]) - Number(b![1]));
-  if (hs.length) {
-    holdetSnapshotFile = hs[hs.length - 1]![0];
+  // Vælg nyeste GYLDIGE snapshot: en tom/ufuldstændig upload (fx after-17 blev
+  // 0 bytes → fladen kunne ikke auto-indlæse) skal ikke vinde over en ældre
+  // hel fil. Kræv items[] med indhold; ellers prøv den næstnyeste.
+  for (let k = hs.length - 1; k >= 0; k--) {
+    const name = hs[k]![0];
+    let ok = false;
+    try { const raw = readFileSync(f(`fixtures/holdet/${name}`), 'utf8'); ok = raw.trim().length > 0 && Array.isArray(JSON.parse(raw).items) && JSON.parse(raw).items.length > 0; } catch { ok = false; }
+    if (!ok) { console.log(`holdet-snapshot: ${name} SPRINGES OVER (tom/ugyldig upload) — falder tilbage til ældre.`); continue; }
+    holdetSnapshotFile = name;
     mkdirSync(f('public/data'), { recursive: true });
-    writeFileSync(f('public/data/holdet-snapshot.json'), readFileSync(f(`fixtures/holdet/${holdetSnapshotFile}`)));
-    console.log(`holdet-snapshot: ${holdetSnapshotFile} bundtet til auto-indlæsning i fladen.`);
+    writeFileSync(f('public/data/holdet-snapshot.json'), readFileSync(f(`fixtures/holdet/${name}`)));
+    console.log(`holdet-snapshot: ${name} bundtet til auto-indlæsning i fladen.`);
+    break;
   }
 } catch { /* ingen holdet-fixtures endnu */ }
 
@@ -254,11 +262,13 @@ try {
   for (const file of readdirSync(f('fixtures/holdet'))) {
     const m = file.match(/^tour-de-france-2026-after-stage-(\d+)\.json$/);
     if (!m) continue;
-    const j = JSON.parse(readFileSync(f(`fixtures/holdet/${file}`), 'utf8'));
+    const raw = readFileSync(f(`fixtures/holdet/${file}`), 'utf8');
+    if (!raw.trim()) continue; // tom upload (fx after-17 0 bytes) → spring over
+    let j; try { j = JSON.parse(raw); } catch { continue; }
     const persons = j._embedded?.persons || {};
     const mm: Record<string, number> = {};
     for (const it of j.items ?? []) { const p = persons[it.personId]; if (!p) continue; mm[nameKey(`${p.firstName || ''} ${p.lastName || ''}`)] = it.price; }
-    priceHistory[m[1]] = mm;
+    if (Object.keys(mm).length) priceHistory[m[1]] = mm;
   }
   const ks = Object.keys(priceHistory).sort((a, b) => +a - +b);
   console.log(`priceHistory: ${ks.length} etape-snapshots indbygget (E${ks.join(', E')}) → facit sikkert morgen OG aften.`);
